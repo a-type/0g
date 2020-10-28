@@ -4,7 +4,7 @@ import { keyboard } from './keyboard';
 export function useKeyboard() {
   useFrame(() => {
     keyboard.cleanup();
-  }, 0);
+  });
 }
 
 export function KeyboardInput() {
