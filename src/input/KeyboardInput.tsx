@@ -1,13 +1,13 @@
 import { useFrame } from 'react-three-fiber';
 import { keyboard } from './keyboard';
 
-export function useKeyboard() {
+function useUpdateKeyboard() {
   useFrame(() => {
-    keyboard.cleanup();
+    keyboard.frame();
   });
 }
 
 export function KeyboardInput() {
-  useKeyboard();
+  useUpdateKeyboard();
   return null;
 }

@@ -40,7 +40,7 @@ export class Keyboard {
     this.keysUp.add(key);
   };
 
-  getKey(key: KeyboardKey) {
+  getKeyPressed(key: KeyboardKey) {
     return this.keysPressed.has(key);
   }
 
@@ -52,7 +52,7 @@ export class Keyboard {
     return this.keysUp.has(key);
   }
 
-  cleanup() {
+  frame() {
     this.keysDown.clear();
     this.keysUp.clear();
   }
