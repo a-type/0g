@@ -25,32 +25,37 @@ In order to have this thing work you need to render the exported `<KeyboardInput
 
 To get physics setup just render `<Physics>` wrapping the rest of your tree (maybe just below `Canvas`).
 
-## Using behaviors
+## Entities and behaviors
 
-This library's primary function is to facilitate using and creating behaviors. It currently exports one behavior: `useBody`.
+This library's primary function is to facilitate creating entities and applying behaviors to them.
 
-To use the behavior you need to have a mesh reference. To do that just do a `useRef` and pass it to your `<mesh>` or equivalent.
+- **Entities**: Stable object references which hold data for a particular "game object" - be it a player, wall, coin, etc.
+- **Behaviors**: Logic applied to entities which modify their contained data. Behaviors are things you write, in the form of hooks.
 
-`useBody` is a hook you call and pass in the mesh and some physics config:
+This usage pattern is roughly inspired by Unity's ECS. Unlike Unity, Entities here contain data (you might consider Entities and Components merged here). Rather than unified singular Systems, we use Behaviors individually, attaching them to our components which represent game objects.
+
+To create an Entity, call `useEntity`. You pass any data you want to include within the entity. There's only one special config value right now, `bodyConfig` - like classic Unity, each Entity has a physics body built-in. You just have to pass config values to set it up.
 
 ```tsx
 import * as p from 'planck-js';
-import { useBody } from 'r2d';
+import { useEntity } from 'r2d';
 
 export function Floor({ position, width = 10, height = 1, angle }) {
-  const meshRef = React.useRef(null);
-  useBody({
-    mesh: meshRef.current,
-    body: {
-      type: 'static',
-      userData: {
-        tags: [Tag.Wall],
+  const entity = useEntity({
+    bodyConfig: {
+      body: {
+        type: 'static',
+        userData: {
+          tags: [Tag.Wall],
+        },
       },
+      fixture: p.Box(width / 2, height / 2),
+      position,
+      angle,
     },
-    fixture: p.Box(width / 2, height / 2),
-    position,
-    angle,
   });
+
+  const meshRef = useMeshRef(entity);
 
   return (
     <Box ref={meshRef} args={[width, height, 0]}>
@@ -60,92 +65,71 @@ export function Floor({ position, width = 10, height = 1, angle }) {
 }
 ```
 
-You should pass `position` and `angle` to your `useBody`, not to your mesh. It'll get overwritten on the mesh.
+You should pass `position` and `angle` to your `useEntity`, not to your mesh. It'll get overwritten on the mesh.
+
+You can also see `useMeshRef` used here. It takes an entity and returns a ref you can pass to the `mesh` (or equivalent from Drei, etc) which will synchronize it to your body.
 
 ### Handling collisions
 
 This is a WIP, but you can use another hook to handle collisions with the body:
 
 ```ts
-useCollisions(bodyBehavior, {
-  onBeginContact: ({ other, contact }) => {
-    const otherBody = other.getBody();
-    // etc
-  },
-  onEndContact: ({ other, contact }) => {},
-});
+useContacts(entity);
 ```
 
-Having a separate hook may seem like overkill, but it's actually really useful to have it separate at the moment, especially because of how behaviors generally work together...
+Having a separate hook may seem like overkill, but it's actually really useful to have it separate at the moment, especially for performance reasons - computing contacts for a specific body isn't so fast right now...
 
 ## Creating behaviors
 
-Besides just `useBody`, the point is you can create your own behaviors. Right now `useBody` is actually so small you might just want to do it yourself?
+Behaviors are just hooks! This library doesn't actually include any specific code to manage creating them. But there's a pattern you should keep in mind.
 
-Behaviors are roughly inspired by Unity. They include an update callback which is run each frame, they have a local state object you can use to store state, and they can expose a public API. They're also hooks.
+The Entity represents the data (or state) required to power all the behaviors. TypeScript helps us out here - you should type your hooks to specify what kind of data they expect on the Entity they will be modifying.
 
-The code below implements a simple jump behavior. I'm not totally happy with it yet (especially the awkwardness of referencing the `bodyBehavior` as a passed-in arg), but it's the general idea I'm going for.
+Conventionally, a behavior takes an `entity` as its first argument. Generally the only argument - any configurable state or data should be on the Entity.
 
 ```tsx
 import { Vec2 } from 'planck-js';
-import { useBehavior, BodyBehavior } from 'r2d';
+import { Entity } from 'r2d';
 import { useInputStore } from '../store/useInputStore';
 
-export function useJump({
-  bodyBehavior,
-  jumpPower = 30,
-}: {
+export function useJump(entity: Entity<{
   bodyBehavior: BodyBehavior;
   jumpPower?: number;
-}) {
-  return useBehavior({
-    onUpdate: () => {
-      if (keyboard.getKey(' ')) {
-        bodyBehavior.applyLinearImpulse(Vec2(0, jumpPower), {
-          wake: true,
-        });
-      }
-    },
-    initialState: {},
-    // this is purely hypothetical, there's no real reason for
-    // an API on this behavior - but just to demonstrate.
-    makeApi: (state) => ({
-      logFoo: () => console.log('foo!'),
-    }),
+}>) {
+  useFrame({
+    if (keyboard.getKey(' ')) {
+      entity.body.applyLinearImpulse(Vec2(0, jumpPower), {
+        wake: true,
+      });
+    }
   });
 }
 ```
 
-To use your behavior you call it, passing in any args you specified. Here's how you might use `useJump`:
+To use your behavior you call it, passing in the entity.
 
 ```tsx
 function Player() {
-  const meshRef = useRef(null);
-  const bodyBehavior = useBody({
-    mesh: meshRef.current,
-    body: {
-      type: 'dynamic',
-      fixedRotation: false,
-      angularDamping: 5,
+  const entity = useEntity({
+    bodyConfig: {
+      body: {
+        type: 'dynamic',
+        fixedRotation: false,
+        angularDamping: 5,
+      },
+      fixture: {
+        shape: p.Circle(1),
+        density: 10,
+        friction: 20,
+      },
+      position,
     },
-    fixture: {
-      shape: p.Circle(1),
-      density: 10,
-      friction: 20,
-    },
-    position,
   });
 
   // use our behavior!
-  const jumpBehavior = useJump({
-    bodyBehavior,
-    jumpPower = 10,
-  });
+  useJump(entity);
 
-  // invoke our API!
-  useEffect(() => {
-    jumpBehavior.logFoo();
-  }, [jumpBehavior]);
+  const meshRef = useMeshRef(entity);
 
   return (
     <mesh ref={meshRef}>
@@ -155,52 +139,6 @@ function Player() {
 }
 ```
 
-So, basically, this kind of composition / interaction is why it's nice to have small discrete hook behaviors right now. For example, having the collisions in a separate hook from `useBody` is nice because you'd want `useBody` early in your component (probably first thing), but then you may want to define some custom behaviors which would care about collisions - and then, you call `useCollisions` and invoke the APIs of your custom behaviors from the callbacks. Here's an example from the game I'm testing this library with:
+### Rules of behaviors
 
-```tsx
-const meshRef = React.useRef(null);
-const bodyBehavior = useBody({
-  mesh: meshRef.current,
-  body: {
-    type: 'dynamic',
-    fixedRotation: false,
-    angularDamping: 5,
-  },
-  fixture: {
-    shape: p.Circle(1),
-    density: 10,
-    friction: 20,
-  },
-  position,
-});
-
-// behavior that makes the camera follow this object
-useFollowCamera({ mesh: meshRef.current });
-
-// behavior to handle player movement - perhaps we only want to allow
-// jumping when they are in contact with a wall and the normal of that
-// contact is upward - so we need to know about current collisions!
-const controls = usePlayerControls({
-  bodyBehavior,
-});
-
-useCollisions(bodyBehavior, {
-  onBeginContact: ({ other, contact }) => {
-    const otherBody = other.getBody();
-    if (otherBody.getUserData().tags.includes(Tag.Wall)) {
-      // our controls behavior exposes a way to add contacts
-      // to a Set it stores in its internal state. It then uses
-      // the contents of this Set each frame to see what objects
-      // this player is in contact with, and what angle of contact,
-      // etc.
-      controls.addWallContact(contact);
-    }
-  },
-  onEndContact: ({ other, contact }) => {
-    const otherBody = other.getBody();
-    if (otherBody.getUserData().tags.includes(Tag.Wall)) {
-      controls.removeWallContact(contact);
-    }
-  },
-});
-```
+- Don't destructure the `entity` in your hook args. The important part of the `entity` is that it's a stable reference which holds state. Destructuring risks an outdated reference if the value is reassigned later. Still working on how to make that... better.
