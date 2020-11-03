@@ -1,7 +1,7 @@
 import * as p from 'planck-js';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
+import { Entity } from '../behaviors';
 import { usePhysics } from './Physics';
-import { BodyBehavior } from './useBody';
 
 export type ContactEvent = {
   self: p.Fixture;
@@ -9,8 +9,8 @@ export type ContactEvent = {
   contact: p.Contact;
 };
 
-export function useCollisions(
-  bodyBehavior: BodyBehavior,
+export function useContactEvents(
+  body: p.Body,
   events: {
     onBeginContact?: (ev: ContactEvent) => void;
     onEndContact?: (ev: ContactEvent) => void;
@@ -24,7 +24,6 @@ export function useCollisions(
   useEffect(() => {
     function wrapContactHandler(handler?: (ev: ContactEvent) => void) {
       return function (contact: p.Contact) {
-        const body = bodyBehavior.getState().body;
         const bodyA = contact.getFixtureA().getBody();
         const bodyB = contact.getFixtureB().getBody();
         if (bodyA === body) {
@@ -53,5 +52,27 @@ export function useCollisions(
       world.off('begin-contact', handleBeginContact);
       world.off('end-contact', handleEndContact);
     };
-  }, [world, onBeginContact, onEndContact, bodyBehavior]);
+  }, [world, onBeginContact, onEndContact, body]);
 }
+
+export const useContacts = (
+  entity: Entity<{ contacts: Set<p.Contact>; body: p.Body }>
+) => {
+  const onBeginContact = useCallback(
+    (ev: ContactEvent) => {
+      entity.contacts.add(ev.contact);
+    },
+    [entity]
+  );
+  const onEndContact = useCallback(
+    (ev: ContactEvent) => {
+      entity.contacts.delete(ev.contact);
+    },
+    [entity]
+  );
+
+  useContactEvents(entity.body, {
+    onBeginContact,
+    onEndContact,
+  });
+};

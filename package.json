@@ -73,5 +73,7 @@
     "typedoc-plugin-internal-external": "^2.2.0",
     "typescript": "^3.9.7"
   },
-  "dependencies": {}
+  "dependencies": {
+    "rxjs": "^6.6.3"
+  }
 }
