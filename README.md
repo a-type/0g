@@ -1,144 +1,177 @@
-# r2d
+## Prefabs, Systems, and Stores
 
-Experimental 2d game tools for personal use.
+### Prefabs
 
-This really isn't ready for anyone yet, but it might be nice to get feedback on the general direction, so here's some barebones docs:
-
-## Input
-
-The library exports a `keyboard` which stores active keys, so you can always just pull in `keyboard` and use its methods to get input. Nothing for mouse yet. It has types for the keys I care about, will need to flesh that out more.
-
-```ts
-// is the key down right now?
-keyboard.getKey(' ');
-// was the key pressed just this frame?
-keyboard.getKeyDown(' ');
-// was the key released just this frame?
-keyboard.getKeyUp(' ');
-```
-
-In order to have this thing work you need to render the exported `<KeyboardInput />` component in your tree. It subscribes to `useFrame` to ensure the up/down values are accurate to the game loop.
-
-## Physics
-
-`planck-js` is a peer dependency. `r2d` uses a lot of it internally. Maybe it would be better to just bake it in? You'll end up importing a lot of stuff from `planck-js` yourself to pass into the library.
-
-To get physics setup just render `<Physics>` wrapping the rest of your tree (maybe just below `Canvas`).
-
-## Entities and behaviors
-
-This library's primary function is to facilitate creating entities and applying behaviors to them.
-
-- **Entities**: Stable object references which hold data for a particular "game object" - be it a player, wall, coin, etc.
-- **Behaviors**: Logic applied to entities which modify their contained data. Behaviors are things you write, in the form of hooks.
-
-This usage pattern is roughly inspired by Unity's ECS. Unlike Unity, Entities here contain data (you might consider Entities and Components merged here). Rather than unified singular Systems, we use Behaviors individually, attaching them to our components which represent game objects.
-
-To create an Entity, call `useEntity`. You pass any data you want to include within the entity. There's only one special config value right now, `bodyConfig` - like classic Unity, each Entity has a physics body built-in. You just have to pass config values to set it up.
+Prefabs describe what it takes to create a type of Entity.
+Prefabs have a name, which is globally unique and used elsewhere to refer to it.
+Prefabs have Systems, which define how they interact with the world and others.
+Prefabs have a render, which defines how the Prefab shows up in the scene.
 
 ```tsx
-import * as p from 'planck-js';
-import { useEntity } from 'r2d';
+// a Prefab module
+export const name = 'Player';
 
-export function Floor({ position, width = 10, height = 1, angle }) {
-  const entity = useEntity({
-    bodyConfig: {
-      body: {
-        type: 'static',
-        userData: {
-          tags: [Tag.Wall],
-        },
-      },
-      fixture: p.Box(width / 2, height / 2),
-      position,
-      angle,
-    },
-  });
+export const systems = {
+  body: rigidBody,
+  movement: playerMovement,
+};
 
-  const meshRef = useMeshRef(entity);
-
-  return (
-    <Box ref={meshRef} args={[width, height, 0]}>
-      <meshBasicMaterial attach="material" />
-    </Box>
-  );
-}
+export const render = ({ store: { transform, sprite } }) => (
+  <group position={transform.position.toArray()}>
+    <Sprite {...sprite} />
+  </group>
+);
 ```
 
-You should pass `position` and `angle` to your `useEntity`, not to your mesh. It'll get overwritten on the mesh.
-
-You can also see `useMeshRef` used here. It takes an entity and returns a ref you can pass to the `mesh` (or equivalent from Drei, etc) which will synchronize it to your body.
-
-### Handling collisions
-
-This is a WIP, but you can use another hook to handle collisions with the body:
-
-```ts
-useContacts(entity);
-```
-
-Having a separate hook may seem like overkill, but it's actually really useful to have it separate at the moment, especially for performance reasons - computing contacts for a specific body isn't so fast right now...
-
-## Creating behaviors
-
-Behaviors are just hooks! This library doesn't actually include any specific code to manage creating them. But there's a pattern you should keep in mind.
-
-The Entity represents the data (or state) required to power all the behaviors. TypeScript helps us out here - you should type your hooks to specify what kind of data they expect on the Entity they will be modifying.
-
-Conventionally, a behavior takes an `entity` as its first argument. Generally the only argument - any configurable state or data should be on the Entity.
+Prefab render is more versatile than it seems though.
+As long as you have data to power it, you can render anything.
 
 ```tsx
-import { Vec2 } from 'planck-js';
-import { Entity } from 'r2d';
-import { useInputStore } from '../store/useInputStore';
+export const render = ({ store: { transform, sprites } }) => (
+  <group position={transform.position.toArray()}>
+    {sprites.map((sprite) => (
+      <Sprite {...sprite} key={sprite.id} />
+    ))}
+  </group>
+);
+```
 
-export function useJump(entity: Entity<{
-  bodyBehavior: BodyBehavior;
-  jumpPower?: number;
-}>) {
-  useFrame({
-    if (keyboard.getKey(' ')) {
-      entity.body.applyLinearImpulse(Vec2(0, jumpPower), {
-        wake: true,
+### Systems
+
+Systems declare their needed shared data by mounting `stores`.
+Systems can define local state by defining `state`.
+Local state can derive from store initial values by passing a function.
+
+```tsx
+export const rigidBody = (context) => ({
+  stores: {
+    transform: transformStore(),
+    body: bodyStore()
+  },
+  state: (stores) => ({
+    body: createBody(context.world, stores.body);
+  }),
+  run: (delta, stores, state) => {
+    // copy values from simulated body to transform
+    stores.transform.position.copy(state.body.position);
+    stores.transform.rotation = state.body.rotation;
+  },
+});
+```
+
+Multiple systems can require the same `stores` and share data.
+
+```tsx
+export const gun = (context) => ({
+  stores: {
+    transform: transformStore(),
+    input: inputStore(),
+  },
+  run: (delta, stores) => {
+    if (stores.input.shoot.isDown) {
+      context.instantiate('Bullet', {
+        position: stores.transform.position,
+        velocity: new Vector2(10, 0),
       });
     }
-  });
-}
+  },
+});
 ```
 
-To use your behavior you call it, passing in the entity.
+### Stores
+
+Stores are just shapes of data.
 
 ```tsx
-function Player() {
-  const entity = useEntity({
-    bodyConfig: {
-      body: {
-        type: 'dynamic',
-        fixedRotation: false,
-        angularDamping: 5,
-      },
-      fixture: {
-        shape: p.Circle(1),
-        density: 10,
-        friction: 20,
-      },
-      position,
-    },
+export const transformStore = () =>
+  store({
+    position: new Vector2(),
+    rotation: 0,
   });
 
-  // use our behavior!
-  useJump(entity);
-
-  const meshRef = useMeshRef(entity);
-
-  return (
-    <mesh ref={meshRef}>
-      <meshBasicMaterial color="blue" />
-    </mesh>
-  );
-}
+export const bodyStore = () =>
+  store({
+    shape: 'circle',
+    radius: 1,
+    density: 1,
+  });
 ```
 
-### Rules of behaviors
+When an Entity is created, all of its Systems' required stores are attached to it.
 
-- Don't destructure the `entity` in your hook args. The important part of the `entity` is that it's a stable reference which holds state. Destructuring risks an outdated reference if the value is reassigned later. Still working on how to make that... better.
+### Structure of abstractions
+
+entity
+
+- id
+- prefab
+  - systems
+    - stores
+
+## Saving and Loading
+
+Stores are persisted as part of the save state.
+Stores are restored with each entity on load.
+
+Save files store entities and stores.
+
+```js
+[
+  {
+    id: 'a',
+    prefab: 'Player',
+    stores: {
+      transform: {
+        position: { x: 0, y: 0 },
+        rotation: 0,
+      },
+      body: {
+        shape: 'circle',
+        radius: 1,
+        density: 1,
+      },
+    },
+  },
+];
+```
+
+## Finding, Creating, Destroying
+
+Each System has access to Context.
+Context is game-global stuff, including the scene manifest (what's in the scene).
+Get any other Entity by ID from the context.
+Create new Entities from any System using a Prefab name, and an initial Stores state.
+Destroy Entities by ID from any System.
+
+```tsx
+type Context = {
+  get(id: string): Entity;
+  create(prefabName: string, initialStores?: any): Entity;
+  destroy(id: string): void;
+};
+```
+
+## Entities
+
+Entities can reference one another (via Systems).
+Entities expose only certain things publicly.
+
+```tsx
+type Entity = {
+  id: string;
+  prefab: string;
+  stores: {
+    [alias: string]: any;
+  };
+};
+```
+
+## Editor
+
+Scenes are really defined entirely by saved Entities and their Stores.
+So to construct a scene we start with making our Prefabs.
+Once we have Prefabs, we can open an Editor.
+The Editor can create Entities from Prefabs and define their Store data.
+The Editor renders the initial state of all Entities.
+But the Editor isn't only for initial states.
+We can bring up the Editor any time during gameplay to tweak.
