@@ -148,6 +148,7 @@ type Context = {
   get(id: string): Entity;
   create(prefabName: string, initialStores?: any): Entity;
   destroy(id: string): void;
+  // more things come from plugins ?
 };
 ```
 
@@ -175,3 +176,14 @@ The Editor can create Entities from Prefabs and define their Store data.
 The Editor renders the initial state of all Entities.
 But the Editor isn't only for initial states.
 We can bring up the Editor any time during gameplay to tweak.
+
+## Plugins
+
+Plugins can add behavior to the World.
+Physics is a good plugin example.
+Plugins have several hook points:
+
+1. _Context_: plugins can provide values to Context.
+2. _Providers_: plugins can wrap the World tree in Providers.
+
+... more ? ...

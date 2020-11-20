@@ -9,6 +9,8 @@
     "build:gh": "parcel build index.html --public-url /react-typescript-library-template/ --out-dir ../docs"
   },
   "dependencies": {
+    "@react-spring/web": "^9.0.0-rc.3",
+    "matter-js": "^0.14.2",
     "react-app-polyfill": "^1.0.0"
   },
   "alias": {
