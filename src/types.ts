@@ -1,5 +1,11 @@
 import { FC } from 'react';
 
+export type WorldContext = {
+  get(id: string): Entity;
+  create(prefabName: string, initialStores?: Record<string, any>): Entity;
+  destroy(id: string): void;
+};
+
 export type FrameData = {
   delta: number;
 };
@@ -35,11 +41,12 @@ export type BasicSystemState = Record<string, unknown>;
 
 export type SystemConfigObject<
   T extends Stores = Stores,
-  A extends BasicSystemState = BasicSystemState
+  A extends BasicSystemState = BasicSystemState,
+  W extends WorldContext = WorldContext
 > = {
   stores: T;
-  state?: A | (() => A);
-  run: (frameData: FrameData, stores: T) => void | Promise<void>;
+  state?: A | ((context: W) => A);
+  run: (stores: T, state: A, context: W & FrameData) => void | Promise<void>;
 };
 // export type SystemConfig<
 //   T extends Stores = Stores,
@@ -51,10 +58,14 @@ export type SystemConfigObject<
 //   A extends BasicSystemState = BasicSystemState,
 //   W = unknown
 // > = (context: W) => System<T, A>;
-export type System<T extends Stores = Stores, A = BasicSystemState> = {
+export type System<
+  T extends Stores = Stores,
+  A extends BasicSystemState = BasicSystemState,
+  W extends WorldContext = WorldContext
+> = {
   stores: T;
-  state: A;
-  run: (frameData: FrameData, stores: T) => void | Promise<void>;
+  state: A | ((context: W) => A);
+  run: (stores: T, state: A, context: W & FrameData) => void | Promise<void>;
 };
 export type Systems = Record<string, System>;
 
@@ -83,3 +94,8 @@ export type ReduceSystemsStores<
 export type ExtractPrefabStores<P extends Prefab> = ReduceSystemsStores<
   P['systems']
 >;
+
+export type ExtractSystemState<S> = S extends System<any, infer A> ? A : never;
+export type ExtractSystemsStates<S extends Systems> = {
+  [K in keyof S]: ExtractSystemState<S[K]>;
+};

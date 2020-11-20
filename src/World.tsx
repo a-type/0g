@@ -3,13 +3,13 @@ import shortid from 'shortid';
 import mergeDeepRight from 'ramda/es/mergeDeepRight';
 import { useFrame as useFrameDefault, FrameHook } from './useFrame';
 import { proxy, useProxy } from 'valtio';
-import { Entity, Prefab, Stores } from './types';
-
-export type WorldContext = {
-  get(id: string): Entity;
-  create(prefabName: string, initialStores?: Record<string, any>): Entity;
-  destroy(id: string): void;
-};
+import {
+  Entity,
+  ExtractSystemsStates,
+  Prefab,
+  Stores,
+  WorldContext,
+} from './types';
 
 export const worldContext = React.createContext<WorldContext | null>(null);
 
@@ -45,9 +45,24 @@ const createEntity = (
   };
 };
 
+const initializeSystemStates = (prefab: Prefab, ctx: WorldContext) => {
+  return Object.entries(prefab.systems).reduce<
+    ExtractSystemsStates<Prefab['systems']>
+  >((states, [name, sys]) => {
+    states[name] = typeof sys.state === 'function' ? sys.state(ctx) : sys.state;
+    return states;
+  }, {});
+};
+
 type GlobalStore = {
   entities: {
     [id: string]: Entity;
+  };
+};
+
+type SystemStateRegistry = {
+  [entityId: string]: {
+    [systemKey: string]: any;
   };
 };
 
@@ -64,7 +79,11 @@ export const World: React.FC<WorldProps> = ({
   const [globalStore] = React.useState(() => createGlobalStore());
   const snapshot = useProxy(globalStore);
 
+  const [systemStates] = React.useState<SystemStateRegistry>(() => ({}));
+
   const prefabsRef = React.useRef(prefabs);
+
+  const contextRef = React.useRef<WorldContext>();
 
   const get = React.useCallback(
     (id: string) => globalStore.entities[id] ?? null,
@@ -83,6 +102,12 @@ export const World: React.FC<WorldProps> = ({
         initialStores
       );
       globalStore.entities[id] = entity;
+
+      systemStates[id] = initializeSystemStates(
+        prefabs[prefabName],
+        contextRef.current!
+      );
+
       return entity;
     },
     [globalStore]
@@ -90,6 +115,14 @@ export const World: React.FC<WorldProps> = ({
   const destroy = React.useCallback((id: string) => {
     delete globalStore.entities[id];
   }, []);
+
+  React.useLayoutEffect(() => {
+    contextRef.current = {
+      get,
+      create,
+      destroy,
+    };
+  }, [get, create, destroy]);
 
   const ctx = React.useMemo(
     () => ({
@@ -107,8 +140,9 @@ export const World: React.FC<WorldProps> = ({
   useFrame((frameData) => {
     for (const entity of entitiesList) {
       const prefab = prefabs[entity.prefab];
-      for (const system of Object.values(prefab.systems)) {
-        system.run(frameData, entity.stores);
+      const states = systemStates[entity.id];
+      for (const [alias, system] of Object.entries(prefab.systems)) {
+        system.run(entity.stores, states[alias], { ...ctx, ...frameData });
       }
     }
   });
