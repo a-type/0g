@@ -15,3 +15,22 @@ body {
   overflow: hidden;
   position: relative;
 }
+
+.CenterSpaceTransformer {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  overflow: visible;
+}
+.CenterSpaceTransformer > * {
+  position: absolute;
+  display: block;
+}
+
+.Paddle {
+}
+
+.Ball {
+  border-radius: 100%;
+  background-color: black;
+}

@@ -1,4 +1,4 @@
-import React, { FC, memo } from 'react';
+import React, { FC } from 'react';
 import { useProxy } from 'valtio';
 import { logger } from './logger';
 import { Prefab, PrefabConfig, PrefabRenderProps, Systems } from './types';
@@ -39,6 +39,6 @@ export function prefab<S extends Systems = Systems>(
 
   return {
     ...config,
-    Component: memo(Component),
+    Component: Component,
   };
 }

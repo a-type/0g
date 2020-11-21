@@ -1,9 +1,47 @@
-import { FC } from 'react';
+import { FC, ReactElement } from 'react';
+import { Keyboard } from './input/keyboard';
+import { Pointer } from './input/Pointer';
 
-export type WorldContext = {
+type Empty = Record<string, unknown>;
+
+export type Plugin<API extends Empty = Empty> = {
+  wrap?: (content: ReactElement) => ReactElement;
+  api: API;
+  // TODO: return stuff to add to context?
+  run?: (ctx: WorldContext & FrameData) => void | Promise<void>;
+};
+export type PluginConfig<API extends Empty = Empty> = Plugin<API>;
+export type Plugins = Record<string, Plugin>;
+type PluginApis<P extends Plugins> = {
+  [K in keyof P]: P[K]['api'];
+};
+
+export type InputTools = {
+  keyboard: Keyboard;
+  pointer: Pointer;
+};
+
+export type GlobalStore = {
+  entities: {
+    [id: string]: Entity;
+  };
+};
+
+export type SystemStateRegistry = {
+  [entityId: string]: {
+    [systemKey: string]: any;
+  };
+};
+
+export type WorldContext<P extends Plugins = Record<string, Plugin<Empty>>> = {
   get(id: string): Entity;
   create(prefabName: string, initialStores?: Record<string, any>): Entity;
   destroy(id: string): void;
+  plugins: PluginApis<P>;
+  input: InputTools;
+  __internal: {
+    globalStore: GlobalStore;
+  };
 };
 
 export type FrameData = {
@@ -37,44 +75,33 @@ export type Prefab<S extends Systems = Systems> = {
   Component: FC<PrefabRenderProps<S>>;
 };
 
-export type BasicSystemState = Record<string, unknown>;
-
-export type SystemConfigObject<
-  T extends Stores = Stores,
-  A extends BasicSystemState = BasicSystemState,
-  W extends WorldContext = WorldContext
-> = {
-  stores: T;
-  state?: A | ((context: W) => A);
-  run: (stores: T, state: A, context: W & FrameData) => void | Promise<void>;
-};
-// export type SystemConfig<
-//   T extends Stores = Stores,
-//   A extends BasicSystemState = BasicSystemState,
-//   W = unknown
-// > = SystemConfigObject<T, A> | ((context: W) => SystemConfigObject<T, A>);
-// export type SystemCreator<
-//   T extends Stores = Stores,
-//   A extends BasicSystemState = BasicSystemState,
-//   W = unknown
-// > = (context: W) => System<T, A>;
 export type System<
-  T extends Stores = Stores,
-  A extends BasicSystemState = BasicSystemState,
+  T extends Stores,
+  A extends Empty,
   W extends WorldContext = WorldContext
 > = {
   stores: T;
-  state: A | ((context: W) => A);
+  state: A | ((stores: T, context: W) => A);
   run: (stores: T, state: A, context: W & FrameData) => void | Promise<void>;
 };
-export type Systems = Record<string, System>;
+export type SystemConfig<
+  T extends Stores,
+  A extends Empty,
+  W extends WorldContext = WorldContext
+> = {
+  stores: T;
+  state?: A | ((stores: T, context: W) => A);
+  run: (stores: T, state: A, context: W & FrameData) => void | Promise<void>;
+};
+
+export type Systems = Record<string, System<any, any>>;
 
 export type SystemInstanceSnapshot = {
   stores: Stores;
   state: any;
 };
 
-export type ExtractSystemStores<S> = S extends System<infer T> ? T : never;
+export type ExtractSystemStores<S> = S extends System<infer T, any> ? T : never;
 type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
   k: infer I
 ) => void

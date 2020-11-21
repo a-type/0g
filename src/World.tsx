@@ -2,20 +2,28 @@ import * as React from 'react';
 import shortid from 'shortid';
 import mergeDeepRight from 'ramda/es/mergeDeepRight';
 import { useFrame as useFrameDefault, FrameHook } from './useFrame';
-import { proxy, useProxy } from 'valtio';
+import { proxy, subscribe, useProxy } from 'valtio';
 import {
-  Entity,
   ExtractSystemsStates,
+  Plugins,
   Prefab,
   Stores,
   WorldContext,
+  GlobalStore,
+  SystemStateRegistry,
 } from './types';
+import { PluginProviders } from './internal/PluginProviders';
+import { keyboard, pointer } from './input';
+
+const input = { keyboard, pointer };
 
 export const worldContext = React.createContext<WorldContext | null>(null);
 
 export type WorldProps = {
   prefabs: Record<string, Prefab>;
   useFrame?: FrameHook;
+  plugins?: Plugins;
+  scene?: GlobalStore;
 };
 
 export type ExtractPrefabNames<W extends WorldProps> = keyof W['prefabs'];
@@ -45,45 +53,49 @@ const createEntity = (
   };
 };
 
-const initializeSystemStates = (prefab: Prefab, ctx: WorldContext) => {
+const initializeSystemStates = (
+  prefab: Prefab,
+  stores: Stores,
+  ctx: WorldContext
+) => {
   return Object.entries(prefab.systems).reduce<
     ExtractSystemsStates<Prefab['systems']>
   >((states, [name, sys]) => {
-    states[name] = typeof sys.state === 'function' ? sys.state(ctx) : sys.state;
+    states[name] =
+      typeof sys.state === 'function' ? sys.state(stores, ctx) : sys.state;
     return states;
   }, {});
 };
 
-type GlobalStore = {
-  entities: {
-    [id: string]: Entity;
-  };
-};
-
-type SystemStateRegistry = {
-  [entityId: string]: {
-    [systemKey: string]: any;
-  };
-};
-
-const createGlobalStore = () =>
-  proxy<GlobalStore>({
-    entities: {},
-  });
+const createGlobalStore = (initial = { entities: {} }) =>
+  proxy<GlobalStore>(initial);
 
 export const World: React.FC<WorldProps> = ({
   prefabs,
   useFrame = useFrameDefault,
+  plugins = {},
+  scene,
 }) => {
   // TODO: initialize from scene
-  const [globalStore] = React.useState(() => createGlobalStore());
+  const [globalStore] = React.useState(() => createGlobalStore(scene));
   const snapshot = useProxy(globalStore);
 
   const [systemStates] = React.useState<SystemStateRegistry>(() => ({}));
 
+  const contextRef = React.useRef<WorldContext>();
   const prefabsRef = React.useRef(prefabs);
 
-  const contextRef = React.useRef<WorldContext>();
+  const pluginApis = React.useMemo(
+    () =>
+      Object.entries(plugins).reduce<Record<string, Record<string, unknown>>>(
+        (apis, [name, plugin]) => {
+          apis[name] = plugin.api;
+          return apis;
+        },
+        {}
+      ),
+    [plugins]
+  );
 
   const get = React.useCallback(
     (id: string) => globalStore.entities[id] ?? null,
@@ -105,6 +117,7 @@ export const World: React.FC<WorldProps> = ({
 
       systemStates[id] = initializeSystemStates(
         prefabs[prefabName],
+        initialStores,
         contextRef.current!
       );
 
@@ -121,38 +134,83 @@ export const World: React.FC<WorldProps> = ({
       get,
       create,
       destroy,
+      plugins: pluginApis,
+      input,
+      __internal: {
+        globalStore,
+      },
     };
-  }, [get, create, destroy]);
+  }, [get, create, destroy, pluginApis]);
 
   const ctx = React.useMemo(
     () => ({
       get,
       create,
       destroy,
+      plugins: pluginApis,
+      input,
+      __internal: {
+        globalStore,
+      },
     }),
-    [get, create, destroy]
+    [get, create, destroy, pluginApis]
   );
+
+  // initialize scene if provided / changed
+  React.useLayoutEffect(() => {
+    if (!scene) return;
+    for (const [id, entity] of Object.entries(scene?.entities)) {
+      systemStates[id] = initializeSystemStates(
+        prefabsRef.current[entity.prefab],
+        entity.stores,
+        ctx
+      );
+    }
+  }, [scene, systemStates, ctx]);
 
   const entitiesList = React.useMemo(() => Object.values(snapshot.entities), [
     snapshot.entities,
   ]);
+  const pluginsList = React.useMemo(() => Object.values(plugins), [plugins]);
 
   useFrame((frameData) => {
+    const frameCtx = { ...ctx, ...frameData };
+
+    for (const plugin of pluginsList) {
+      plugin.run?.(frameCtx);
+    }
+
     for (const entity of entitiesList) {
       const prefab = prefabs[entity.prefab];
-      const states = systemStates[entity.id];
+      const states = systemStates[entity.id] ?? {};
       for (const [alias, system] of Object.entries(prefab.systems)) {
-        system.run(entity.stores, states[alias], { ...ctx, ...frameData });
+        system.run(
+          globalStore.entities[entity.id].stores,
+          states[alias],
+          frameCtx
+        );
       }
     }
+
+    keyboard.frame();
+    pointer.frame();
   });
 
   return (
     <worldContext.Provider value={ctx}>
-      {entitiesList.map((entity) => {
-        const Prefab = prefabs[entity.prefab].Component;
-        return <Prefab key={entity.id} stores={entity.stores} />;
-      })}
+      <PluginProviders plugins={plugins}>
+        <>
+          {entitiesList.map((entity) => {
+            const Prefab = prefabs[entity.prefab].Component;
+            return (
+              <Prefab
+                key={entity.id}
+                stores={globalStore.entities[entity.id].stores}
+              />
+            );
+          })}
+        </>
+      </PluginProviders>
     </worldContext.Provider>
   );
 };
