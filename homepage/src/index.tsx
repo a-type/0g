@@ -44,6 +44,54 @@ const scene = {
         transform: { x: 0, y: 0 },
       },
     },
+    leftWall: {
+      id: 'leftWall',
+      prefab: 'Wall',
+      stores: {
+        bodyConfig: {
+          shape: 'rectangle',
+          density: 1,
+          width: 10,
+          height: 1000,
+          restitution: 1,
+          angle: 0,
+          isStatic: true,
+        },
+        transform: { x: -500, y: 0 },
+      },
+    },
+    rightWall: {
+      id: 'leftWall',
+      prefab: 'Wall',
+      stores: {
+        bodyConfig: {
+          shape: 'rectangle',
+          density: 1,
+          width: 10,
+          height: 1000,
+          restitution: 1,
+          angle: 0,
+          isStatic: true,
+        },
+        transform: { x: 500, y: 0 },
+      },
+    },
+    topWall: {
+      id: 'topWall',
+      prefab: 'Wall',
+      stores: {
+        bodyConfig: {
+          shape: 'rectangle',
+          density: 1,
+          width: 1000,
+          height: 10,
+          restitution: 1,
+          angle: 0,
+          isStatic: true,
+        },
+        transform: { x: 0, y: -500 },
+      },
+    },
   },
 };
 
