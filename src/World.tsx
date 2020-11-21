@@ -77,7 +77,7 @@ export const World: React.FC<WorldProps> = ({
   scene,
 }) => {
   // TODO: initialize from scene
-  const [globalStore] = React.useState(() => createGlobalStore(scene));
+  const [globalStore] = React.useState(() => createGlobalStore());
   const snapshot = useProxy(globalStore);
 
   const [systemStates] = React.useState<SystemStateRegistry>(() => ({}));
@@ -104,9 +104,10 @@ export const World: React.FC<WorldProps> = ({
   const create = React.useCallback(
     <N extends ExtractPrefabNames<WorldProps>>(
       prefabName: N,
-      initialStores: Stores = {}
+      initialStores: Stores = {},
+      manualId?: string
     ) => {
-      const id = `${prefabName}-${shortid()}`;
+      const id = manualId || `${prefabName}-${shortid()}`;
       const entity = createEntity(
         id,
         prefabName,
@@ -123,7 +124,7 @@ export const World: React.FC<WorldProps> = ({
 
       return entity;
     },
-    [globalStore]
+    [globalStore, systemStates]
   );
   const destroy = React.useCallback((id: string) => {
     delete globalStore.entities[id];
@@ -160,41 +161,42 @@ export const World: React.FC<WorldProps> = ({
   React.useLayoutEffect(() => {
     if (!scene) return;
     for (const [id, entity] of Object.entries(scene?.entities)) {
-      systemStates[id] = initializeSystemStates(
-        prefabsRef.current[entity.prefab],
-        entity.stores,
-        ctx
-      );
+      create(entity.prefab, entity.stores, id);
     }
-  }, [scene, systemStates, ctx]);
+  }, [scene, create]);
 
   const entitiesList = React.useMemo(() => Object.values(snapshot.entities), [
     snapshot.entities,
   ]);
   const pluginsList = React.useMemo(() => Object.values(plugins), [plugins]);
 
-  useFrame((frameData) => {
-    const frameCtx = { ...ctx, ...frameData };
+  const frameCtxRef = React.useRef({ ...ctx, delta: 0 });
+  const loop = React.useCallback(
+    (frameData) => {
+      Object.assign(frameCtxRef.current, ctx, frameData);
 
-    for (const plugin of pluginsList) {
-      plugin.run?.(frameCtx);
-    }
-
-    for (const entity of entitiesList) {
-      const prefab = prefabs[entity.prefab];
-      const states = systemStates[entity.id] ?? {};
-      for (const [alias, system] of Object.entries(prefab.systems)) {
-        system.run(
-          globalStore.entities[entity.id].stores,
-          states[alias],
-          frameCtx
-        );
+      for (const plugin of pluginsList) {
+        plugin.run?.(frameCtxRef.current);
       }
-    }
 
-    keyboard.frame();
-    pointer.frame();
-  });
+      for (const entity of entitiesList) {
+        const prefab = prefabsRef.current[entity.prefab];
+        const states = systemStates[entity.id] ?? {};
+        for (const [alias, system] of Object.entries(prefab.systems)) {
+          system.run(
+            globalStore.entities[entity.id].stores,
+            states[alias],
+            frameCtxRef.current
+          );
+        }
+      }
+
+      keyboard.frame();
+      pointer.frame();
+    },
+    [pluginsList, entitiesList]
+  );
+  useFrame(loop);
 
   return (
     <worldContext.Provider value={ctx}>
