@@ -11,6 +11,8 @@ import {
   WorldContext,
   GlobalStore,
   SystemStateRegistry,
+  System,
+  Entity,
 } from './types';
 import { PluginProviders } from './internal/PluginProviders';
 import { keyboard, pointer } from './input';
@@ -175,17 +177,43 @@ export const World: React.FC<WorldProps> = ({
     (frameData) => {
       Object.assign(frameCtxRef.current, ctx, frameData);
 
+      let entity: Entity;
+      let entry: [string, System<any, any>];
+      for (entity of entitiesList) {
+        for (entry of Object.entries(
+          prefabsRef.current[entity.prefab].systems
+        )) {
+          entry[1].preStep?.(
+            globalStore.entities[entity.id].stores,
+            systemStates[entity.id]?.[entry[0]],
+            frameCtxRef.current
+          );
+        }
+      }
+
       for (const plugin of pluginsList) {
         plugin.run?.(frameCtxRef.current);
       }
 
-      for (const entity of entitiesList) {
-        const prefab = prefabsRef.current[entity.prefab];
-        const states = systemStates[entity.id] ?? {};
-        for (const [alias, system] of Object.entries(prefab.systems)) {
-          system.run(
+      for (entity of entitiesList) {
+        for (entry of Object.entries(
+          prefabsRef.current[entity.prefab].systems
+        )) {
+          entry[1].run(
             globalStore.entities[entity.id].stores,
-            states[alias],
+            systemStates[entity.id]?.[entry[0]],
+            frameCtxRef.current
+          );
+        }
+      }
+
+      for (entity of entitiesList) {
+        for (entry of Object.entries(
+          prefabsRef.current[entity.prefab].systems
+        )) {
+          entry[1].postStep?.(
+            globalStore.entities[entity.id].stores,
+            systemStates[entity.id]?.[entry[0]],
             frameCtxRef.current
           );
         }

@@ -83,6 +83,16 @@ export type System<
   stores: T;
   state: A | ((stores: T, context: W) => A);
   run: (stores: T, state: A, context: W & FrameData) => void | Promise<void>;
+  preStep?: (
+    stores: T,
+    state: A,
+    context: W & FrameData
+  ) => void | Promise<void>;
+  postStep?: (
+    stores: T,
+    state: A,
+    context: W & FrameData
+  ) => void | Promise<void>;
 };
 export type SystemConfig<
   T extends Stores,
@@ -92,6 +102,16 @@ export type SystemConfig<
   stores: T;
   state?: A | ((stores: T, context: W) => A);
   run: (stores: T, state: A, context: W & FrameData) => void | Promise<void>;
+  preStep?: (
+    stores: T,
+    state: A,
+    context: W & FrameData
+  ) => void | Promise<void>;
+  postStep?: (
+    stores: T,
+    state: A,
+    context: W & FrameData
+  ) => void | Promise<void>;
 };
 
 export type Systems = Record<string, System<any, any>>;
