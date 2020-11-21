@@ -132,7 +132,7 @@ export const World: React.FC<WorldProps> = ({
     delete globalStore.entities[id];
   }, []);
 
-  React.useLayoutEffect(() => {
+  React.useMemo(() => {
     contextRef.current = {
       get,
       create,
@@ -175,7 +175,7 @@ export const World: React.FC<WorldProps> = ({
   const frameCtxRef = React.useRef({ ...ctx, delta: 0 });
   const loop = React.useCallback(
     (frameData) => {
-      Object.assign(frameCtxRef.current, ctx, frameData);
+      Object.assign(frameCtxRef.current, contextRef.current, frameData);
 
       let entity: Entity;
       let entry: [string, System<any, any>];
