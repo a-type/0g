@@ -49,6 +49,7 @@ export const rigidBody = r2d.system({
   run: ({ transform, forces }, { body }: { body: Body }) => {
     transform.x = body.position.x;
     transform.y = body.position.y;
+    transform.angle = body.angle;
 
     if (forces.velocity) {
       Body.setVelocity(body, forces.velocity);

@@ -7,6 +7,8 @@ import { plugins } from './plugins';
 
 import './index.css';
 
+const SIZE = 500;
+
 const scene = {
   entities: {
     paddle: {
@@ -24,7 +26,7 @@ const scene = {
         forces: {
           velocity: { x: 0, y: 0 },
         },
-        transform: { x: 0, y: 400 },
+        transform: { x: 0, y: SIZE / 2 },
       },
     },
     ball: {
@@ -52,12 +54,12 @@ const scene = {
           shape: 'rectangle',
           density: 1,
           width: 10,
-          height: 1000,
+          height: SIZE,
           restitution: 1,
           angle: 0,
           isStatic: true,
         },
-        transform: { x: -500, y: 0 },
+        transform: { x: -SIZE / 2, y: 0 },
       },
     },
     rightWall: {
@@ -68,12 +70,12 @@ const scene = {
           shape: 'rectangle',
           density: 1,
           width: 10,
-          height: 1000,
+          height: SIZE,
           restitution: 1,
           angle: 0,
           isStatic: true,
         },
-        transform: { x: 500, y: 0 },
+        transform: { x: SIZE / 2, y: 0 },
       },
     },
     topWall: {
@@ -83,13 +85,13 @@ const scene = {
         bodyConfig: {
           shape: 'rectangle',
           density: 1,
-          width: 1000,
+          width: SIZE,
           height: 10,
           restitution: 1,
           angle: 0,
           isStatic: true,
         },
-        transform: { x: 0, y: -500 },
+        transform: { x: 0, y: -SIZE / 2 },
       },
     },
   },

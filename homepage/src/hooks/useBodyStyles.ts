@@ -17,7 +17,8 @@ export function useBodyStyles(stores: {
       : stores.bodyConfig.height;
 
   return {
-    transform: `translate(${x}px, ${y}px) rotate(${angle}rad) translate(-50%, -50%)`,
+    transform: `translate(${x}px, ${y}px) translate(-50%, -50%) rotate(${angle}rad) `,
+    transformOrigin: '50% 50%',
     width,
     height,
   };
