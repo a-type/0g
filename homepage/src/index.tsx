@@ -34,8 +34,8 @@ const scene = {
       stores: {
         bodyConfig: {
           shape: 'circle',
-          density: 0.01,
-          radius: 2.5,
+          density: 0.1,
+          radius: 1,
           restitution: 1,
           angle: 0,
           bullet: true,
@@ -92,6 +92,15 @@ const scene = {
           isStatic: true,
         },
         transform: { x: 0, y: -SIZE / 2 },
+      },
+    },
+    blockSpawner: {
+      id: 'blockSpawner',
+      prefab: 'BlockSpawner',
+      stores: {
+        transform: {
+          y: -SIZE / 3,
+        },
       },
     },
   },

@@ -1,2 +1,2 @@
-export const PX_SCALE = 3;
-export const SIZE = 100;
+export const PX_SCALE = 10;
+export const SIZE = 50;
