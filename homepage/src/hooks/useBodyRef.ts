@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef } from 'react';
 import { subscribe } from 'valtio';
+import { PX_SCALE } from '../constants';
 import { BodyConfigData } from '../stores/bodyConfig';
 
 export function useBodyRef<T extends HTMLElement>(stores: {
@@ -14,12 +15,12 @@ export function useBodyRef<T extends HTMLElement>(stores: {
 
       const width =
         stores.bodyConfig.shape === 'circle'
-          ? stores.bodyConfig.radius * 2
-          : stores.bodyConfig.width;
+          ? stores.bodyConfig.radius * 2 * PX_SCALE
+          : stores.bodyConfig.width * PX_SCALE;
       const height =
         stores.bodyConfig.shape === 'circle'
-          ? stores.bodyConfig.radius * 2
-          : stores.bodyConfig.height;
+          ? stores.bodyConfig.radius * 2 * PX_SCALE
+          : stores.bodyConfig.height * PX_SCALE;
 
       ref.current.style.width = `${width}px`;
       ref.current.style.height = `${height}px`;
@@ -28,7 +29,9 @@ export function useBodyRef<T extends HTMLElement>(stores: {
       if (!ref.current) return;
 
       const { x, y, angle } = stores.transform;
-      ref.current.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%) rotate(${angle}rad)`;
+      ref.current.style.transform = `translate(${x * PX_SCALE}px, ${
+        y * PX_SCALE
+      }px) translate(-50%, -50%) rotate(${angle}rad)`;
     };
 
     const unsubTransform = subscribe(stores.transform, updateTransform);

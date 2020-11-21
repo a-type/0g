@@ -49,7 +49,7 @@ export type FrameData = {
 };
 export type FrameCallback = (data: FrameData) => void | Promise<void>;
 
-export type Store = unknown;
+export type Store<T extends Empty = Empty> = T;
 export type Stores = Record<string, Store>;
 
 export type Entity = {
@@ -59,7 +59,7 @@ export type Entity = {
 };
 
 export type PrefabRenderProps<S extends Systems = Systems> = {
-  stores: ReduceSystemsStores<S>;
+  stores: ExtractSystemsStores<S>;
 };
 
 export type PrefabConfig<S extends Systems = Systems> = {
@@ -75,24 +75,27 @@ export type Prefab<S extends Systems = Systems> = {
   Component: FC<PrefabRenderProps<S>>;
 };
 
+export type EntityContext = { id: string };
+export type SystemContext<W extends WorldContext> = W & {
+  entity: EntityContext;
+};
+export type SystemRunContext<W extends WorldContext> = SystemContext<W> &
+  FrameData;
+export type SystemRunFn<
+  T extends Stores,
+  A extends Empty,
+  W extends WorldContext
+> = (stores: T, state: A, context: SystemRunContext<W>) => void | Promise<void>;
 export type System<
   T extends Stores,
   A extends Empty,
   W extends WorldContext = WorldContext
 > = {
   stores: T;
-  state: A | ((stores: T, context: W) => A);
-  run: (stores: T, state: A, context: W & FrameData) => void | Promise<void>;
-  preStep?: (
-    stores: T,
-    state: A,
-    context: W & FrameData
-  ) => void | Promise<void>;
-  postStep?: (
-    stores: T,
-    state: A,
-    context: W & FrameData
-  ) => void | Promise<void>;
+  state: A | ((stores: T, context: SystemContext<W>) => A);
+  run: SystemRunFn<T, A, W>;
+  preStep?: SystemRunFn<T, A, W>;
+  postStep?: SystemRunFn<T, A, W>;
 };
 export type SystemConfig<
   T extends Stores,
@@ -100,21 +103,13 @@ export type SystemConfig<
   W extends WorldContext = WorldContext
 > = {
   stores: T;
-  state?: A | ((stores: T, context: W) => A);
-  run: (stores: T, state: A, context: W & FrameData) => void | Promise<void>;
-  preStep?: (
-    stores: T,
-    state: A,
-    context: W & FrameData
-  ) => void | Promise<void>;
-  postStep?: (
-    stores: T,
-    state: A,
-    context: W & FrameData
-  ) => void | Promise<void>;
+  state?: A | ((stores: T, context: SystemContext<W>) => A);
+  run: SystemRunFn<T, A, W>;
+  preStep?: SystemRunFn<T, A, W>;
+  postStep?: SystemRunFn<T, A, W>;
 };
 
-export type Systems = Record<string, System<any, any>>;
+export type Systems = Record<string, System<Stores, Empty>>;
 
 export type SystemInstanceSnapshot = {
   stores: Stores;
@@ -136,13 +131,20 @@ type MapValueUnion<T> = T extends Record<any, infer V> ? V : never;
 // 3. convert the union to intersection (represents the merging process)
 export type ReduceSystemsStores<
   M extends MappedSystemStores
-> = UnionToIntersection<MapValueUnion<M>['stores']>;
+> = UnionToIntersection<MapValueUnion<M>>;
+export type ExtractSystemsStores<S extends Systems> = ReduceSystemsStores<
+  MapSystemsStores<S>
+>;
 
 export type ExtractPrefabStores<P extends Prefab> = ReduceSystemsStores<
-  P['systems']
+  MapSystemsStores<P['systems']>
 >;
 
 export type ExtractSystemState<S> = S extends System<any, infer A> ? A : never;
 export type ExtractSystemsStates<S extends Systems> = {
   [K in keyof S]: ExtractSystemState<S[K]>;
+};
+
+export type MapSystemsStores<S extends Systems> = {
+  [K in keyof S]: ExtractSystemStores<S[K]>;
 };

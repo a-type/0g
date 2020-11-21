@@ -1,19 +1,10 @@
-import { matterjs } from './matterjs';
-import { Engine, World } from 'matter-js';
+import { box2d } from './box2d';
+import { b2World } from '@flyover/box2d';
 
-// for debug....
-export const engine = Engine.create({
-  world: World.create({
-    gravity: {
-      x: 0,
-      y: 0,
-      scale: 0,
-    },
-  }),
-});
+const world = new b2World({ x: 0, y: 0 });
 
 export const plugins = {
-  matter: matterjs(engine),
+  box2d: box2d(world),
 };
 
 export type Plugins = typeof plugins;

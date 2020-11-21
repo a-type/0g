@@ -6,8 +6,7 @@ import * as prefabs from './prefabs';
 import { plugins } from './plugins';
 
 import './index.css';
-
-const SIZE = 500;
+import { PX_SCALE, SIZE } from './constants';
 
 const scene = {
   entities: {
@@ -18,8 +17,8 @@ const scene = {
         bodyConfig: {
           shape: 'rectangle',
           density: 1,
-          width: 200,
-          height: 25,
+          width: SIZE / 3,
+          height: SIZE / 20,
           restitution: 1,
           angle: 0,
         },
@@ -35,10 +34,11 @@ const scene = {
       stores: {
         bodyConfig: {
           shape: 'circle',
-          density: 1,
-          radius: 5,
+          density: 0.01,
+          radius: 2.5,
           restitution: 1,
           angle: 0,
+          bullet: true,
         },
         forces: {
           velocity: { x: 0, y: 0 },
@@ -52,8 +52,8 @@ const scene = {
       stores: {
         bodyConfig: {
           shape: 'rectangle',
-          density: 1,
-          width: 10,
+          density: 100,
+          width: 5,
           height: SIZE,
           restitution: 1,
           angle: 0,
@@ -69,7 +69,7 @@ const scene = {
         bodyConfig: {
           shape: 'rectangle',
           density: 1,
-          width: 10,
+          width: 5,
           height: SIZE,
           restitution: 1,
           angle: 0,
@@ -86,7 +86,7 @@ const scene = {
           shape: 'rectangle',
           density: 1,
           width: SIZE,
-          height: 10,
+          height: 0.5,
           restitution: 1,
           angle: 0,
           isStatic: true,
@@ -99,8 +99,15 @@ const scene = {
 
 const App = () => {
   return (
-    <div className="CenterSpaceTransformer">
-      <World prefabs={prefabs} scene={scene} plugins={plugins} />
+    <div
+      className="Viewport"
+      style={{
+        transform: `scale(${window.innerWidth / SIZE / PX_SCALE})`,
+      }}
+    >
+      <div className="CenterSpaceTransformer">
+        <World prefabs={prefabs} scene={scene} plugins={plugins} />
+      </div>
     </div>
   );
 };

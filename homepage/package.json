@@ -9,6 +9,7 @@
     "build:gh": "parcel build index.html --public-url /r2d/ --out-dir ../docs"
   },
   "dependencies": {
+    "@flyover/box2d": "^1.0.1",
     "@react-spring/web": "^9.0.0-rc.3",
     "matter-js": "^0.14.2",
     "react-app-polyfill": "^1.0.0",

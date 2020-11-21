@@ -38,3 +38,9 @@ body {
 .Wall {
   background-color: black;
 }
+
+.Viewport {
+  position: relative;
+  width: 100vw;
+  height: 100vw;
+}

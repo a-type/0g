@@ -6,6 +6,7 @@ export type BodyConfigData = {
   isStatic: boolean;
   angle: number;
   restitution: number;
+  bullet: boolean;
 } & (
   | {
       shape: 'circle';
@@ -28,5 +29,6 @@ export const bodyConfig = r2d.store<BodyConfigData>({
   friction: 0,
   isStatic: false,
   angle: 0,
-  restitution: Number.MIN_VALUE,
+  restitution: 0,
+  bullet: false,
 });

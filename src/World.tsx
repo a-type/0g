@@ -16,6 +16,7 @@ import {
 } from './types';
 import { PluginProviders } from './internal/PluginProviders';
 import { keyboard, pointer } from './input';
+import { mergeDeepLeft } from 'ramda';
 
 const input = { keyboard, pointer };
 
@@ -34,7 +35,8 @@ const initializeStores = (prefab: Prefab) => {
   return Object.values(prefab.systems).reduce<Stores>((s, system) => {
     return Object.entries(system.stores).reduce<Stores>(
       (stores, [alias, store]) => {
-        stores[alias] = store;
+        // copy the default values
+        stores[alias] = { ...store };
         return stores;
       },
       s
@@ -48,23 +50,28 @@ const createEntity = (
   prefab: Prefab,
   initialStores: Stores = {}
 ) => {
-  return {
+  const e = {
     id,
     prefab: prefabName,
     stores: mergeDeepRight(initializeStores(prefab), initialStores),
   };
+  return e;
 };
 
+const systemStateInitCtx: any = {};
 const initializeSystemStates = (
   prefab: Prefab,
-  stores: Stores,
-  ctx: WorldContext
+  ctx: WorldContext,
+  entity: Entity
 ) => {
   return Object.entries(prefab.systems).reduce<
     ExtractSystemsStates<Prefab['systems']>
   >((states, [name, sys]) => {
+    Object.assign(systemStateInitCtx, ctx, { entity: { id: entity.id } });
     states[name] =
-      typeof sys.state === 'function' ? sys.state(stores, ctx) : sys.state;
+      typeof sys.state === 'function'
+        ? sys.state(entity.stores, systemStateInitCtx)
+        : { ...sys.state };
     return states;
   }, {});
 };
@@ -116,14 +123,14 @@ export const World: React.FC<WorldProps> = ({
         prefabsRef.current[prefabName],
         initialStores
       );
-      globalStore.entities[id] = entity;
 
       systemStates[id] = initializeSystemStates(
         prefabs[prefabName],
-        initialStores,
-        contextRef.current!
+        contextRef.current!,
+        entity
       );
 
+      globalStore.entities[id] = entity;
       return entity;
     },
     [globalStore, systemStates]
@@ -172,7 +179,11 @@ export const World: React.FC<WorldProps> = ({
   ]);
   const pluginsList = React.useMemo(() => Object.values(plugins), [plugins]);
 
-  const frameCtxRef = React.useRef({ ...ctx, delta: 0 });
+  const frameCtxRef = React.useRef({
+    ...ctx,
+    delta: 0,
+    entity: (null as unknown) as Entity,
+  });
   const loop = React.useCallback(
     (frameData) => {
       Object.assign(frameCtxRef.current, contextRef.current, frameData);
@@ -183,6 +194,7 @@ export const World: React.FC<WorldProps> = ({
         for (entry of Object.entries(
           prefabsRef.current[entity.prefab].systems
         )) {
+          frameCtxRef.current.entity = entity;
           entry[1].preStep?.(
             globalStore.entities[entity.id].stores,
             systemStates[entity.id]?.[entry[0]],
@@ -199,6 +211,7 @@ export const World: React.FC<WorldProps> = ({
         for (entry of Object.entries(
           prefabsRef.current[entity.prefab].systems
         )) {
+          frameCtxRef.current.entity = entity;
           entry[1].run(
             globalStore.entities[entity.id].stores,
             systemStates[entity.id]?.[entry[0]],
@@ -211,6 +224,7 @@ export const World: React.FC<WorldProps> = ({
         for (entry of Object.entries(
           prefabsRef.current[entity.prefab].systems
         )) {
+          frameCtxRef.current.entity = entity;
           entry[1].postStep?.(
             globalStore.entities[entity.id].stores,
             systemStates[entity.id]?.[entry[0]],
@@ -222,7 +236,7 @@ export const World: React.FC<WorldProps> = ({
       keyboard.frame();
       pointer.frame();
     },
-    [pluginsList, entitiesList]
+    [pluginsList, entitiesList, globalStore]
   );
   useFrame(loop);
 

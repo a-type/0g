@@ -76,6 +76,6 @@
   "dependencies": {
     "ramda": "^0.27.1",
     "shortid": "^2.2.16",
-    "valtio": "^0.2.3"
+    "valtio": "^0.3.1"
   }
 }
