@@ -12,7 +12,6 @@ export const ballMovement = r2d.system({
     body: body,
     config: store({
       speed: 12,
-      maxSpeed: 12,
     }),
   },
   state: {
@@ -35,10 +34,9 @@ export const ballMovement = r2d.system({
     }
 
     // limit velocity
-    console.log(vecGetLength(stores.body.velocity));
-    if (vecGetLength(stores.body.velocity) > stores.config.maxSpeed) {
+    if (vecGetLength(stores.body.velocity) > stores.config.speed) {
       const normal = vecNormalize(stores.body.velocity);
-      stores.forces.velocity = vecScale(normal, stores.config.maxSpeed);
+      stores.forces.velocity = vecScale(normal, stores.config.speed);
     }
   },
 });
