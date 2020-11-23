@@ -1,14 +1,19 @@
 import { forces } from '../stores/forces';
-import { r2d } from '../../../src';
+import { r2d, store } from '../../../src';
 import { transform } from '../stores/transform';
 import { body } from '../stores/body';
 import { SIZE } from '../constants';
+import { vecGetLength, vecNormalize, vecScale } from 'math2d';
 
 export const ballMovement = r2d.system({
   stores: {
     forces: forces,
     transform: transform,
     body: body,
+    config: store({
+      speed: 12,
+      maxSpeed: 12,
+    }),
   },
   state: {
     started: false,
@@ -20,12 +25,20 @@ export const ballMovement = r2d.system({
       stores.transform.y = 0;
       stores.forces.impulse = {
         x: 0,
-        y: 300 * stores.body.mass,
+        y: stores.config.speed * stores.body.mass,
       };
     }
 
     if (stores.transform.y > SIZE * 1.5) {
-      state.started = false;
+      stores.transform.x = 0;
+      stores.transform.y = 0;
+    }
+
+    // limit velocity
+    console.log(vecGetLength(stores.body.velocity));
+    if (vecGetLength(stores.body.velocity) > stores.config.maxSpeed) {
+      const normal = vecNormalize(stores.body.velocity);
+      stores.forces.velocity = vecScale(normal, stores.config.maxSpeed);
     }
   },
 });

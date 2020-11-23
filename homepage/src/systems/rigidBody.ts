@@ -11,6 +11,8 @@ import {
   b2PolygonShape,
 } from '@flyover/box2d';
 import { body } from '../stores/body';
+import { contacts } from '../stores/contacts';
+import { EntityContact } from '../plugins/box2d';
 
 export const rigidBody = r2d.system({
   stores: {
@@ -18,8 +20,18 @@ export const rigidBody = r2d.system({
     bodyConfig: bodyConfig,
     forces: forces,
     body: body,
+    contacts: contacts,
   },
-  state: (stores, ctx: WorldContext<Plugins> & { entity: { id: string } }) => {
+  state: {
+    body: (null as unknown) as b2Body,
+    newContactsCache: new Array<EntityContact>(),
+    endedContactsCache: new Array<EntityContact>(),
+  },
+  init: (
+    stores,
+    state,
+    ctx: WorldContext<Plugins> & { entity: { id: string } }
+  ) => {
     const { x, y } = stores.transform;
     const {
       density,
@@ -28,6 +40,7 @@ export const rigidBody = r2d.system({
       isStatic,
       angle,
       restitution,
+      fixedRotation,
     } = stores.bodyConfig;
     const world = ctx.plugins.box2d.world;
 
@@ -39,11 +52,13 @@ export const rigidBody = r2d.system({
       angularDamping: 0.00001,
       awake: true,
       allowSleep: false,
+      fixedRotation,
     });
     const fix = new b2FixtureDef();
     fix.density = density;
     fix.restitution = restitution;
     fix.friction = friction;
+    fix.userData = { entityId: ctx.entity.id };
 
     if (stores.bodyConfig.shape === 'rectangle') {
       const shape = new b2PolygonShape();
@@ -58,21 +73,46 @@ export const rigidBody = r2d.system({
     stores.body.angularVelocity = body.GetAngularVelocity();
     stores.body.velocity = body.GetLinearVelocity();
 
-    return {
-      body,
+    state.body = body;
+
+    // subscribe to contacts
+    const onBeginContact = (contact: EntityContact) => {
+      state.newContactsCache.push(contact);
     };
+    const onEndContact = (contact: EntityContact) => {
+      state.endedContactsCache.push(contact);
+    };
+
+    ctx.plugins.box2d.contacts.subscribe(ctx.entity.id, {
+      onBeginContact,
+      onEndContact,
+    });
   },
-  preStep: ({ transform }, { body }: { body: b2Body }) => {
-    body.SetPositionXY(transform.x, transform.y);
+  dispose: (stores, state, ctx) => {
+    ctx.plugins.box2d.world.DestroyBody(state.body);
   },
-  run: ({ transform, body: bodyStore, forces }, { body }: { body: b2Body }) => {
+  preStep: ({ transform, contacts, body }, state) => {
+    state.body.SetPositionXY(transform.x, transform.y);
+    let contact: EntityContact;
+    for (contact of state.newContactsCache) {
+      contacts.began.push(contact);
+      contacts.current.push(contact);
+    }
+    for (contact of state.endedContactsCache) {
+      contacts.current = contacts.current.filter((c) => c !== contact);
+      contacts.ended = contacts.ended.filter((c) => c !== contact);
+    }
+    state.newContactsCache = [];
+    state.endedContactsCache = [];
+
+    body.angularVelocity = state.body.GetAngularVelocity();
+    body.velocity = state.body.GetLinearVelocity().Clone();
+  },
+  run: ({ transform, forces }, { body }) => {
     const { x, y } = body.GetPosition();
     transform.x = x;
     transform.y = y;
     transform.angle = body.GetAngle();
-
-    bodyStore.angularVelocity = body.GetAngularVelocity();
-    bodyStore.velocity = body.GetLinearVelocity();
 
     if (forces.impulse) {
       body.ApplyLinearImpulseToCenter(forces.impulse, true);
@@ -82,7 +122,9 @@ export const rigidBody = r2d.system({
       body.SetLinearVelocity(forces.velocity);
       forces.velocity = null;
     }
-
-    console.log(body.GetLinearVelocity().y);
+  },
+  postStep: ({ contacts }) => {
+    contacts.began = [];
+    contacts.ended = [];
   },
 });

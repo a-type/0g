@@ -2,7 +2,7 @@ import * as React from 'react';
 import shortid from 'shortid';
 import mergeDeepRight from 'ramda/es/mergeDeepRight';
 import { useFrame as useFrameDefault, FrameHook } from './useFrame';
-import { proxy, subscribe, useProxy } from 'valtio';
+import { proxy, useProxy } from 'valtio';
 import {
   ExtractSystemsStates,
   Plugins,
@@ -16,7 +16,6 @@ import {
 } from './types';
 import { PluginProviders } from './internal/PluginProviders';
 import { keyboard, pointer } from './input';
-import { mergeDeepLeft } from 'ramda';
 
 const input = { keyboard, pointer };
 
@@ -41,38 +40,6 @@ const initializeStores = (prefab: Prefab) => {
       },
       s
     );
-  }, {});
-};
-
-const createEntity = (
-  id: string,
-  prefabName: string,
-  prefab: Prefab,
-  initialStores: Stores = {}
-) => {
-  const e = {
-    id,
-    prefab: prefabName,
-    stores: mergeDeepRight(initializeStores(prefab), initialStores),
-  };
-  return e;
-};
-
-const systemStateInitCtx: any = {};
-const initializeSystemStates = (
-  prefab: Prefab,
-  ctx: WorldContext,
-  entity: Entity
-) => {
-  return Object.entries(prefab.systems).reduce<
-    ExtractSystemsStates<Prefab['systems']>
-  >((states, [name, sys]) => {
-    Object.assign(systemStateInitCtx, ctx, { entity: { id: entity.id } });
-    states[name] =
-      typeof sys.state === 'function'
-        ? sys.state(entity.stores, systemStateInitCtx)
-        : { ...sys.state };
-    return states;
   }, {});
 };
 
@@ -106,6 +73,20 @@ export const World: React.FC<WorldProps> = ({
     [plugins]
   );
 
+  const initializeSystemStates = (entity: Entity) => {
+    const prefab = prefabsRef.current[entity.prefab];
+    const systemStateInitCtx = Object.assign({}, contextRef.current, {
+      entity,
+    });
+    return Object.entries(prefab.systems).reduce<
+      ExtractSystemsStates<Prefab['systems']>
+    >((states, [name, sys]) => {
+      states[name] = { ...sys.state };
+      sys.init?.(entity.stores, states[name], systemStateInitCtx);
+      return states;
+    }, {});
+  };
+
   const get = React.useCallback(
     (id: string) => globalStore.entities[id] ?? null,
     [globalStore]
@@ -117,26 +98,39 @@ export const World: React.FC<WorldProps> = ({
       manualId?: string
     ) => {
       const id = manualId || `${prefabName}-${shortid()}`;
-      const entity = createEntity(
+      const entity = {
         id,
-        prefabName,
-        prefabsRef.current[prefabName],
-        initialStores
-      );
+        prefab: prefabName,
+        stores: mergeDeepRight(
+          initializeStores(prefabsRef.current[prefabName]),
+          initialStores
+        ),
+      };
 
-      systemStates[id] = initializeSystemStates(
-        prefabs[prefabName],
-        contextRef.current!,
-        entity
-      );
+      systemStates[id] = initializeSystemStates(entity);
 
       globalStore.entities[id] = entity;
       return entity;
     },
     [globalStore, systemStates]
   );
-  const destroy = React.useCallback((id: string) => {
-    delete globalStore.entities[id];
+  const [destroyList] = React.useState(() => new Array<string>());
+  const destroy = React.useCallback(
+    (id: string) => {
+      // delete globalStore.entities[id];
+      destroyList.push(id);
+    },
+    [destroyList]
+  );
+
+  const disposeSystems = React.useCallback((entity: Entity) => {
+    let pair: [string, System<any, any>];
+    const prefab = prefabsRef.current[entity.prefab];
+    const states = systemStates[entity.id];
+    const context = Object.assign({}, contextRef.current, { entity });
+    for (pair of Object.entries(prefab.systems)) {
+      pair[1].dispose?.(entity.stores, states[pair[0]], context);
+    }
   }, []);
 
   React.useMemo(() => {
@@ -233,10 +227,19 @@ export const World: React.FC<WorldProps> = ({
         }
       }
 
+      // process any destroy calls
+      while (destroyList.length) {
+        const id = destroyList.pop();
+        if (!id) continue;
+        // dispose all systems
+        disposeSystems(globalStore.entities[id]);
+        delete globalStore.entities[id];
+      }
+
       keyboard.frame();
       pointer.frame();
     },
-    [pluginsList, entitiesList, globalStore]
+    [pluginsList, entitiesList, globalStore, destroyList]
   );
   useFrame(loop);
 

@@ -92,7 +92,9 @@ export type System<
   W extends WorldContext = WorldContext
 > = {
   stores: T;
-  state: A | ((stores: T, context: SystemContext<W>) => A);
+  state: A;
+  init?: (stores: T, state: A, context: SystemContext<W>) => void;
+  dispose?: (stores: T, state: A, context: SystemContext<W>) => void;
   run: SystemRunFn<T, A, W>;
   preStep?: SystemRunFn<T, A, W>;
   postStep?: SystemRunFn<T, A, W>;
@@ -103,7 +105,9 @@ export type SystemConfig<
   W extends WorldContext = WorldContext
 > = {
   stores: T;
-  state?: A | ((stores: T, context: SystemContext<W>) => A);
+  state?: A;
+  init?: (stores: T, state: A, context: SystemContext<W>) => void;
+  dispose?: (stores: T, state: A, context: SystemContext<W>) => void;
   run: SystemRunFn<T, A, W>;
   preStep?: SystemRunFn<T, A, W>;
   postStep?: SystemRunFn<T, A, W>;

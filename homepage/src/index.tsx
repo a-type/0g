@@ -21,6 +21,8 @@ const scene = {
           height: SIZE / 20,
           restitution: 1,
           angle: 0,
+          friction: 0.5,
+          fixedRotation: true,
         },
         forces: {
           velocity: { x: 0, y: 0 },
@@ -37,8 +39,10 @@ const scene = {
           density: 0.1,
           radius: 1,
           restitution: 1,
+          friction: 0.5,
           angle: 0,
           bullet: true,
+          fixedRotation: true,
         },
         forces: {
           velocity: { x: 0, y: 0 },

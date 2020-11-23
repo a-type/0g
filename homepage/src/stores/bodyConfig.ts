@@ -7,6 +7,7 @@ export type BodyConfigData = {
   angle: number;
   restitution: number;
   bullet: boolean;
+  fixedRotation: boolean;
 } & (
   | {
       shape: 'circle';
@@ -31,4 +32,5 @@ export const bodyConfig = r2d.store<BodyConfigData>({
   angle: 0,
   restitution: 0,
   bullet: false,
+  fixedRotation: false,
 });
