@@ -11,10 +11,10 @@ export const brickBreaker = r2d.system({
     for (contact of contacts.began) {
       // not a game object?
       if (!contact.otherId) continue;
-      const other = ctx.get(contact.otherId);
+      const other = ctx.world.get(contact.otherId);
       if (!other) continue;
       if (other.prefab === 'Block') {
-        ctx.destroy(other.id);
+        ctx.world.remove(other.id);
       }
     }
   },

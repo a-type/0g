@@ -187,3 +187,10 @@ Plugins have several hook points:
 2. _Providers_: plugins can wrap the World tree in Providers.
 
 ... more ? ...
+
+## Scenes
+
+A Scene is just a collection of entities.
+Entities are structured in a flat map, keyed by ID.
+Composition is not currently supported.
+I'd like to have it, but it's difficult to reason about right now.

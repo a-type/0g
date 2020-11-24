@@ -31,7 +31,7 @@ export function useBodyRef<T extends HTMLElement>(stores: {
       const { x, y, angle } = stores.transform;
       ref.current.style.transform = `translate(${x * PX_SCALE}px, ${
         y * PX_SCALE
-      }px) translate(-50%, -50%) rotate(${angle}rad)`;
+      }px) translate(-50%, -50%) rotate(${angle ?? 0}rad)`;
     };
 
     const unsubTransform = subscribe(stores.transform, updateTransform);
@@ -44,7 +44,7 @@ export function useBodyRef<T extends HTMLElement>(stores: {
       unsubTransform();
       unsubBody();
     };
-  }, []);
+  }, [stores.transform, stores.bodyConfig, ref]);
 
   return ref;
 }

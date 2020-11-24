@@ -6,6 +6,7 @@
     "extends": [
         "eslint:recommended",
         "plugin:react/recommended",
+        "plugin:react-hooks/recommended",
         "plugin:@typescript-eslint/recommended"
     ],
     "parser": "@typescript-eslint/parser",
@@ -24,6 +25,7 @@
         "react/prop-types": [0],
         "@typescript-eslint/explicit-module-boundary-types": [0],
         "react/display-name": [0],
-        "no-empty-function": [1]
+        "no-empty-function": [1],
+        "@typescript-eslint/no-explicit-any": [0]
     }
 }

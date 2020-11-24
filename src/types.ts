@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events';
 import { FC, ReactElement } from 'react';
 import { Keyboard } from './input/keyboard';
 import { Pointer } from './input/Pointer';
@@ -8,7 +9,10 @@ export type Plugin<API extends Empty = Empty> = {
   wrap?: (content: ReactElement) => ReactElement;
   api: API;
   // TODO: return stuff to add to context?
-  run?: (ctx: WorldContext & FrameData) => void | Promise<void>;
+  run?: (ctx: {
+    world: WorldContext;
+    frame: FrameData;
+  }) => void | Promise<void>;
 };
 export type PluginConfig<API extends Empty = Empty> = Plugin<API>;
 export type Plugins = Record<string, Plugin>;
@@ -22,27 +26,40 @@ export type InputTools = {
 };
 
 export type GlobalStore = {
-  entities: {
-    [id: string]: Entity;
-  };
+  tree: TreeNode;
+  entities: Record<string, EntityData>;
 };
 
-export type SystemStateRegistry = {
-  [entityId: string]: {
-    [systemKey: string]: any;
-  };
+export type TreeNode = {
+  id: string;
+  children: Record<string, TreeNode>;
+};
+
+export type WorldApi = {
+  get(id: string): EntityData | null;
+  add(
+    prefabName: string,
+    initialStores?: Stores,
+    parentId?: string | null,
+    id?: string | null
+  ): EntityData;
+  remove(id: string): void;
+};
+
+export type SystemStates = {
+  get(entity: EntityData, systemAlias: string): any;
+  getAll(entity: EntityData): Record<string, any>;
+  add(entity: EntityData, systemAlias: string, initial: any): void;
 };
 
 export type WorldContext<P extends Plugins = Record<string, Plugin<Empty>>> = {
-  get(id: string): Entity;
-  create(prefabName: string, initialStores?: Record<string, any>): Entity;
-  destroy(id: string): void;
   plugins: PluginApis<P>;
   input: InputTools;
-  __internal: {
-    globalStore: GlobalStore;
-  };
-};
+  prefabs: Record<string, Prefab>;
+  store: GlobalStore;
+  events: EventEmitter;
+  systemStates: SystemStates;
+} & WorldApi;
 
 export type FrameData = {
   delta: number;
@@ -52,10 +69,17 @@ export type FrameCallback = (data: FrameData) => void | Promise<void>;
 export type Store<T extends Empty = Empty> = T;
 export type Stores = Record<string, Store>;
 
-export type Entity = {
+export type EntityData = {
   id: string;
   prefab: string;
   stores: Stores;
+  /** only root scene has null */
+  parentId: string | null;
+};
+
+export type EntityApi = {
+  addChild(prefabName: string, initialStores?: Stores, id?: string): EntityData;
+  removeSelf(): void;
 };
 
 export type PrefabRenderProps<S extends Systems = Systems> = {
@@ -75,12 +99,19 @@ export type Prefab<S extends Systems = Systems> = {
   Component: FC<PrefabRenderProps<S>>;
 };
 
-export type EntityContext = { id: string };
-export type SystemContext<W extends WorldContext> = W & {
-  entity: EntityContext;
+export type SystemStateRegistry = {
+  [entityId: string]: {
+    [systemKey: string]: any;
+  };
 };
-export type SystemRunContext<W extends WorldContext> = SystemContext<W> &
-  FrameData;
+
+export type SystemContext<W extends WorldContext> = {
+  world: W;
+  entity: EntityData;
+};
+export type SystemRunContext<W extends WorldContext> = SystemContext<W> & {
+  frame: FrameData;
+};
 export type SystemRunFn<
   T extends Stores,
   A extends Empty,
@@ -152,3 +183,5 @@ export type ExtractSystemsStates<S extends Systems> = {
 export type MapSystemsStores<S extends Systems> = {
   [K in keyof S]: ExtractSystemStores<S[K]>;
 };
+
+export type States = Record<string, unknown>;

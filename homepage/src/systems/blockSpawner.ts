@@ -29,7 +29,7 @@ export const blockSpawner = r2d.system({
           h < spawnerConfig.verticalCount / 2;
           h++
         ) {
-          ctx.create('Block', {
+          ctx.world.add('Block', {
             bodyConfig: {
               shape: 'rectangle',
               width: spawnerConfig.blockWidth,
