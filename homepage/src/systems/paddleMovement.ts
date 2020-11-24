@@ -15,13 +15,13 @@ export const paddleMovement = r2d.system({
 
     const velocity = { x: 0, y: 0 };
     if (
-      ctx.input.keyboard.getKeyPressed('a') ||
-      ctx.input.keyboard.getKeyPressed('ArrowLeft')
+      ctx.world.input.keyboard.getKeyPressed('a') ||
+      ctx.world.input.keyboard.getKeyPressed('ArrowLeft')
     ) {
       velocity.x = -12;
     } else if (
-      ctx.input.keyboard.getKeyPressed('d') ||
-      ctx.input.keyboard.getKeyPressed('ArrowRight')
+      ctx.world.input.keyboard.getKeyPressed('d') ||
+      ctx.world.input.keyboard.getKeyPressed('ArrowRight')
     ) {
       velocity.x = 12;
     }

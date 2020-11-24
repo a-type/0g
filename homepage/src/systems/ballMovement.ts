@@ -3,7 +3,6 @@ import { r2d, store } from '../../../src';
 import { transform } from '../stores/transform';
 import { body } from '../stores/body';
 import { SIZE } from '../constants';
-import { vecGetLength, vecNormalize, vecScale } from 'math2d';
 
 export const ballMovement = r2d.system({
   stores: {
@@ -34,9 +33,9 @@ export const ballMovement = r2d.system({
     }
 
     // limit velocity
-    if (vecGetLength(stores.body.velocity) > stores.config.speed) {
-      const normal = vecNormalize(stores.body.velocity);
-      stores.forces.velocity = vecScale(normal, stores.config.speed);
-    }
+    // if (vecGetLength(stores.body.velocity) > stores.config.speed) {
+    //   const normal = vecNormalize(stores.body.velocity);
+    //   stores.forces.velocity = vecScale(normal, stores.config.speed);
+    // }
   },
 });

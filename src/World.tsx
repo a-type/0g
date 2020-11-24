@@ -1,23 +1,25 @@
 import * as React from 'react';
-import shortid from 'shortid';
-import mergeDeepRight from 'ramda/es/mergeDeepRight';
 import { useFrame as useFrameDefault, FrameHook } from './useFrame';
 import { proxy, useProxy } from 'valtio';
 import {
-  ExtractSystemsStates,
   Plugins,
   Prefab,
-  Stores,
   WorldContext,
   GlobalStore,
-  SystemStateRegistry,
+  FrameData,
+  Stores,
+  EntityData,
+  TreeNode,
   System,
-  Entity,
+  WorldApi,
 } from './types';
 import { PluginProviders } from './internal/PluginProviders';
 import { keyboard, pointer } from './input';
-
-const input = { keyboard, pointer };
+import { EventEmitter } from 'events';
+import { Entity } from './Entity';
+import { DefaultScenePrefab } from './DefaultScenePrefab';
+import shortid from 'shortid';
+import { mergeDeepRight } from 'ramda';
 
 export const worldContext = React.createContext<WorldContext | null>(null);
 
@@ -29,6 +31,133 @@ export type WorldProps = {
 };
 
 export type ExtractPrefabNames<W extends WorldProps> = keyof W['prefabs'];
+
+const createGlobalStore = (
+  initial: GlobalStore = {
+    tree: {
+      id: 'scene',
+      children: {},
+    },
+    entities: {
+      scene: {
+        id: 'scene',
+        stores: {},
+        prefab: 'Scene',
+        parentId: null,
+      },
+    },
+  }
+) => proxy<GlobalStore>(initial);
+
+function climbTree(
+  path: string[],
+  store: GlobalStore,
+  targetId: string | null
+): string[] {
+  if (!targetId) return path;
+
+  const registered = store.entities[targetId];
+  if (!registered)
+    throw new Error(
+      `Traversing tree to ${targetId} but it was not found (broken link)`
+    );
+
+  if (registered.parentId) {
+    path.unshift(registered.parentId);
+    return climbTree(path, store, registered.parentId);
+  }
+
+  return path;
+}
+function discoverTreePath(store: GlobalStore, targetId: string | null) {
+  return climbTree([], store, targetId);
+}
+function traverseToNode(store: GlobalStore, path: string[]) {
+  let currentNode = store.tree;
+  let currentId = path.shift();
+  while (path.length) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    currentId = path.shift()!;
+    currentNode = currentNode.children[currentId];
+  }
+  return currentNode;
+}
+function addTreeNode(
+  store: GlobalStore,
+  parentId: string | null,
+  childId: string
+) {
+  const path = discoverTreePath(store, parentId);
+  const node = traverseToNode(store, path);
+  node.children[childId] = {
+    id: childId,
+    children: {},
+  };
+}
+function removeTreeNode(store: GlobalStore, childId: string) {
+  const path = discoverTreePath(store, childId);
+  const parentPath = path.slice(undefined, -1);
+  const node = traverseToNode(store, parentPath);
+  const childNode = node.children[childId];
+  delete node.children[childId];
+  return childNode;
+}
+/**
+ * Removes all members of a subtree of the scene tree, starting
+ * at a particular node. returns a list of entities removed
+ * @param store
+ * @param node
+ */
+function removeSubtree(
+  store: GlobalStore,
+  node: TreeNode,
+  removedList: EntityData[] = []
+) {
+  removedList.push(store.entities[node.id]);
+  delete store.entities[node.id];
+  Object.values(node.children).forEach((n) => {
+    removeSubtree(store, n);
+  });
+  return removedList;
+}
+
+function useSystemStates() {
+  const [systemStateRegistry] = React.useState<
+    WeakMap<EntityData, Record<string, any>>
+  >(new WeakMap());
+
+  const getAll = React.useCallback(
+    (entity: EntityData) => {
+      let current = systemStateRegistry.get(entity);
+      if (!current) {
+        current = {};
+        systemStateRegistry.set(entity, current);
+      }
+      return current;
+    },
+    [systemStateRegistry]
+  );
+  const get = React.useCallback(
+    (entity: EntityData, systemAlias: string) =>
+      getAll(entity)?.[systemAlias] ?? null,
+    [getAll]
+  );
+  const add = React.useCallback(
+    (entity: EntityData, systemAlias: string, initial: any) => {
+      const existing = getAll(entity);
+      // TODO: think if I really want to override existing?
+      existing[systemAlias] = initial;
+      systemStateRegistry.set(entity, existing);
+    },
+    [getAll, systemStateRegistry]
+  );
+
+  return {
+    getAll,
+    get,
+    add,
+  };
+}
 
 const initializeStores = (prefab: Prefab) => {
   return Object.values(prefab.systems).reduce<Stores>((s, system) => {
@@ -43,8 +172,70 @@ const initializeStores = (prefab: Prefab) => {
   }, {});
 };
 
-const createGlobalStore = (initial = { entities: {} }) =>
-  proxy<GlobalStore>(initial);
+function useWorldApi(store: GlobalStore, prefabs: Record<string, Prefab>) {
+  const get = React.useCallback(
+    (id: string) => {
+      return store.entities[id] ?? null;
+    },
+    [store]
+  );
+
+  const add = React.useCallback(
+    (
+      prefabName: string,
+      initialStores: Stores = {},
+      parentId: string | null | undefined = undefined,
+      ownId: string | null = null
+    ) => {
+      const id = ownId || `${prefabName}-${shortid()}`;
+      const defaultedParentId = parentId === undefined ? 'scene' : null;
+
+      const prefab = prefabs[prefabName];
+
+      const entity: EntityData = {
+        id,
+        prefab: prefabName,
+        stores: mergeDeepRight(initializeStores(prefab), initialStores),
+        parentId: defaultedParentId,
+      };
+
+      store.entities[id] = entity;
+      addTreeNode(store, defaultedParentId, id);
+      return store.entities[id];
+    },
+    [store, prefabs]
+  );
+
+  const destroy = React.useCallback(
+    (id: string) => {
+      const node = removeTreeNode(store, id);
+      return removeSubtree(store, node);
+    },
+    [store]
+  );
+
+  return {
+    get,
+    add,
+    destroy,
+  };
+}
+
+function walkAndAdd(
+  api: WorldApi,
+  parentId: string | null,
+  node: TreeNode,
+  scene: GlobalStore
+): void {
+  const entity = scene.entities[node.id];
+  api.add(entity.prefab, entity.stores, parentId, entity.id);
+  Object.values(node.children).forEach((n) =>
+    walkAndAdd(api, entity.id, n, scene)
+  );
+}
+function loadProvidedScene(api: WorldApi, scene: GlobalStore) {
+  walkAndAdd(api, null, scene.tree, scene);
+}
 
 export const World: React.FC<WorldProps> = ({
   prefabs,
@@ -52,14 +243,29 @@ export const World: React.FC<WorldProps> = ({
   plugins = {},
   scene,
 }) => {
-  // TODO: initialize from scene
+  // validation
+  if (scene && (!scene.tree || !scene.entities)) {
+    throw new Error('Invalid scene prop, must have tree and entities');
+  }
+
   const [globalStore] = React.useState(() => createGlobalStore());
-  const snapshot = useProxy(globalStore);
 
-  const [systemStates] = React.useState<SystemStateRegistry>(() => ({}));
+  // DEBUG
+  React.useEffect(() => {
+    (window as any).globalStore = globalStore;
+  }, [globalStore]);
 
-  const contextRef = React.useRef<WorldContext>();
-  const prefabsRef = React.useRef(prefabs);
+  const systemStates = useSystemStates();
+
+  const treeSnapshot = useProxy(globalStore.tree);
+
+  const prefabsRef = React.useRef<Record<string, Prefab>>({
+    Scene: DefaultScenePrefab,
+    ...prefabs,
+  });
+  const pluginsList = React.useMemo(() => Object.values(plugins), [plugins]);
+
+  const [events] = React.useState(() => new EventEmitter());
 
   const pluginApis = React.useMemo(
     () =>
@@ -73,190 +279,101 @@ export const World: React.FC<WorldProps> = ({
     [plugins]
   );
 
-  const initializeSystemStates = (entity: Entity) => {
-    const prefab = prefabsRef.current[entity.prefab];
-    const systemStateInitCtx = Object.assign({}, contextRef.current, {
-      entity,
-    });
-    return Object.entries(prefab.systems).reduce<
-      ExtractSystemsStates<Prefab['systems']>
-    >((states, [name, sys]) => {
-      states[name] = { ...sys.state };
-      sys.init?.(entity.stores, states[name], systemStateInitCtx);
-      return states;
-    }, {});
-  };
-
-  const get = React.useCallback(
-    (id: string) => globalStore.entities[id] ?? null,
-    [globalStore]
-  );
-  const create = React.useCallback(
-    <N extends ExtractPrefabNames<WorldProps>>(
-      prefabName: N,
-      initialStores: Stores = {},
-      manualId?: string
-    ) => {
-      const id = manualId || `${prefabName}-${shortid()}`;
-      const entity = {
-        id,
-        prefab: prefabName,
-        stores: mergeDeepRight(
-          initializeStores(prefabsRef.current[prefabName]),
-          initialStores
-        ),
-      };
-
-      systemStates[id] = initializeSystemStates(entity);
-
-      globalStore.entities[id] = entity;
-      return entity;
-    },
-    [globalStore, systemStates]
-  );
-  const [destroyList] = React.useState(() => new Array<string>());
-  const destroy = React.useCallback(
+  const api = useWorldApi(globalStore, prefabsRef.current);
+  const { get, add, destroy } = api;
+  const [removeList] = React.useState(() => new Array<string>());
+  const remove = React.useCallback(
     (id: string) => {
-      // delete globalStore.entities[id];
-      destroyList.push(id);
+      removeList.push(id);
     },
-    [destroyList]
+    [removeList]
   );
 
-  const disposeSystems = React.useCallback((entity: Entity) => {
-    let pair: [string, System<any, any>];
-    const prefab = prefabsRef.current[entity.prefab];
-    const states = systemStates[entity.id];
-    const context = Object.assign({}, contextRef.current, { entity });
-    for (pair of Object.entries(prefab.systems)) {
-      pair[1].dispose?.(entity.stores, states[pair[0]], context);
-    }
-  }, []);
+  React.useEffect(() => {
+    if (scene) loadProvidedScene({ get, add, remove }, scene);
+    // TODO: reset after scene change?
+  }, [scene, get, add, remove]);
 
-  React.useMemo(() => {
-    contextRef.current = {
-      get,
-      create,
-      destroy,
-      plugins: pluginApis,
-      input,
-      __internal: {
-        globalStore,
-      },
-    };
-  }, [get, create, destroy, pluginApis]);
-
-  const ctx = React.useMemo(
+  const context = React.useMemo<WorldContext>(
     () => ({
-      get,
-      create,
-      destroy,
-      plugins: pluginApis,
-      input,
-      __internal: {
-        globalStore,
+      events,
+      prefabs: prefabsRef.current,
+      store: globalStore,
+      input: {
+        keyboard,
+        pointer,
       },
+      plugins: pluginApis,
+      get,
+      add,
+      remove,
+      systemStates,
     }),
-    [get, create, destroy, pluginApis]
+    [
+      events,
+      prefabsRef,
+      globalStore,
+      pluginApis,
+      get,
+      add,
+      remove,
+      systemStates,
+    ]
   );
 
-  // initialize scene if provided / changed
-  React.useLayoutEffect(() => {
-    if (!scene) return;
-    for (const [id, entity] of Object.entries(scene?.entities)) {
-      create(entity.prefab, entity.stores, id);
-    }
-  }, [scene, create]);
-
-  const entitiesList = React.useMemo(() => Object.values(snapshot.entities), [
-    snapshot.entities,
-  ]);
-  const pluginsList = React.useMemo(() => Object.values(plugins), [plugins]);
+  const disposeEntity = React.useCallback(
+    (entity: EntityData) => {
+      const prefab = prefabsRef.current[entity.prefab];
+      let entry: [string, System<any, any>];
+      const ctx = { world: context, entity };
+      for (entry of Object.entries(prefab.systems)) {
+        entry[1].dispose?.(
+          entity.stores,
+          systemStates.get(entity, entry[0]),
+          ctx
+        );
+      }
+    },
+    [prefabsRef, context, systemStates]
+  );
 
   const frameCtxRef = React.useRef({
-    ...ctx,
-    delta: 0,
-    entity: (null as unknown) as Entity,
+    world: context,
+    frame: (null as unknown) as FrameData,
   });
   const loop = React.useCallback(
     (frameData) => {
-      Object.assign(frameCtxRef.current, contextRef.current, frameData);
+      frameCtxRef.current.frame = frameData;
 
-      let entity: Entity;
-      let entry: [string, System<any, any>];
-      for (entity of entitiesList) {
-        for (entry of Object.entries(
-          prefabsRef.current[entity.prefab].systems
-        )) {
-          frameCtxRef.current.entity = entity;
-          entry[1].preStep?.(
-            globalStore.entities[entity.id].stores,
-            systemStates[entity.id]?.[entry[0]],
-            frameCtxRef.current
-          );
-        }
-      }
+      events.emit('preStep', frameData);
 
       for (const plugin of pluginsList) {
         plugin.run?.(frameCtxRef.current);
       }
 
-      for (entity of entitiesList) {
-        for (entry of Object.entries(
-          prefabsRef.current[entity.prefab].systems
-        )) {
-          frameCtxRef.current.entity = entity;
-          entry[1].run(
-            globalStore.entities[entity.id].stores,
-            systemStates[entity.id]?.[entry[0]],
-            frameCtxRef.current
-          );
-        }
-      }
+      events.emit('step', frameData);
 
-      for (entity of entitiesList) {
-        for (entry of Object.entries(
-          prefabsRef.current[entity.prefab].systems
-        )) {
-          frameCtxRef.current.entity = entity;
-          entry[1].postStep?.(
-            globalStore.entities[entity.id].stores,
-            systemStates[entity.id]?.[entry[0]],
-            frameCtxRef.current
-          );
-        }
-      }
+      events.emit('postStep', frameData);
 
-      // process any destroy calls
-      while (destroyList.length) {
-        const id = destroyList.pop();
-        if (!id) continue;
-        // dispose all systems
-        disposeSystems(globalStore.entities[id]);
-        delete globalStore.entities[id];
+      // Cleanup removed entity subtrees
+      let id = removeList.shift();
+      while (id) {
+        const removedEntities = destroy(id);
+        removedEntities.forEach(disposeEntity);
+        id = removeList.shift();
       }
 
       keyboard.frame();
       pointer.frame();
     },
-    [pluginsList, entitiesList, globalStore, destroyList]
+    [events, pluginsList, removeList, destroy, disposeEntity]
   );
   useFrame(loop);
 
   return (
-    <worldContext.Provider value={ctx}>
+    <worldContext.Provider value={context}>
       <PluginProviders plugins={plugins}>
-        <>
-          {entitiesList.map((entity) => {
-            const Prefab = prefabs[entity.prefab].Component;
-            return (
-              <Prefab
-                key={entity.id}
-                stores={globalStore.entities[entity.id].stores}
-              />
-            );
-          })}
-        </>
+        <Entity id={treeSnapshot.id} treeNode={globalStore.tree} />
       </PluginProviders>
     </worldContext.Provider>
   );

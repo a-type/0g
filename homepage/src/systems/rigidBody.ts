@@ -1,7 +1,6 @@
-import { Plugins } from '../plugins';
 import { bodyConfig } from '../stores/bodyConfig';
 import { transform } from '../stores/transform';
-import { r2d, WorldContext } from '../../../src';
+import { r2d } from '../../../src';
 import { forces } from '../stores/forces';
 import {
   b2Body,
@@ -9,6 +8,7 @@ import {
   b2CircleShape,
   b2FixtureDef,
   b2PolygonShape,
+  b2World,
 } from '@flyover/box2d';
 import { body } from '../stores/body';
 import { contacts } from '../stores/contacts';
@@ -27,11 +27,7 @@ export const rigidBody = r2d.system({
     newContactsCache: new Array<EntityContact>(),
     endedContactsCache: new Array<EntityContact>(),
   },
-  init: (
-    stores,
-    state,
-    ctx: WorldContext<Plugins> & { entity: { id: string } }
-  ) => {
+  init: (stores, state, ctx) => {
     const { x, y } = stores.transform;
     const {
       density,
@@ -42,7 +38,7 @@ export const rigidBody = r2d.system({
       restitution,
       fixedRotation,
     } = stores.bodyConfig;
-    const world = ctx.plugins.box2d.world;
+    const world = ctx.world.plugins.box2d.world as b2World;
 
     const body = world.CreateBody({
       type: isStatic ? b2BodyType.b2_staticBody : b2BodyType.b2_dynamicBody,
@@ -83,13 +79,13 @@ export const rigidBody = r2d.system({
       state.endedContactsCache.push(contact);
     };
 
-    ctx.plugins.box2d.contacts.subscribe(ctx.entity.id, {
+    (ctx.world.plugins.box2d as any).contacts.subscribe(ctx.entity.id, {
       onBeginContact,
       onEndContact,
     });
   },
-  dispose: (stores, state, ctx) => {
-    ctx.plugins.box2d.world.DestroyBody(state.body);
+  dispose: (_, state, ctx) => {
+    (ctx.world.plugins as any).box2d.world.DestroyBody(state.body);
   },
   preStep: ({ transform, contacts, body }, state) => {
     state.body.SetPositionXY(transform.x, transform.y);
@@ -106,7 +102,9 @@ export const rigidBody = r2d.system({
     state.endedContactsCache = [];
 
     body.angularVelocity = state.body.GetAngularVelocity();
-    body.velocity = state.body.GetLinearVelocity().Clone();
+    const { x, y } = state.body.GetLinearVelocity();
+    body.velocity.x = x;
+    body.velocity.y = y;
   },
   run: ({ transform, forces }, { body }) => {
     const { x, y } = body.GetPosition();

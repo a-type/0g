@@ -1,17 +1,53 @@
 import 'react-app-polyfill/ie11';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { World } from '../../src/index';
+import { GlobalStore, World } from '../../src/index';
 import * as prefabs from './prefabs';
 import { plugins } from './plugins';
 
 import './index.css';
 import { PX_SCALE, SIZE } from './constants';
 
-const scene = {
+const world: GlobalStore = {
+  tree: {
+    id: 'scene',
+    children: {
+      paddle: {
+        id: 'paddle',
+        children: {},
+      },
+      ball: {
+        id: 'ball',
+        children: {},
+      },
+      leftWall: {
+        id: 'leftWall',
+        children: {},
+      },
+      rightWall: {
+        id: 'rightWall',
+        children: {},
+      },
+      topWall: {
+        id: 'topWall',
+        children: {},
+      },
+      blockSpawner: {
+        id: 'blockSpawner',
+        children: {},
+      },
+    },
+  },
   entities: {
+    scene: {
+      id: 'scene',
+      prefab: 'Scene',
+      stores: {},
+      parentId: null,
+    },
     paddle: {
       id: 'paddle',
+      parentId: 'scene',
       prefab: 'Paddle',
       stores: {
         bodyConfig: {
@@ -21,7 +57,7 @@ const scene = {
           height: SIZE / 20,
           restitution: 1,
           angle: 0,
-          friction: 0.5,
+          friction: 0.25,
           fixedRotation: true,
         },
         forces: {
@@ -32,6 +68,7 @@ const scene = {
     },
     ball: {
       id: 'ball',
+      parentId: 'scene',
       prefab: 'Ball',
       stores: {
         bodyConfig: {
@@ -39,7 +76,7 @@ const scene = {
           density: 0.1,
           radius: 1,
           restitution: 1,
-          friction: 0.5,
+          friction: 0.25,
           angle: 0,
           bullet: true,
           fixedRotation: true,
@@ -52,6 +89,7 @@ const scene = {
     },
     leftWall: {
       id: 'leftWall',
+      parentId: 'scene',
       prefab: 'Wall',
       stores: {
         bodyConfig: {
@@ -67,7 +105,8 @@ const scene = {
       },
     },
     rightWall: {
-      id: 'leftWall',
+      id: 'rightWall',
+      parentId: 'scene',
       prefab: 'Wall',
       stores: {
         bodyConfig: {
@@ -84,6 +123,7 @@ const scene = {
     },
     topWall: {
       id: 'topWall',
+      parentId: 'scene',
       prefab: 'Wall',
       stores: {
         bodyConfig: {
@@ -100,6 +140,7 @@ const scene = {
     },
     blockSpawner: {
       id: 'blockSpawner',
+      parentId: 'scene',
       prefab: 'BlockSpawner',
       stores: {
         transform: {
@@ -119,7 +160,7 @@ const App = () => {
       }}
     >
       <div className="CenterSpaceTransformer">
-        <World prefabs={prefabs} scene={scene} plugins={plugins} />
+        <World prefabs={prefabs} scene={world} plugins={plugins} />
       </div>
     </div>
   );
