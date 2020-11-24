@@ -29,18 +29,22 @@ export const blockSpawner = r2d.system({
           h < spawnerConfig.verticalCount / 2;
           h++
         ) {
-          ctx.world.add('Block', {
-            bodyConfig: {
-              shape: 'rectangle',
-              width: spawnerConfig.blockWidth,
-              height: spawnerConfig.blockHeight,
-              isStatic: true,
+          ctx.world.add(
+            'Block',
+            {
+              bodyConfig: {
+                shape: 'rectangle',
+                width: spawnerConfig.blockWidth,
+                height: spawnerConfig.blockHeight,
+                isStatic: true,
+              },
+              transform: {
+                x: x + w * spawnerConfig.blockWidth,
+                y: y + h * spawnerConfig.blockHeight,
+              },
             },
-            transform: {
-              x: x + w * spawnerConfig.blockWidth,
-              y: y + h * spawnerConfig.blockHeight,
-            },
-          });
+            ctx.entity.id
+          );
         }
       }
     }
