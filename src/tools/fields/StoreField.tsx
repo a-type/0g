@@ -1,8 +1,5 @@
 import * as React from 'react';
 import { Store } from '../../types';
-import { JsonField } from './JsonField';
-import { NumberField } from './NumberField';
-import { StringField } from './StringField';
 import { useStoreField, StoreFieldKind } from './useStoreField';
 
 export type StoreFieldProps = {
@@ -21,7 +18,7 @@ export function StoreField({ name, store, ...rest }: StoreFieldProps) {
   return (
     <label {...rest}>
       <div>{name}</div>
-      <Element ref={ref} />
+      <Element ref={ref} data-field-kind={kind} />
     </label>
   );
 }

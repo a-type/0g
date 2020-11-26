@@ -11,7 +11,7 @@ export type StorePanelProps = {
 
 export function StorePanel({ store, title }: StorePanelProps) {
   const snapshot = useProxy(store);
-  const [open, setOpen] = React.useState(true);
+  const [open, setOpen] = React.useState(false);
 
   return (
     <div>

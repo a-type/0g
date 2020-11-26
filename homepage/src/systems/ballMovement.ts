@@ -3,6 +3,7 @@ import { r2d, store } from '../../../src';
 import { transform } from '../stores/transform';
 import { body } from '../stores/body';
 import { SIZE } from '../constants';
+import { vecGetLength } from 'math2d';
 
 export const ballMovement = r2d.system({
   stores: {
@@ -21,10 +22,13 @@ export const ballMovement = r2d.system({
       state.started = true;
       stores.transform.x = 0;
       stores.transform.y = 0;
-      stores.forces.impulse = {
-        x: 0,
-        y: stores.config.speed * stores.body.mass,
-      };
+      const currentSpeed = vecGetLength(stores.body.velocity);
+      if (currentSpeed < stores.config.speed) {
+        stores.forces.impulse = {
+          x: 0,
+          y: (stores.config.speed - currentSpeed) * stores.body.mass,
+        };
+      }
     }
 
     if (stores.transform.y > SIZE * 1.5) {
