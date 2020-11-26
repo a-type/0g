@@ -4,9 +4,9 @@ import * as ReactDOM from 'react-dom';
 import { GlobalStore, World } from '../../src/index';
 import * as prefabs from './prefabs';
 import { plugins } from './plugins';
-
-import './index.css';
 import { PX_SCALE, SIZE } from './constants';
+import './index.css';
+import '../../src/tools/tools.css';
 
 const world: GlobalStore = {
   tree: {
@@ -156,7 +156,10 @@ const App = () => {
     <div
       className="Viewport"
       style={{
-        transform: `scale(${window.innerWidth / SIZE / PX_SCALE})`,
+        transform: `scale(${
+          Math.min(window.innerHeight, window.innerWidth) / SIZE / PX_SCALE -
+          0.2
+        })`,
       }}
     >
       <div className="CenterSpaceTransformer">

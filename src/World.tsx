@@ -20,6 +20,7 @@ import { Entity } from './Entity';
 import { DefaultScenePrefab } from './DefaultScenePrefab';
 import shortid from 'shortid';
 import { mergeDeepRight } from 'ramda';
+import { SceneTree } from './tools/SceneTree';
 
 export const worldContext = React.createContext<WorldContext | null>(null);
 
@@ -237,6 +238,26 @@ function loadProvidedScene(api: WorldApi, scene: GlobalStore) {
   walkAndAdd(api, null, scene.tree, scene);
 }
 
+function useDebugMode(setPaused: (p: boolean) => void) {
+  const [isDebug, setIsDebug] = React.useState(false);
+  React.useEffect(() => {
+    function handleKey(ev: KeyboardEvent) {
+      if (ev.key === '/') {
+        setIsDebug((v) => {
+          setPaused(!v);
+          return !v;
+        });
+      }
+    }
+    window.addEventListener('keypress', handleKey);
+    return () => {
+      window.removeEventListener('keypress', handleKey);
+    };
+  }, [setPaused]);
+
+  return isDebug;
+}
+
 export const World: React.FC<WorldProps> = ({
   prefabs,
   useFrame = useFrameDefault,
@@ -265,7 +286,11 @@ export const World: React.FC<WorldProps> = ({
   });
   const pluginsList = React.useMemo(() => Object.values(plugins), [plugins]);
 
-  const [events] = React.useState(() => new EventEmitter());
+  const [events] = React.useState(() => {
+    const e = new EventEmitter();
+    e.setMaxListeners(10000);
+    return e;
+  });
 
   const pluginApis = React.useMemo(
     () =>
@@ -337,6 +362,7 @@ export const World: React.FC<WorldProps> = ({
     [prefabsRef, context, systemStates]
   );
 
+  const [paused, setPaused] = React.useState(false);
   const frameCtxRef = React.useRef({
     world: context,
     frame: (null as unknown) as FrameData,
@@ -368,12 +394,17 @@ export const World: React.FC<WorldProps> = ({
     },
     [events, pluginsList, removeList, destroy, disposeEntity]
   );
-  useFrame(loop);
+  useFrame(loop, paused);
+
+  const isDebug = useDebugMode(setPaused);
 
   return (
     <worldContext.Provider value={context}>
       <PluginProviders plugins={plugins}>
-        <Entity id={treeSnapshot.id} treeNode={globalStore.tree} />
+        <>
+          <Entity id={treeSnapshot.id} treeNode={globalStore.tree} />
+          {isDebug && <SceneTree />}
+        </>
       </PluginProviders>
     </worldContext.Provider>
   );
