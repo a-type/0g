@@ -4,6 +4,7 @@ import { useProxy } from 'valtio';
 import { TreeNode } from '../types';
 import { worldContext } from '../World';
 import { EntityPane } from './EntityPane';
+import { Html } from './Html';
 
 const sceneTreeContext = React.createContext<{
   selected: string;
@@ -27,16 +28,18 @@ export function SceneTree() {
 
   const selectedEntity = ctx.store.entities[selected];
 
-  return ReactDOM.createPortal(
-    <sceneTreeContext.Provider value={{ selected, setSelected }}>
-      <div className="panel fixed-left">
-        <SceneTreeNode treeNode={ctx.store.tree} level={0} />
-      </div>
-      <div className="panel fixed-right">
-        <EntityPane entity={selectedEntity} />
-      </div>
-    </sceneTreeContext.Provider>,
-    document.body
+  return (
+    <Html>
+      <sceneTreeContext.Provider value={{ selected, setSelected }}>
+        <div className="panel fixed-left">
+          <SceneTreeNode treeNode={ctx.store.tree} level={0} />
+        </div>
+        <div className="panel fixed-right">
+          <EntityPane entity={selectedEntity} />
+        </div>
+      </sceneTreeContext.Provider>
+      ,
+    </Html>
   );
 }
 

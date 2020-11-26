@@ -4,9 +4,9 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "start": "parcel index.html",
-    "build": "parcel build index.html",
-    "build:gh": "parcel build index.html --public-url /r2d/ --out-dir ../docs"
+    "start": "parcel ./src/index.html ./src/demos/**/index.html",
+    "build": "parcel build src/index.html demos/**/index.html",
+    "build:gh": "parcel build src/index.html demos/**/index.html --public-url /r2d/ --out-dir ../docs"
   },
   "dependencies": {
     "@flyover/box2d": "^1.0.1",
@@ -14,8 +14,10 @@
     "@tsdotnet/object-pool": "^1.0.6",
     "math2d": "^3.0.0",
     "matter-js": "^0.14.2",
+    "pixi.js": "^5.3.3",
     "react-app-polyfill": "^1.0.0",
-    "src": "^1.1.2"
+    "react-pixi-fiber": "^0.14.1",
+    "use-asset": "^0.2.0"
   },
   "alias": {
     "react": "../node_modules/react",

@@ -21,6 +21,7 @@ import { DefaultScenePrefab } from './DefaultScenePrefab';
 import shortid from 'shortid';
 import { mergeDeepRight } from 'ramda';
 import { SceneTree } from './tools/SceneTree';
+import { Html } from './tools/Html';
 
 export const worldContext = React.createContext<WorldContext | null>(null);
 
@@ -33,22 +34,23 @@ export type WorldProps = {
 
 export type ExtractPrefabNames<W extends WorldProps> = keyof W['prefabs'];
 
-const createGlobalStore = (
-  initial: GlobalStore = {
-    tree: {
+export const defaultScene = {
+  tree: {
+    id: 'scene',
+    children: {},
+  },
+  entities: {
+    scene: {
       id: 'scene',
-      children: {},
+      stores: {},
+      prefab: 'Scene',
+      parentId: null,
     },
-    entities: {
-      scene: {
-        id: 'scene',
-        stores: {},
-        prefab: 'Scene',
-        parentId: null,
-      },
-    },
-  }
-) => proxy<GlobalStore>(initial);
+  },
+};
+
+const createGlobalStore = (initial: GlobalStore = defaultScene) =>
+  proxy<GlobalStore>(initial);
 
 function climbTree(
   path: string[],
@@ -201,7 +203,12 @@ function useWorldApi(store: GlobalStore, prefabs: Record<string, Prefab>) {
       };
 
       store.entities[id] = entity;
-      addTreeNode(store, defaultedParentId, id);
+      // FIXME: not a fan of this hardcoding
+      // don't add the scene to the tree - it is the root element
+      // already and always present.
+      if (id !== 'scene') {
+        addTreeNode(store, defaultedParentId, id);
+      }
       return store.entities[id];
     },
     [store, prefabs]
@@ -398,12 +405,17 @@ export const World: React.FC<WorldProps> = ({
 
   const isDebug = useDebugMode(setPaused);
 
+  const isEmpty = Object.keys(treeSnapshot.children).length === 0;
+
   return (
     <worldContext.Provider value={context}>
       <PluginProviders plugins={plugins}>
         <>
           <Entity id={treeSnapshot.id} treeNode={globalStore.tree} />
           {isDebug && <SceneTree />}
+          {isEmpty && (
+            <Html className="panel">The scene is empty. Press / to edit</Html>
+          )}
         </>
       </PluginProviders>
     </worldContext.Provider>
