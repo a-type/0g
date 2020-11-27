@@ -3,8 +3,10 @@ import * as ReactDOM from 'react-dom';
 import { useProxy } from 'valtio';
 import { TreeNode } from '../types';
 import { worldContext } from '../World';
+import { ContextMenu } from './ContextMenu';
 import { EntityPane } from './EntityPane';
 import { Html } from './Html';
+import { Button } from '@chakra-ui/react';
 
 const sceneTreeContext = React.createContext<{
   selected: string;
@@ -29,17 +31,14 @@ export function SceneTree() {
   const selectedEntity = ctx.store.entities[selected];
 
   return (
-    <Html>
-      <sceneTreeContext.Provider value={{ selected, setSelected }}>
-        <div className="panel fixed-left">
-          <SceneTreeNode treeNode={ctx.store.tree} level={0} />
-        </div>
-        <div className="panel fixed-right">
-          <EntityPane entity={selectedEntity} />
-        </div>
-      </sceneTreeContext.Provider>
-      ,
-    </Html>
+    <sceneTreeContext.Provider value={{ selected, setSelected }}>
+      <div className="panel fixed-left">
+        <SceneTreeNode treeNode={ctx.store.tree} level={0} />
+      </div>
+      <div className="panel fixed-right">
+        <EntityPane entity={selectedEntity} />
+      </div>
+    </sceneTreeContext.Provider>
   );
 }
 
@@ -54,12 +53,31 @@ function SceneTreeNode({
 
   const { id, children } = useProxy(treeNode);
 
+  const [contextOpen, setContextOpen] = React.useState(false);
+  const toggleContext = React.useCallback((ev?: React.MouseEvent) => {
+    ev?.preventDefault();
+    setContextOpen((v) => !v);
+  }, []);
+
   return (
     <div style={{ marginLeft: level > 0 ? 8 : 0 }}>
-      <button className="button" onClick={() => setSelected(id)}>
-        {id}
-        {selected === id && ' *'}
-      </button>
+      <ContextMenu
+        isOpen={contextOpen}
+        onClose={toggleContext}
+        title={id}
+        target={
+          <Button
+            className="button"
+            onClick={() => setSelected(id)}
+            onContextMenu={toggleContext}
+          >
+            {id}
+            {selected === id && ' *'}
+          </Button>
+        }
+      >
+        TODO
+      </ContextMenu>
       <div>
         {Object.keys(children).map((name) => (
           <SceneTreeNode

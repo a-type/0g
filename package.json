@@ -75,10 +75,12 @@
     "typescript": "^3.9.7"
   },
   "dependencies": {
+    "@chakra-ui/react": "^1.0.1",
+    "@emotion/react": "^11.1.1",
+    "@emotion/styled": "^11.0.0",
+    "framer-motion": "^2.9.4",
     "ramda": "^0.27.1",
     "shortid": "^2.2.16",
-    "tweakpane": "^1.5.6",
-    "use-tweaks": "^0.3.0",
     "valtio": "0.4.0",
     "zustand": "^3.2.0"
   }

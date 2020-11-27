@@ -1,5 +1,7 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
+import { worldContext } from '../World';
+import { ChakraProvider } from '@chakra-ui/react';
 
 export type HtmlProps = React.HTMLAttributes<HTMLDivElement> & {
   prepend?: boolean;
@@ -23,8 +25,19 @@ export const Html = React.forwardRef(
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [target]);
 
+    // bridge contexts we need
+    const world = React.useContext(worldContext);
+
     React.useEffect(
-      () => void ReactDOM.render(<div ref={ref} {...rest} />, el)
+      () =>
+        void ReactDOM.render(
+          <worldContext.Provider value={world}>
+            <ChakraProvider>
+              <div ref={ref} {...rest} />
+            </ChakraProvider>
+          </worldContext.Provider>,
+          el
+        )
     );
 
     return null;

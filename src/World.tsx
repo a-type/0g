@@ -20,8 +20,8 @@ import { Entity } from './Entity';
 import { DefaultScenePrefab } from './DefaultScenePrefab';
 import shortid from 'shortid';
 import { mergeDeepRight } from 'ramda';
-import { SceneTree } from './tools/SceneTree';
 import { Html } from './tools/Html';
+import { DebugUI } from './tools/DebugUI';
 
 export const worldContext = React.createContext<WorldContext | null>(null);
 
@@ -412,9 +412,11 @@ export const World: React.FC<WorldProps> = ({
       <PluginProviders plugins={plugins}>
         <>
           <Entity id={treeSnapshot.id} treeNode={globalStore.tree} />
-          {isDebug && <SceneTree />}
-          {isEmpty && (
-            <Html className="panel">The scene is empty. Press / to edit</Html>
+          {isDebug && <DebugUI />}
+          {isEmpty && !isDebug && (
+            <Html className="panel fixed-left">
+              The scene is empty. Press / to edit
+            </Html>
           )}
         </>
       </PluginProviders>
