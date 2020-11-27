@@ -2,6 +2,12 @@ import * as React from 'react';
 import { useProxy } from 'valtio';
 import { Store } from '../types';
 import { StoreField } from './fields/StoreField';
+import {
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  Box,
+} from '@chakra-ui/react';
 
 export type StorePanelProps = {
   store: Store;
@@ -14,15 +20,17 @@ export function StorePanel({ store, title }: StorePanelProps) {
   const [open, setOpen] = React.useState(false);
 
   return (
-    <div>
-      <button
+    <AccordionItem>
+      <AccordionButton
         className="button collapse-title"
         onClick={() => setOpen((v) => !v)}
       >
-        {title}
-      </button>
-      {open &&
-        Object.keys(snapshot).map((name) => (
+        <Box flex="1" textAlign="left">
+          {title}
+        </Box>
+      </AccordionButton>
+      <AccordionPanel>
+        {Object.keys(snapshot).map((name) => (
           <StoreField
             className="panel-field"
             key={name}
@@ -30,6 +38,7 @@ export function StorePanel({ store, title }: StorePanelProps) {
             store={store}
           />
         ))}
-    </div>
+      </AccordionPanel>
+    </AccordionItem>
   );
 }

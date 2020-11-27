@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { EntityData } from '../types';
 import { StorePanel } from './StorePanel';
+import { Accordion } from '@chakra-ui/react';
 
 export type EntityPaneProps = {
   entity: EntityData;
@@ -8,7 +9,7 @@ export type EntityPaneProps = {
 
 export function EntityPane({ entity }: EntityPaneProps) {
   return (
-    <div>
+    <Accordion defaultIndex={[0]} minW={200}>
       {Object.keys(entity.stores).map((storeName) => (
         <StorePanel
           key={storeName}
@@ -17,6 +18,6 @@ export function EntityPane({ entity }: EntityPaneProps) {
           store={entity.stores[storeName]}
         />
       ))}
-    </div>
+    </Accordion>
   );
 }
