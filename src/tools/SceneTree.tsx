@@ -7,6 +7,7 @@ import { ContextMenu } from './ContextMenu';
 import { EntityPane } from './EntityPane';
 import { Html } from './Html';
 import { Button } from '@chakra-ui/react';
+import { AddPrefabButton } from './AddPrefabButton';
 
 const sceneTreeContext = React.createContext<{
   selected: string;
@@ -76,7 +77,7 @@ function SceneTreeNode({
           </Button>
         }
       >
-        TODO
+        <AddPrefabButton parentId={id} />
       </ContextMenu>
       <div>
         {Object.keys(children).map((name) => (

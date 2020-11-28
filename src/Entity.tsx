@@ -85,14 +85,16 @@ export function Entity({ id, treeNode }: EntityProps) {
   }, [children]);
 
   return (
-    <prefab.Component stores={entity.stores}>
-      {childEntries.map((entry) => (
-        <Entity
-          id={entry[0]}
-          key={entry[0]}
-          treeNode={treeNode.children[entry[0]]}
-        />
-      ))}
-    </prefab.Component>
+    <React.Suspense fallback={null}>
+      <prefab.Component stores={entity.stores}>
+        {childEntries.map((entry) => (
+          <Entity
+            id={entry[0]}
+            key={entry[0]}
+            treeNode={treeNode.children[entry[0]]}
+          />
+        ))}
+      </prefab.Component>
+    </React.Suspense>
   );
 }

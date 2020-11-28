@@ -52,6 +52,10 @@ export class Keyboard {
     return this.keysUp.has(key);
   }
 
+  getAllPressedKeys() {
+    return this.keysPressed;
+  }
+
   frame() {
     this.keysDown.clear();
     this.keysUp.clear();

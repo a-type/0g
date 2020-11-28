@@ -1,16 +1,20 @@
+import { Texture } from 'pixi.js';
 import { createAsset } from 'use-asset';
+
+async function loadTexture(importPromise: Promise<any>) {
+  const { default: url } = await (importPromise as Promise<{
+    default: string;
+  }>);
+  return await Texture.fromURL(url);
+}
 
 export const spritesheets = {
   characters: createAsset(
-    () =>
-      (import('./roguelikeChar_transparent.png') as unknown) as Promise<string>,
+    () => loadTexture(import('./roguelikeChar_transparent.png')),
     Infinity
   ),
   environment: createAsset(
-    () =>
-      (import('./roguelikeSheet_transparent.png') as unknown) as Promise<
-        string
-      >,
+    () => loadTexture(import('./roguelikeSheet_transparent.png')),
     Infinity
   ),
 };

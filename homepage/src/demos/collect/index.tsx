@@ -2,17 +2,11 @@ import 'react-app-polyfill/ie11';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { World, defaultScene } from '../../../..';
-import { Stage } from 'react-pixi-fiber';
+import { Stage } from '@inlet/react-pixi';
 import { plugins } from '../../common/plugins';
 import * as prefabs from './prefabs';
 import '../../../../src/tools/tools.css';
 import './index.css';
-
-const options = {
-  backgroundColor: 0x10bb99,
-  height: window.innerHeight,
-  width: window.innerWidth,
-};
 
 function SceneLoader() {
   const [scene, setScene] = React.useState<any | null>(null);
@@ -46,11 +40,17 @@ function SceneLoader() {
   );
 }
 
-const WorldRenderer = ({ scene }: any) => (
-  <Stage options={options}>
-    <World prefabs={prefabs} scene={scene} plugins={plugins} />
-  </Stage>
-);
+const WorldRenderer = ({ scene }: any) => {
+  const options = {
+    backgroundColor: 0x10bb99,
+  };
+
+  return (
+    <Stage options={options} width={320} height={240}>
+      <World prefabs={prefabs} scene={scene} plugins={plugins} />
+    </Stage>
+  );
+};
 
 const App = () => <SceneLoader />;
 

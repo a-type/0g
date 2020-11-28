@@ -1,15 +1,9 @@
 import * as React from 'react';
 import { Store } from '../../types';
-import { useStoreField, StoreFieldKind } from './useStoreField';
-import {
-  Input,
-  NumberInput,
-  Textarea,
-  NumberInputField,
-  NumberInputStepper,
-  NumberIncrementStepper,
-  NumberDecrementStepper,
-} from '@chakra-ui/react';
+import { NumberField } from './NumberField';
+import { StringField } from './StringField';
+import { VectorField } from './VectorField';
+import { ObjectField } from './ObjectField';
 
 export type StoreFieldProps = {
   name: string;
@@ -17,41 +11,56 @@ export type StoreFieldProps = {
   className?: string;
 };
 
-export function StoreField({ name, store, ...rest }: StoreFieldProps) {
-  const [ref, { kind }] = useStoreField(store, name);
+export enum StoreFieldKind {
+  String,
+  Number,
+  Object,
+  Vector,
+  Unsupported,
+}
 
+export function StoreField({ name, store, ...rest }: StoreFieldProps) {
   return (
     <label {...rest}>
       <div>{name}</div>
-      <StoreInput name={name} kind={kind} ref={ref} />
+      <StoreInput name={name} store={store} />
     </label>
   );
 }
 
-const StoreInput = React.forwardRef<
-  any,
-  {
-    kind: StoreFieldKind;
-    ref: any;
-    name: string;
+function inferFieldKind(value: any) {
+  if (typeof value === 'string') {
+    return StoreFieldKind.String;
   }
->(({ kind, name }, ref) => {
+  if (typeof value === 'number') {
+    return StoreFieldKind.Number;
+  }
+  if (value?.x && value?.y) {
+    return StoreFieldKind.Vector;
+  }
+  if (
+    value === null ||
+    value === undefined ||
+    (typeof value === 'object' && value!.constructor === Object)
+  ) {
+    return StoreFieldKind.Object;
+  }
+  return StoreFieldKind.Unsupported;
+}
+
+const StoreInput = (props: { store: Store; name: string }) => {
+  const kind = inferFieldKind(props.store[props.name]);
+
   switch (kind) {
     case StoreFieldKind.Number:
-      return (
-        <NumberInput>
-          <NumberInputField ref={ref} />
-          <NumberInputStepper>
-            <NumberIncrementStepper />
-            <NumberDecrementStepper />
-          </NumberInputStepper>
-        </NumberInput>
-      );
+      return <NumberField {...props} />;
     case StoreFieldKind.String:
-      return <Input ref={ref} />;
+      return <StringField {...props} />;
     case StoreFieldKind.Object:
-      return <Textarea ref={ref} />;
+      return <ObjectField {...props} />;
+    case StoreFieldKind.Vector:
+      return <VectorField {...props} />;
     default:
       return <div>unsupported</div>;
   }
-});
+};
