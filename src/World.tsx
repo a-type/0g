@@ -7,11 +7,11 @@ import {
   WorldContext,
   GlobalStore,
   FrameData,
-  Stores,
   EntityData,
   TreeNode,
-  System,
   WorldApi,
+  Store,
+  StoreData,
 } from './types';
 import { PluginProviders } from './internal/PluginProviders';
 import { keyboard, pointer } from './input';
@@ -22,6 +22,7 @@ import shortid from 'shortid';
 import { mergeDeepRight } from 'ramda';
 import { Html } from './tools/Html';
 import { DebugUI } from './tools/DebugUI';
+import { System } from './system';
 
 export const worldContext = React.createContext<WorldContext | null>(null);
 
@@ -30,6 +31,7 @@ export type WorldProps = {
   useFrame?: FrameHook;
   plugins?: Plugins;
   scene?: GlobalStore;
+  systems: System<any, any>[];
 };
 
 export type ExtractPrefabNames<W extends WorldProps> = keyof W['prefabs'];
@@ -42,7 +44,7 @@ export const defaultScene = {
   entities: {
     scene: {
       id: 'scene',
-      stores: {},
+      storesData: {},
       prefab: 'Scene',
       parentId: null,
     },
@@ -124,55 +126,14 @@ function removeSubtree(
   return removedList;
 }
 
-function useSystemStates() {
-  const [systemStateRegistry] = React.useState<
-    WeakMap<EntityData, Record<string, any>>
-  >(new WeakMap());
-
-  const getAll = React.useCallback(
-    (entity: EntityData) => {
-      let current = systemStateRegistry.get(entity);
-      if (!current) {
-        current = {};
-        systemStateRegistry.set(entity, current);
-      }
-      return current;
-    },
-    [systemStateRegistry]
-  );
-  const get = React.useCallback(
-    (entity: EntityData, systemAlias: string) =>
-      getAll(entity)?.[systemAlias] ?? null,
-    [getAll]
-  );
-  const add = React.useCallback(
-    (entity: EntityData, systemAlias: string, initial: any) => {
-      const existing = getAll(entity);
-      // TODO: think if I really want to override existing?
-      existing[systemAlias] = initial;
-      systemStateRegistry.set(entity, existing);
-    },
-    [getAll, systemStateRegistry]
-  );
-
-  return {
-    getAll,
-    get,
-    add,
-  };
-}
-
+/** Copies initial values from all of a prefab's specified stores */
 const initializeStores = (prefab: Prefab) => {
-  return Object.values(prefab.systems).reduce<Stores>((s, system) => {
-    return Object.entries(system.stores).reduce<Stores>(
-      (stores, [alias, store]) => {
-        // copy the default values
-        stores[alias] = { ...store };
-        return stores;
-      },
-      s
-    );
-  }, {});
+  const stores: Record<string, StoreData> = {};
+  let entry: [string, Store<any> | undefined];
+  for (entry of Object.entries(prefab.stores)) {
+    stores[entry[0]] = { ...(entry[1]?.initial ?? {}) };
+  }
+  return stores;
 };
 
 function useWorldApi(store: GlobalStore, prefabs: Record<string, Prefab>) {
@@ -186,7 +147,7 @@ function useWorldApi(store: GlobalStore, prefabs: Record<string, Prefab>) {
   const add = React.useCallback(
     (
       prefabName: string,
-      initialStores: Stores = {},
+      initialStores: Record<string, any> = {},
       parentId: string | null | undefined = undefined,
       ownId: string | null = null
     ) => {
@@ -198,7 +159,7 @@ function useWorldApi(store: GlobalStore, prefabs: Record<string, Prefab>) {
       const entity: EntityData = {
         id,
         prefab: prefabName,
-        stores: mergeDeepRight(initializeStores(prefab), initialStores),
+        storesData: mergeDeepRight(initializeStores(prefab), initialStores),
         parentId: defaultedParentId,
       };
 
@@ -236,7 +197,7 @@ function walkAndAdd(
   scene: GlobalStore
 ): void {
   const entity = scene.entities[node.id];
-  api.add(entity.prefab, entity.stores, parentId, entity.id);
+  api.add(entity.prefab, entity.storesData, parentId, entity.id);
   Object.values(node.children).forEach((n) =>
     walkAndAdd(api, entity.id, n, scene)
   );
@@ -270,6 +231,7 @@ export const World: React.FC<WorldProps> = ({
   useFrame = useFrameDefault,
   plugins = {},
   scene,
+  systems,
 }) => {
   // validation
   if (scene && (!scene.tree || !scene.entities)) {
@@ -283,14 +245,13 @@ export const World: React.FC<WorldProps> = ({
     (window as any).globalStore = globalStore;
   }, [globalStore]);
 
-  const systemStates = useSystemStates();
-
   const treeSnapshot = useProxy(globalStore.tree);
 
   const prefabsRef = React.useRef<Record<string, Prefab>>({
     Scene: DefaultScenePrefab,
     ...prefabs,
   });
+  const systemsRef = React.useRef<System<any, any>[]>(systems);
   const pluginsList = React.useMemo(() => Object.values(plugins), [plugins]);
 
   const [events] = React.useState(() => {
@@ -339,34 +300,20 @@ export const World: React.FC<WorldProps> = ({
       get,
       add,
       remove,
-      systemStates,
+      systems: systemsRef.current,
     }),
-    [
-      events,
-      prefabsRef,
-      globalStore,
-      pluginApis,
-      get,
-      add,
-      remove,
-      systemStates,
-    ]
+    [events, prefabsRef, globalStore, pluginApis, get, add, remove]
   );
 
   const disposeEntity = React.useCallback(
     (entity: EntityData) => {
-      const prefab = prefabsRef.current[entity.prefab];
-      let entry: [string, System<any, any>];
+      let system: System<any, any>;
       const ctx = { world: context, entity };
-      for (entry of Object.entries(prefab.systems)) {
-        entry[1].dispose?.(
-          entity.stores,
-          systemStates.get(entity, entry[0]),
-          ctx
-        );
+      for (system of systemsRef.current) {
+        system.dispose(ctx);
       }
     },
-    [prefabsRef, context, systemStates]
+    [context]
   );
 
   const [paused, setPaused] = React.useState(false);

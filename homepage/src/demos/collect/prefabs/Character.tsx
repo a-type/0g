@@ -3,45 +3,39 @@ import { Container, Sprite } from '@inlet/react-pixi';
 import { r2d } from '../../../../..';
 import { forces } from '../../../common/stores/forces';
 import { transform } from '../../../common/stores/transform';
-import { rigidBody } from '../../../common/systems/rigidBody';
-import { spritesheets } from '../assets';
-import { sprite } from '../../../pixi/systems/sprite';
-import { Rectangle } from 'pixi.js';
 import { useTextureTile } from '../../../pixi/hooks/useTextureTile';
-
-const movement = r2d.system({
-  stores: {
-    transform: transform,
-    forces: forces,
-    config: r2d.store({
-      speed: 12,
-    }),
-  },
-  run: ({ config, forces }, _, ctx) => {
-    const velocity = { x: 0, y: 0 };
-    if (ctx.world.input.keyboard.getKeyPressed('ArrowLeft'))
-      velocity.x = -config.speed;
-    if (ctx.world.input.keyboard.getKeyPressed('ArrowRight'))
-      velocity.x = config.speed;
-    if (ctx.world.input.keyboard.getKeyPressed('ArrowUp'))
-      velocity.y = -config.speed;
-    if (ctx.world.input.keyboard.getKeyPressed('ArrowDown'))
-      velocity.y = config.speed;
-
-    forces.velocity = velocity;
-  },
-});
+import charSheet from '../assets/roguelikeChar_transparent.png';
+import { spriteConfig } from '../../../pixi/stores/spriteConfig';
+import { bodyConfig } from '../../../common/stores/bodyConfig';
+import { characterConfig } from '../systems/characterMovement';
 
 export const Character = r2d.prefab({
   name: 'Character',
-  systems: {
-    movement,
-    baseSprite: sprite,
-    clothesSprite: sprite,
-    rigidBody: rigidBody,
+  stores: {
+    spriteConfig: spriteConfig({
+      source: charSheet,
+      tileData: {
+        x: 0,
+        y: 0,
+        width: 16,
+        height: 16,
+        gap: 2,
+      },
+    }),
+    transform: transform({
+      x: 200,
+      y: 200,
+    }),
+    bodyConfig: bodyConfig({
+      shape: 'rectangle',
+      width: 16,
+      height: 16,
+    }),
+    forces: forces(),
+    config: characterConfig(),
   },
-  Component: ({ stores: { transform, sprite } }) => {
-    const { source, tileData } = sprite;
+  Component: ({ stores: { transform, spriteConfig } }) => {
+    const { source, tileData } = spriteConfig;
     // you can use hooks here!
 
     // suspense-based asset loading

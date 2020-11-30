@@ -1,18 +1,25 @@
 import { forces } from '../../../common/stores/forces';
-import { r2d, store } from '../../../../..';
-import { transform } from '../../../common/stores/transform';
-import { body } from '../../../common/stores/body';
+import { r2d } from '../../../../..';
 import { SIZE } from '../constants';
 import { vecGetLength } from 'math2d';
+import { Store } from '../../../../../src';
+import { transform } from '../../../common/stores/transform';
+import { body } from '../../../common/stores/body';
 
-export const ballMovement = r2d.system({
-  stores: {
-    forces: forces,
-    transform: transform,
-    body: body,
-    config: store({
-      speed: 12,
-    }),
+export const ballMovement = r2d.system<
+  {
+    transform: ReturnType<typeof transform>;
+    config: Store<{ speed: number }>;
+    body: ReturnType<typeof body>;
+    forces: ReturnType<typeof forces>;
+  },
+  {
+    started: boolean;
+  }
+>({
+  name: 'ballMovement',
+  runsOn: (prefab) => {
+    return prefab.name === 'Ball';
   },
   state: {
     started: false,
@@ -31,15 +38,9 @@ export const ballMovement = r2d.system({
       }
     }
 
-    if (stores.transform.y > SIZE * 1.5) {
-      stores.transform.x = 0;
-      stores.transform.y = 0;
-    }
-
-    // limit velocity
-    // if (vecGetLength(stores.body.velocity) > stores.config.speed) {
-    //   const normal = vecNormalize(stores.body.velocity);
-    //   stores.forces.velocity = vecScale(normal, stores.config.speed);
+    // if (stores.transform.y > SIZE * 1.5) {
+    //   stores.transform.x = 0;
+    //   stores.transform.y = 0;
     // }
   },
 });

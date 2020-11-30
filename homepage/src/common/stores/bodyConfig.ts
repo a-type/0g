@@ -22,7 +22,7 @@ export type BodyConfigData = {
     }
 );
 
-export const bodyConfig = r2d.store<BodyConfigData>({
+export const bodyConfig = r2d.store<BodyConfigData>('bodyConfig', {
   shape: 'circle',
   radius: 1,
   density: 1,

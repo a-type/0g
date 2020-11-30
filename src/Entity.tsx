@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { useProxy } from 'valtio';
-import { WorldContext, FrameData, System, EntityData, TreeNode } from './types';
+import { System } from './system';
+import { WorldContext, FrameData, EntityData, TreeNode } from './types';
 import { worldContext } from './World';
 
 export type EntityProps = {
@@ -9,32 +10,20 @@ export type EntityProps = {
 };
 
 function useRunSystems(world: WorldContext, entity: EntityData) {
+  const prefab = world.prefabs[entity.prefab];
+  const runnableSystems = React.useMemo(() => {
+    return world.systems.filter((s) => s.runsOn(prefab));
+  }, [world.systems, prefab]);
+
   React.useLayoutEffect(() => {
-    const prefab = world.prefabs[entity.prefab];
-
-    function initializeSystems() {
-      let entry: [string, System<any, any>];
-      const ctx = { world, entity };
-      for (entry of Object.entries(prefab.systems)) {
-        if (!world.systemStates.get(entity, entry[0])) {
-          const state = { ...entry[1].state };
-          entry[1].init?.(entity.stores, state, ctx);
-          world.systemStates.add(entity, entry[0], state);
-        }
-      }
-    }
-
-    initializeSystems();
-
     function runSystems(
       runHandle: 'run' | 'preStep' | 'postStep',
       frame: FrameData
     ) {
-      const systemStates = world.systemStates.getAll(entity);
-      let entry: [string, System<any, any>];
+      let system: System<any, any>;
       const ctx = { world, entity, frame };
-      for (entry of Object.entries(prefab.systems)) {
-        entry[1][runHandle]?.(entity.stores, systemStates[entry[0]], ctx);
+      for (system of runnableSystems) {
+        system[runHandle]?.(ctx);
       }
     }
 
@@ -59,7 +48,7 @@ function useRunSystems(world: WorldContext, entity: EntityData) {
       world.events.off('step', runStep);
       world.events.off('postStep', runPostStep);
     };
-  }, [world, entity]);
+  }, [world, entity, runnableSystems]);
 }
 
 export function Entity({ id, treeNode }: EntityProps) {
@@ -86,7 +75,7 @@ export function Entity({ id, treeNode }: EntityProps) {
 
   return (
     <React.Suspense fallback={null}>
-      <prefab.Component stores={entity.stores}>
+      <prefab.Component stores={entity.storesData}>
         {childEntries.map((entry) => (
           <Entity
             id={entry[0]}

@@ -2,8 +2,9 @@ import { EventEmitter } from 'events';
 import { FC, ReactElement } from 'react';
 import { Keyboard } from './input/keyboard';
 import { Pointer } from './input/Pointer';
+import { System } from './system';
 
-type Empty = Record<string, unknown>;
+type Empty = Record<string, any>;
 
 export type Plugin<API extends Empty = Empty> = {
   wrap?: (content: ReactElement) => ReactElement;
@@ -39,7 +40,7 @@ export type WorldApi = {
   get(id: string): EntityData | null;
   add(
     prefabName: string,
-    initialStores?: Stores,
+    initialStores?: Record<string, any>,
     parentId?: string | null,
     id?: string | null
   ): EntityData;
@@ -58,7 +59,7 @@ export type WorldContext<P extends Plugins = Record<string, Plugin<Empty>>> = {
   prefabs: Record<string, Prefab>;
   store: GlobalStore;
   events: EventEmitter;
-  systemStates: SystemStates;
+  systems: System<any, any>[];
 } & WorldApi;
 
 export type FrameData = {
@@ -66,13 +67,20 @@ export type FrameData = {
 };
 export type FrameCallback = (data: FrameData) => void | Promise<void>;
 
-export type Store<T extends Empty = Empty> = T;
-export type Stores = Record<string, Store>;
+export type StoreData<T extends Empty = Empty> = T;
+export type StoreCreator<T extends StoreData> = (
+  overrides?: Partial<T>
+) => Store<T>;
+export type Store<T extends StoreData> = {
+  name: string;
+  initial: T;
+};
+export type Stores = Record<string, Store<any> | undefined>;
 
-export type EntityData = {
+export type EntityData<S extends Stores = Stores> = {
   id: string;
   prefab: string;
-  stores: Stores;
+  storesData: MappedStoreData<S>;
   /** only root scene has null */
   parentId: string | null;
 };
@@ -82,20 +90,28 @@ export type EntityApi = {
   removeSelf(): void;
 };
 
-export type PrefabRenderProps<S extends Systems = Systems> = {
-  stores: ExtractSystemsStores<S>;
+type ExtractStoreData<S extends Store<any> | undefined> = S extends Store<
+  infer T
+>
+  ? T
+  : never;
+type MappedStoreData<S extends Record<string, Store<any> | undefined>> = {
+  [K in keyof S]: ExtractStoreData<S[K]>;
+};
+export type PrefabRenderProps<S extends Stores> = {
+  stores: MappedStoreData<S>;
 };
 
-export type PrefabConfig<S extends Systems = Systems> = {
+export type PrefabConfig<S extends Stores = Stores> = {
   name: string;
-  systems: S;
+  stores: S;
   Component?: FC<PrefabRenderProps<S>>;
   ManualComponent?: FC<PrefabRenderProps<S>>;
 };
 
-export type Prefab<S extends Systems = Systems> = {
+export type Prefab<S extends Stores = Stores> = {
   name: string;
-  systems: S;
+  stores: S;
   Component: FC<PrefabRenderProps<S>>;
 };
 
@@ -105,6 +121,10 @@ export type SystemStateRegistry = {
   };
 };
 
+export type SystemProvidedState = any;
+export type DefaultedState<
+  A extends Record<string, any> | undefined
+> = A extends undefined ? Empty : A;
 export type SystemContext<W extends WorldContext> = {
   world: W;
   entity: EntityData;
@@ -113,75 +133,41 @@ export type SystemRunContext<W extends WorldContext> = SystemContext<W> & {
   frame: FrameData;
 };
 export type SystemRunFn<
-  T extends Stores,
-  A extends Empty,
+  T extends Record<string, Store<any> | undefined>,
+  A,
   W extends WorldContext
-> = (stores: T, state: A, context: SystemRunContext<W>) => void | Promise<void>;
-export type System<
-  T extends Stores,
-  A extends Empty,
-  W extends WorldContext = WorldContext
-> = {
-  stores: T;
-  state: A;
-  init?: (stores: T, state: A, context: SystemContext<W>) => void;
-  dispose?: (stores: T, state: A, context: SystemContext<W>) => void;
-  run: SystemRunFn<T, A, W>;
-  preStep?: SystemRunFn<T, A, W>;
-  postStep?: SystemRunFn<T, A, W>;
-};
+> = (
+  stores: MappedStoreData<T>,
+  state: DefaultedState<A>,
+  context: SystemRunContext<W>
+) => void | Promise<void>;
+export type SystemInitFn<
+  T extends Record<string, Store<any> | undefined>,
+  A,
+  W extends WorldContext
+> = (
+  stores: MappedStoreData<T>,
+  state: DefaultedState<A>,
+  context: SystemContext<W>
+) => void;
 export type SystemConfig<
-  T extends Stores,
-  A extends Empty,
+  T extends Record<string, Store<any> | undefined>,
+  A,
   W extends WorldContext = WorldContext
 > = {
-  stores: T;
+  name: string;
   state?: A;
-  init?: (stores: T, state: A, context: SystemContext<W>) => void;
-  dispose?: (stores: T, state: A, context: SystemContext<W>) => void;
+  init?: SystemInitFn<T, A, W>;
+  dispose?: SystemInitFn<T, A, W>;
   run: SystemRunFn<T, A, W>;
   preStep?: SystemRunFn<T, A, W>;
   postStep?: SystemRunFn<T, A, W>;
+  runsOn(prefab: Prefab<any>): boolean;
 };
-
-export type Systems = Record<string, System<Stores, Empty>>;
 
 export type SystemInstanceSnapshot = {
   stores: Stores;
   state: any;
-};
-
-export type ExtractSystemStores<S> = S extends System<infer T, any> ? T : never;
-type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
-  k: infer I
-) => void
-  ? I
-  : never;
-
-type MappedSystemStores = Record<string, Stores>;
-type MapValueUnion<T> = T extends Record<any, infer V> ? V : never;
-// dark magic.
-// 1. extract values of systems as a union
-// 2. reference .stores, also a union
-// 3. convert the union to intersection (represents the merging process)
-export type ReduceSystemsStores<
-  M extends MappedSystemStores
-> = UnionToIntersection<MapValueUnion<M>>;
-export type ExtractSystemsStores<S extends Systems> = ReduceSystemsStores<
-  MapSystemsStores<S>
->;
-
-export type ExtractPrefabStores<P extends Prefab> = ReduceSystemsStores<
-  MapSystemsStores<P['systems']>
->;
-
-export type ExtractSystemState<S> = S extends System<any, infer A> ? A : never;
-export type ExtractSystemsStates<S extends Systems> = {
-  [K in keyof S]: ExtractSystemState<S[K]>;
-};
-
-export type MapSystemsStores<S extends Systems> = {
-  [K in keyof S]: ExtractSystemStores<S[K]>;
 };
 
 export type States = Record<string, unknown>;

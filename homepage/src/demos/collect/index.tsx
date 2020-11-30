@@ -7,6 +7,8 @@ import { plugins } from '../../common/plugins';
 import * as prefabs from './prefabs';
 import '../../../../src/tools/tools.css';
 import './index.css';
+import * as ourSystems from './systems';
+import * as commonSystems from '../../common/systems';
 
 function SceneLoader() {
   const [scene, setScene] = React.useState<any | null>(null);
@@ -47,7 +49,15 @@ const WorldRenderer = ({ scene }: any) => {
 
   return (
     <Stage options={options} width={320} height={240}>
-      <World prefabs={prefabs} scene={scene} plugins={plugins} />
+      <World
+        prefabs={prefabs}
+        scene={scene}
+        plugins={plugins}
+        systems={[
+          ...Object.values(commonSystems),
+          ...Object.values(ourSystems),
+        ]}
+      />
     </Stage>
   );
 };

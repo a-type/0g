@@ -1,13 +1,13 @@
 import React, { FC } from 'react';
 import { useProxy } from 'valtio';
 import { logger } from './logger';
-import { Prefab, PrefabConfig, PrefabRenderProps, Systems } from './types';
+import { Prefab, PrefabConfig, PrefabRenderProps, Stores } from './types';
 
 /**
  * Wraps the reactive ("plain") component's stores prop with
  * useProxy so the component will react to changes.
  */
-function wrapReactiveComponent<S extends Systems>(
+function wrapReactiveComponent<S extends Stores>(
   Component: FC<PrefabRenderProps<S>>
 ): FC<PrefabRenderProps<S>> {
   return function ReactivePrefabComponent({ stores, ...rest }) {
@@ -16,9 +16,7 @@ function wrapReactiveComponent<S extends Systems>(
   };
 }
 
-export function prefab<S extends Systems = Systems>(
-  config: PrefabConfig<S>
-): Prefab<S> {
+export function prefab<S extends Stores>(config: PrefabConfig<S>): Prefab<S> {
   if (config.Component && config.ManualComponent) {
     logger.warn(
       `Both Component and ManualComponent were supplied to ${config.name} - Component will be used`

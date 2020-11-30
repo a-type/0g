@@ -7,6 +7,8 @@ import { plugins } from '../../common/plugins';
 import { PX_SCALE, SIZE } from './constants';
 import './index.css';
 import '../../../../src/tools/tools.css';
+import * as ourSystems from './systems';
+import * as commonSystems from '../../common/systems';
 
 const world: GlobalStore = {
   tree: {
@@ -42,14 +44,14 @@ const world: GlobalStore = {
     scene: {
       id: 'scene',
       prefab: 'Scene',
-      stores: {},
+      storesData: {},
       parentId: null,
     },
     paddle: {
       id: 'paddle',
       parentId: 'scene',
       prefab: 'Paddle',
-      stores: {
+      storesData: {
         bodyConfig: {
           shape: 'rectangle',
           density: 1,
@@ -70,7 +72,7 @@ const world: GlobalStore = {
       id: 'ball',
       parentId: 'scene',
       prefab: 'Ball',
-      stores: {
+      storesData: {
         bodyConfig: {
           shape: 'circle',
           density: 0.1,
@@ -81,9 +83,7 @@ const world: GlobalStore = {
           bullet: true,
           fixedRotation: true,
         },
-        forces: {
-          velocity: { x: 0, y: 0 },
-        },
+        forces: {},
         transform: { x: 0, y: 0 },
       },
     },
@@ -91,7 +91,7 @@ const world: GlobalStore = {
       id: 'leftWall',
       parentId: 'scene',
       prefab: 'Wall',
-      stores: {
+      storesData: {
         bodyConfig: {
           shape: 'rectangle',
           density: 100,
@@ -108,7 +108,7 @@ const world: GlobalStore = {
       id: 'rightWall',
       parentId: 'scene',
       prefab: 'Wall',
-      stores: {
+      storesData: {
         bodyConfig: {
           shape: 'rectangle',
           density: 1,
@@ -125,7 +125,7 @@ const world: GlobalStore = {
       id: 'topWall',
       parentId: 'scene',
       prefab: 'Wall',
-      stores: {
+      storesData: {
         bodyConfig: {
           shape: 'rectangle',
           density: 1,
@@ -142,7 +142,7 @@ const world: GlobalStore = {
       id: 'blockSpawner',
       parentId: 'scene',
       prefab: 'BlockSpawner',
-      stores: {
+      storesData: {
         transform: {
           y: -SIZE / 3,
         },
@@ -163,7 +163,15 @@ const App = () => {
       }}
     >
       <div className="CenterSpaceTransformer">
-        <World prefabs={prefabs} scene={world} plugins={plugins} />
+        <World
+          prefabs={prefabs}
+          scene={world}
+          plugins={plugins}
+          systems={[
+            ...Object.values(ourSystems),
+            ...Object.values(commonSystems),
+          ]}
+        />
       </div>
     </div>
   );

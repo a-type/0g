@@ -1,7 +1,7 @@
 import { r2d } from '../../../..';
 import { EntityContact } from '../plugins/box2d';
 
-export const contacts = r2d.store({
+export const contacts = r2d.store('contacts', {
   /** began since last frame */
   began: new Array<EntityContact>(),
   /** all contacts this frame */

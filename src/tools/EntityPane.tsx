@@ -10,12 +10,12 @@ export type EntityPaneProps = {
 export function EntityPane({ entity }: EntityPaneProps) {
   return (
     <Accordion defaultIndex={[0]} minW={200}>
-      {Object.keys(entity.stores).map((storeName) => (
+      {Object.keys(entity.storesData).map((storeName) => (
         <StorePanel
           key={storeName}
           title={storeName}
           entityId={entity.id}
-          store={entity.stores[storeName]}
+          store={entity.storesData[storeName]}
         />
       ))}
     </Accordion>

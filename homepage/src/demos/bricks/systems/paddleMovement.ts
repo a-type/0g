@@ -2,13 +2,17 @@ import { forces } from '../../../common/stores/forces';
 import { r2d } from '../../../../..';
 import { transform } from '../../../common/stores/transform';
 
-export const paddleMovement = r2d.system({
-  stores: {
-    forces: forces,
-    transform: transform,
+export const paddleMovement = r2d.system<
+  {
+    forces: ReturnType<typeof forces>;
+    transform: ReturnType<typeof transform>;
   },
+  { initialY: null | number }
+>({
+  name: 'paddleMovement',
+  runsOn: (prefab) => prefab.name === 'Paddle',
   state: {
-    initialY: null as null | number,
+    initialY: null,
   },
   run: ({ forces, transform }, state, ctx) => {
     if (state.initialY !== null) state.initialY = transform.y;

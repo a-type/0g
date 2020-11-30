@@ -14,13 +14,23 @@ import { body } from '../stores/body';
 import { contacts } from '../stores/contacts';
 import { EntityContact } from '../plugins/box2d';
 
-export const rigidBody = r2d.system({
-  stores: {
-    transform: transform,
-    bodyConfig: bodyConfig,
-    forces: forces,
-    body: body,
-    contacts: contacts,
+export const rigidBody = r2d.system<
+  {
+    transform: ReturnType<typeof transform>;
+    bodyConfig: ReturnType<typeof bodyConfig>;
+    forces?: ReturnType<typeof forces>;
+    body?: ReturnType<typeof body>;
+    contacts?: ReturnType<typeof contacts>;
+  },
+  {
+    body: b2Body;
+    newContactsCache: EntityContact[];
+    endedContactsCache: EntityContact[];
+  }
+>({
+  name: 'rigidBody',
+  runsOn: (prefab) => {
+    return !!prefab.stores.transform && !!prefab.stores.bodyConfig;
   },
   state: {
     body: (null as unknown) as b2Body,
@@ -65,9 +75,11 @@ export const rigidBody = r2d.system({
     }
     body.CreateFixture(fix);
 
-    stores.body.mass = body.GetMass();
-    stores.body.angularVelocity = body.GetAngularVelocity();
-    stores.body.velocity = body.GetLinearVelocity();
+    if (stores.body) {
+      stores.body.mass = body.GetMass();
+      stores.body.angularVelocity = body.GetAngularVelocity();
+      stores.body.velocity = body.GetLinearVelocity();
+    }
 
     state.body = body;
 
@@ -89,40 +101,53 @@ export const rigidBody = r2d.system({
   },
   preStep: ({ transform, contacts, body }, state) => {
     state.body.SetPositionXY(transform.x, transform.y);
-    let contact: EntityContact;
-    for (contact of state.newContactsCache) {
-      contacts.began.push(contact);
-      contacts.current.push(contact);
-    }
-    for (contact of state.endedContactsCache) {
-      contacts.current = contacts.current.filter((c) => c !== contact);
-      contacts.ended = contacts.ended.filter((c) => c !== contact);
+
+    if (contacts) {
+      let contact: EntityContact;
+      for (contact of state.newContactsCache) {
+        contacts.began.push(contact);
+        contacts.current.push(contact);
+      }
+      for (contact of state.endedContactsCache) {
+        contacts.current = contacts.current.filter((c) => c !== contact);
+        contacts.ended = contacts.ended.filter((c) => c !== contact);
+      }
     }
     state.newContactsCache = [];
     state.endedContactsCache = [];
 
-    body.angularVelocity = state.body.GetAngularVelocity();
-    const { x, y } = state.body.GetLinearVelocity();
-    body.velocity.x = x;
-    body.velocity.y = y;
+    if (body) {
+      body.angularVelocity = state.body.GetAngularVelocity();
+      const { x, y } = state.body.GetLinearVelocity();
+      body.velocity.x = x;
+      body.velocity.y = y;
+    }
   },
-  run: ({ transform, forces }, { body }) => {
+  run: ({ transform, forces }, { body }, ctx) => {
     const { x, y } = body.GetPosition();
     transform.x = x;
     transform.y = y;
     transform.angle = body.GetAngle();
 
-    if (forces.impulse) {
-      body.ApplyLinearImpulseToCenter(forces.impulse, true);
-      forces.impulse = null;
-    }
-    if (forces.velocity) {
-      body.SetLinearVelocity(forces.velocity);
-      forces.velocity = null;
+    if (forces) {
+      if (forces.impulse) {
+        console.debug(`Applying impulse to ${ctx.entity.id}`);
+        body.ApplyLinearImpulseToCenter(forces.impulse, true);
+        forces.impulse = null;
+      }
+      if (forces.velocity) {
+        console.debug(
+          `Applying velocity to ${ctx.entity.id}: ${forces.velocity.x},${forces.velocity.y}`
+        );
+        body.SetLinearVelocity(forces.velocity);
+        forces.velocity = null;
+      }
     }
   },
   postStep: ({ contacts }) => {
-    contacts.began = [];
-    contacts.ended = [];
+    if (contacts) {
+      contacts.began = [];
+      contacts.ended = [];
+    }
   },
 });

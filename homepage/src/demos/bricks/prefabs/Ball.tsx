@@ -1,16 +1,22 @@
 import * as React from 'react';
-import { ballMovement } from '../systems/ballMovement';
-import { rigidBody } from '../../../common/systems/rigidBody';
 import { r2d } from '../../../../..';
 import { useBodyRef } from '../../../common/hooks/useBodyRef';
-import { brickBreaker } from '../systems/brickBreaker';
+import { bodyConfig } from '../../../common/stores/bodyConfig';
+import { transform } from '../../../common/stores/transform';
+import { forces } from '../../../common/stores/forces';
+import { contacts } from '../../../common/stores/contacts';
+import { body } from '../../../common/stores/body';
 
 export const Ball = r2d.prefab({
   name: 'Ball',
-  systems: {
-    rigidBody: rigidBody,
-    movement: ballMovement,
-    brickBreaker: brickBreaker,
+  stores: {
+    bodyConfig: bodyConfig(),
+    transform: transform(),
+    forces: forces(),
+    contacts: contacts(),
+    body: body(),
+    config: r2d.store('ballConfig', { speed: 12 })(),
+    // useDemoMovement: r2d.store('blah', { ye: true })(),
   },
   ManualComponent: ({ stores }) => {
     return <span ref={useBodyRef(stores)} className="Ball" />;

@@ -3,31 +3,32 @@
 ### Prefabs
 
 Prefabs describe what it takes to create a type of Entity.
-Prefabs have a name, which is globally unique and used elsewhere to refer to it.
-Prefabs have Systems, which define how they interact with the world and others.
-Prefabs have a render, which defines how the Prefab shows up in the scene.
+Prefabs declare a name, which is globally unique and used elsewhere to refer to it.
+Prefabs declare Stores, which determine what kind of Entity it shall be.
+Prefabs declare a Component, which defines how the Prefab shows up in the scene.
 
 ```tsx
 // a Prefab module
-export const name = 'Player';
-
-export const systems = {
-  body: rigidBody,
-  movement: playerMovement,
-};
-
-export const render = ({ store: { transform, sprite } }) => (
+export const Player = r2d.prefab({
+  name: 'Player',
+  stores: {
+    transform,
+    bodyConfig,
+    contacts,
+  },
+  Component: ({ stores: { transform, sprite } }) => (
   <group position={transform.position.toArray()}>
     <Sprite {...sprite} />
   </group>
-);
+  ),
+};
 ```
 
 Prefab render is more versatile than it seems though.
 As long as you have data to power it, you can render anything.
 
 ```tsx
-export const render = ({ store: { transform, sprites } }) => (
+Component: ({ stores: { transform, sprites } }) => (
   <group position={transform.position.toArray()}>
     {sprites.map((sprite) => (
       <Sprite {...sprite} key={sprite.id} />
@@ -35,6 +36,12 @@ export const render = ({ store: { transform, sprites } }) => (
   </group>
 );
 ```
+
+### Entities
+
+Prefabs become Entities when instantiated.
+Entities have an ID which identifies them.
+Entities store Store data corresponding to their Prefab's Stores.
 
 ### Systems
 

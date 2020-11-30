@@ -1,12 +1,14 @@
 import * as React from 'react';
 import { r2d } from '../../../../..';
 import { useBodyStyles } from '../../../common/hooks/useBodyStyles';
-import { rigidBody } from '../../../common/systems/rigidBody';
+import { bodyConfig } from '../../../common/stores/bodyConfig';
+import { transform } from '../../../common/stores/transform';
 
 export const Wall = r2d.prefab({
   name: 'Wall',
-  systems: {
-    rigidBody: rigidBody,
+  stores: {
+    transform: transform(),
+    bodyConfig: bodyConfig(),
   },
   Component: ({ stores }) => {
     return <div className="Wall" style={useBodyStyles(stores)} />;

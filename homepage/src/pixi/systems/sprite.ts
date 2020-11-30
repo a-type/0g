@@ -1,31 +1,11 @@
 import { r2d } from '../../../..';
-import defaultTex from '../../demos/collect/assets/roguelikeChar_transparent.png';
+import { spriteConfig } from '../stores/spriteConfig';
 
-export type TileData = {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  gap?: number;
-};
-
-export type SpriteStoreData = {
-  source: string;
-  tileData?: TileData;
-};
-
-export const sprite = r2d.system({
-  stores: {
-    sprite: r2d.store<SpriteStoreData>({
-      source: defaultTex,
-      tileData: {
-        x: 0,
-        y: 0,
-        width: 16,
-        height: 16,
-      },
-    }),
-  },
+export const sprite = r2d.system<{
+  spriteConfig: ReturnType<typeof spriteConfig>;
+}>({
+  name: 'sprite',
+  runsOn: (prefab) => !!prefab.stores.sprite,
   run: () => {
     // Doesn't do anything... yet
     return;

@@ -26,6 +26,11 @@
         "@typescript-eslint/explicit-module-boundary-types": [0],
         "react/display-name": [0],
         "no-empty-function": [1],
-        "@typescript-eslint/no-explicit-any": [0]
+        "@typescript-eslint/no-explicit-any": [0],
+        "@typescript-eslint/ban-types": [1, {
+            "types": {
+                "{}": false
+            }
+        }]
     }
 }
