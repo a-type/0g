@@ -330,3 +330,12 @@ const World = () => {
   return <World prefabs={prefabs} systems={systems} />
 }
 ```
+
+```tsx
+const rigidBody = r2d.system({
+  runsOn: (e) => e.stores.body,
+  run: (entity, state, { tools }) => {
+    const body = tools.getStore(entity, 'body');
+  },
+});
+```
