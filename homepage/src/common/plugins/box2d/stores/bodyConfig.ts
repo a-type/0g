@@ -1,4 +1,4 @@
-import * as r2d from '../../../..';
+import * as r2d from '../../../../../..';
 
 export type BodyConfigData = {
   friction: number;
@@ -22,18 +22,15 @@ export type BodyConfigData = {
     }
 );
 
-export const bodyConfig = r2d.store<'bodyConfig', BodyConfigData>(
-  'bodyConfig',
-  {
-    shape: 'circle',
-    radius: 1,
-    density: 1,
-    frictionAir: 0,
-    friction: 0,
-    isStatic: false,
-    angle: 0,
-    restitution: 0,
-    bullet: false,
-    fixedRotation: false,
-  }
-);
+export const bodyConfig = r2d.store('bodyConfig', {
+  shape: 'circle',
+  radius: 1,
+  density: 1,
+  frictionAir: 0,
+  friction: 0,
+  isStatic: false,
+  angle: 0,
+  restitution: 0,
+  bullet: false,
+  fixedRotation: false,
+} as BodyConfigData);

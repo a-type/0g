@@ -1,4 +1,4 @@
-import * as r2d from '../../../..';
+import * as r2d from '../../../../..';
 import {
   b2Body,
   b2BodyType,
@@ -7,8 +7,8 @@ import {
   b2PolygonShape,
   b2World,
 } from '@flyover/box2d';
-import { EntityContact } from '../plugins/box2d';
-import * as stores from '../stores';
+import { EntityContact } from './box2d';
+import * as stores from './stores';
 
 export const rigidBody = new r2d.System<
   {
@@ -131,14 +131,10 @@ export const rigidBody = new r2d.System<
 
     if (forces) {
       if (forces.impulse) {
-        console.debug(`Applying impulse to ${ctx.entity.id}`);
         body.ApplyLinearImpulseToCenter(forces.impulse, true);
         forces.impulse = null;
       }
       if (forces.velocity) {
-        console.debug(
-          `Applying velocity to ${ctx.entity.id}: ${forces.velocity.x},${forces.velocity.y}`
-        );
         body.SetLinearVelocity(forces.velocity);
         forces.velocity = null;
       }

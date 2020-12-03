@@ -1,5 +1,3 @@
-import { forces } from '../../../common/stores/forces';
-import { transform } from '../../../common/stores/transform';
 import { game } from '../game';
 
 export const paddleMovement = game.system({

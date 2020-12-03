@@ -3,6 +3,7 @@ import { System } from './system';
 import {
   InferredPrefabsStores,
   NormalizeStoresAndStoreCreators,
+  Plugin,
   Prefab,
   StoreCreator,
   Stores,
@@ -11,12 +12,18 @@ import {
 import { World } from './World';
 
 export function create<Prefabs extends Record<string, Prefab<Stores>>>(
-  prefabs: Prefabs
+  prefabs: Prefabs,
+  plugins: Record<string, Plugin> = {}
 ) {
-  const systems: System<any, any>[] = [];
+  const systems: System<any, any>[] = Object.values(plugins).reduce(
+    (all, plugin) => {
+      return [...all, ...Object.values(plugin.systems ?? {})];
+    },
+    new Array<System<any, any>>()
+  );
 
   return {
-    World: withConfig(prefabs, systems)(World),
+    World: withConfig(prefabs, systems, plugins)(World),
     // TODO: type these with typings derived from Cfg
     system: <A extends Record<string, unknown>>(
       // @ts-ignore

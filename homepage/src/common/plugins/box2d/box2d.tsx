@@ -1,4 +1,4 @@
-import * as r2d from '../../../..';
+import * as r2d from '../../../../..';
 import {
   b2Contact,
   b2ContactListener,
@@ -6,6 +6,8 @@ import {
   b2World,
 } from '@flyover/box2d';
 import ObjectPool from '@tsdotnet/object-pool';
+import { rigidBody } from './rigidBody';
+import * as stores from './stores';
 
 export type EntityContact = {
   selfId: string | null;
@@ -124,5 +126,9 @@ export const box2d = (world: b2World) => {
     run: () => {
       world.Step(60 / 1000, 8, 3);
     },
+    systems: {
+      rigidBody: rigidBody,
+    },
+    stores: stores,
   });
 };

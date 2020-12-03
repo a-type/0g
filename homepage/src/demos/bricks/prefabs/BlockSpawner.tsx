@@ -1,10 +1,10 @@
 import * as r2d from '../../../../..';
-import { transform } from '../../../common/stores/transform';
+import { box2d } from '../../../common/plugins';
 
 export const BlockSpawner = r2d.prefab({
   name: 'BlockSpawner',
   stores: {
-    transform: transform(),
+    transform: box2d.stores.transform(),
     spawnerConfig: r2d.store('blockSpawnerConfig', {
       horizontalCount: 6,
       verticalCount: 3,

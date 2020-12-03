@@ -1,18 +1,15 @@
 import * as React from 'react';
 import * as r2d from '../../../../..';
 import { useBodyRef } from '../../../common/hooks/useBodyRef';
-import { transform } from '../../../common/stores/transform';
-import { bodyConfig } from '../../../common/stores/bodyConfig';
-import { body } from '../../../common/stores/body';
-import { forces } from '../../../common/stores/forces';
+import { box2d } from '../../../common/plugins';
 
 export const Paddle = r2d.prefab({
   name: 'Paddle',
   stores: {
-    transform: transform(),
-    bodyConfig: bodyConfig(),
-    body: body(),
-    forces: forces(),
+    transform: box2d.stores.transform(),
+    bodyConfig: box2d.stores.bodyConfig(),
+    body: box2d.stores.body(),
+    forces: box2d.stores.forces(),
   },
   ManualComponent: ({ stores }) => {
     return (

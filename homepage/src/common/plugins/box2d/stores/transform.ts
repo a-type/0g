@@ -1,4 +1,4 @@
-import { store } from '../../../..';
+import { store } from '../../../../../..';
 
 export const transform = store('transform', {
   x: 0,

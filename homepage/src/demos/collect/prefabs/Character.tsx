@@ -1,13 +1,10 @@
 import * as React from 'react';
 import { Container, Sprite } from '@inlet/react-pixi';
 import * as r2d from '../../../../..';
-import { forces } from '../../../common/stores/forces';
-import { transform } from '../../../common/stores/transform';
 import { useTextureTile } from '../../../pixi/hooks/useTextureTile';
 import charSheet from '../assets/roguelikeChar_transparent.png';
 import { spriteConfig } from '../../../pixi/stores/spriteConfig';
-import { bodyConfig } from '../../../common/stores/bodyConfig';
-import { characterConfig } from '../systems/characterMovement';
+import { box2d } from '../../../common/plugins';
 
 export const Character = r2d.prefab({
   name: 'Character',
@@ -22,17 +19,19 @@ export const Character = r2d.prefab({
         gap: 2,
       },
     }),
-    transform: transform({
+    transform: box2d.stores.transform({
       x: 200,
       y: 200,
     }),
-    bodyConfig: bodyConfig({
+    bodyConfig: box2d.stores.bodyConfig({
       shape: 'rectangle',
       width: 16,
       height: 16,
     }),
-    forces: forces(),
-    config: characterConfig(),
+    forces: box2d.stores.forces(),
+    config: r2d.store('characterConfig', {
+      speed: 12,
+    })(),
   },
   Component: ({ stores: { transform, spriteConfig } }) => {
     const { source, tileData } = spriteConfig;

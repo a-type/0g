@@ -1,5 +1,5 @@
-import * as r2d from '../../../..';
-import { EntityContact } from '../plugins/box2d';
+import * as r2d from '../../../../../..';
+import { EntityContact } from '../box2d';
 
 export const contacts = r2d.store('contacts', {
   /** began since last frame */

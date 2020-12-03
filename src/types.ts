@@ -7,7 +7,7 @@ import { System } from './system';
 
 type Empty = Record<string, any>;
 
-export type Plugin<API extends Empty = Empty> = {
+export type Plugin<API extends Empty = Empty, S extends Record<string, StoreCreator<string, any>> = {}> = {
   wrap?: (content: ReactElement) => ReactElement;
   api: API;
   // TODO: return stuff to add to context?
@@ -15,8 +15,9 @@ export type Plugin<API extends Empty = Empty> = {
     world: WorldContext;
     frame: FrameData;
   }) => void | Promise<void>;
+  systems?: Record<string, System<any, any>>;
+  stores: S;
 };
-export type PluginConfig<API extends Empty = Empty> = Plugin<API>;
 export type Plugins = Record<string, Plugin>;
 type PluginApis<P extends Plugins> = {
   [K in keyof P]: P[K]['api'];
@@ -91,13 +92,14 @@ export type EntityApi = {
   removeSelf(): void;
 };
 
-type ExtractStoreData<S extends Store<any, any> | undefined> = S extends Store<
-  any,
-  infer T
->
-  ? T
-  : never;
-type MappedStoreData<S extends Record<string, Store<any, any> | undefined>> = {
+// type ExtractStoreData<S extends Store<string, any>> = S extends Store<
+//   any,
+//   infer T
+// >
+//   ? T
+//   : never;
+type ExtractStoreData<S extends Store<string, any>> = S['initial'];
+type MappedStoreData<S extends Record<string, Store<string, any>>> = {
   [K in keyof S]: ExtractStoreData<S[K]>;
 };
 export type PrefabRenderProps<S extends Stores> = {

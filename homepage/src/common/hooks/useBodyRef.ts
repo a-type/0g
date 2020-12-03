@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef } from 'react';
 import { subscribe } from 'valtio';
-import { BodyConfigData } from '../stores/bodyConfig';
+import { BodyConfigData } from '../plugins/box2d/stores/bodyConfig';
 
 export function useBodyRef<T extends HTMLElement>(
   stores: {

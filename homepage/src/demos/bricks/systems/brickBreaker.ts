@@ -1,11 +1,8 @@
 import * as r2d from '../../../../..';
-import { EntityContact } from '../../../common/plugins/box2d';
-import { contacts } from '../../../common/stores/contacts';
+import { EntityContact } from '../../../common/plugins/box2d/box2d';
 import { game } from '../game';
 
-export const brickBreaker = game.system<{
-  contacts: ReturnType<typeof contacts>;
-}>({
+export const brickBreaker = game.system({
   name: 'brickBreaker',
   runsOn: (prefab) => prefab.name === 'Ball',
   run: (entity, _, ctx) => {

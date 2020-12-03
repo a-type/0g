@@ -18,7 +18,7 @@ export class EntityWrapper<
     storeKind: K
   ): StoresByKind[K]['initial'] {
     return Object.values(this.data.storesData).find(
-      (store) => store?.kind === storeKind
+      (store) => store.__kind === storeKind
     );
   }
 
@@ -26,7 +26,7 @@ export class EntityWrapper<
     storeKind: K
   ): StoresByKind[K]['initial'] {
     return Object.values(this.data.storesData).filter(
-      (store) => store?.kind === storeKind
+      (store) => store.__kind === storeKind
     );
   }
 }

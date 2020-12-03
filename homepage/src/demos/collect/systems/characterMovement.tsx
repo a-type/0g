@@ -1,17 +1,6 @@
-import * as r2d from '../../../../../src';
-import { forces } from '../../../common/stores/forces';
-import { transform } from '../../../common/stores/transform';
 import { game } from '../game';
 
-export const characterConfig = r2d.store('characterConfig', {
-  speed: 12,
-});
-
-export const characterMovement = game.system<{
-  transform: ReturnType<typeof transform>;
-  forces: ReturnType<typeof forces>;
-  config: ReturnType<typeof characterConfig>;
-}>({
+export const characterMovement = game.system({
   name: 'characterMovement',
   runsOn: (prefab) => prefab.name === 'Character',
   run: (entity, _, ctx) => {

@@ -23,6 +23,7 @@ export class System<
     | Record<string, StoreCreator<string, any>>,
   W extends WorldContext = WorldContext
 > {
+  private _name: string;
   /** Caches ephemeral runtime state per-entity. */
   private stateCache = new WeakMap<EntityWrapper<any>, DefaultedState<A>>();
   /** User-defined setup fn */
@@ -67,6 +68,7 @@ export class System<
     this._init = cfg.init;
     this._dispose = cfg.dispose;
     this._runsOn = cfg.runsOn;
+    this._name = cfg.name;
   }
 
   private getWrapper = (
@@ -136,4 +138,8 @@ export class System<
   runsOn = (prefab: Prefab<any>) => {
     return this._runsOn(prefab);
   };
+
+  get name() {
+    return this._name;
+  }
 }

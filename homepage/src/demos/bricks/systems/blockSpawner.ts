@@ -1,6 +1,3 @@
-import * as r2d from '../../../../..';
-import { Store } from '../../../../../src';
-import { transform } from '../../../common/stores/transform';
 import { game } from '../game';
 
 export const blockSpawner = game.system({

@@ -59,9 +59,9 @@ const createGlobalStore = (initial: GlobalStore = defaultScene) =>
 /** Copies initial values from all of a prefab's specified stores */
 const initializeStores = (prefab: Prefab<Stores>) => {
   const stores: Record<string, StoreData> = {};
-  let entry: [string, Store<string, any> | undefined];
+  let entry: [string, Store<string, any>];
   for (entry of Object.entries(prefab.stores)) {
-    stores[entry[0]] = { ...(entry[1]?.initial ?? {}) };
+    stores[entry[0]] = { __kind: entry[1].kind, ...entry[1].initial };
   }
   return stores;
 };

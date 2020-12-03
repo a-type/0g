@@ -3,12 +3,11 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { GlobalStore, World } from '../../../..';
 import * as prefabs from './prefabs';
-import { plugins } from '../../common/plugins';
 import { PX_SCALE, SIZE } from './constants';
 import './index.css';
 import '../../../../src/tools/tools.css';
-import * as ourSystems from './systems';
-import * as commonSystems from '../../common/systems';
+import './systems';
+import { game } from './game';
 
 const world: GlobalStore = {
   tree: {
@@ -163,15 +162,7 @@ const App = () => {
       }}
     >
       <div className="CenterSpaceTransformer">
-        <World
-          prefabs={prefabs}
-          scene={world}
-          plugins={plugins}
-          systems={[
-            ...Object.values(ourSystems),
-            ...Object.values(commonSystems),
-          ]}
-        />
+        <game.World scene={world} />
       </div>
     </div>
   );
