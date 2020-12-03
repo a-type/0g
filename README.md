@@ -343,3 +343,8 @@ const rigidBody = r2d.system({
 ## Packaging Stores & Systems as Reusable
 
 TODO
+
+## Known issues
+
+- Since systems are defined as mutations on the game, it's really easy to forget to import their modules, and then you have no systems.
+- Stores is a bad name - maybe Aspects?
