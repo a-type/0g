@@ -1,7 +1,4 @@
-import { bodyConfig } from '../stores/bodyConfig';
-import { transform } from '../stores/transform';
-import { r2d } from '../../../..';
-import { forces } from '../stores/forces';
+import * as r2d from '../../../..';
 import {
   b2Body,
   b2BodyType,
@@ -10,23 +7,16 @@ import {
   b2PolygonShape,
   b2World,
 } from '@flyover/box2d';
-import { body } from '../stores/body';
-import { contacts } from '../stores/contacts';
 import { EntityContact } from '../plugins/box2d';
+import * as stores from '../stores';
 
-export const rigidBody = r2d.system<
-  {
-    transform: ReturnType<typeof transform>;
-    bodyConfig: ReturnType<typeof bodyConfig>;
-    forces?: ReturnType<typeof forces>;
-    body?: ReturnType<typeof body>;
-    contacts?: ReturnType<typeof contacts>;
-  },
+export const rigidBody = new r2d.System<
   {
     body: b2Body;
     newContactsCache: EntityContact[];
     endedContactsCache: EntityContact[];
-  }
+  },
+  typeof stores
 >({
   name: 'rigidBody',
   runsOn: (prefab) => {
@@ -37,8 +27,10 @@ export const rigidBody = r2d.system<
     newContactsCache: new Array<EntityContact>(),
     endedContactsCache: new Array<EntityContact>(),
   },
-  init: (stores, state, ctx) => {
-    const { x, y } = stores.transform;
+  init: (entity, state, ctx) => {
+    const transform = entity.getStore('transform');
+    const { x, y } = transform;
+    const bodyConfig = entity.getStore('bodyConfig');
     const {
       density,
       friction,
@@ -47,7 +39,7 @@ export const rigidBody = r2d.system<
       angle,
       restitution,
       fixedRotation,
-    } = stores.bodyConfig;
+    } = bodyConfig;
     const world = ctx.world.plugins.box2d.world as b2World;
 
     const body = world.CreateBody({
@@ -66,19 +58,20 @@ export const rigidBody = r2d.system<
     fix.friction = friction;
     fix.userData = { entityId: ctx.entity.id };
 
-    if (stores.bodyConfig.shape === 'rectangle') {
+    if (bodyConfig.shape === 'rectangle') {
       const shape = new b2PolygonShape();
-      shape.SetAsBox(stores.bodyConfig.width / 2, stores.bodyConfig.height / 2);
+      shape.SetAsBox(bodyConfig.width / 2, bodyConfig.height / 2);
       fix.shape = shape;
     } else {
-      fix.shape = new b2CircleShape(stores.bodyConfig.radius);
+      fix.shape = new b2CircleShape(bodyConfig.radius);
     }
     body.CreateFixture(fix);
 
-    if (stores.body) {
-      stores.body.mass = body.GetMass();
-      stores.body.angularVelocity = body.GetAngularVelocity();
-      stores.body.velocity = body.GetLinearVelocity();
+    const bodyStore = entity.getStore('body');
+    if (bodyStore) {
+      bodyStore.mass = body.GetMass();
+      bodyStore.angularVelocity = body.GetAngularVelocity();
+      bodyStore.velocity = body.GetLinearVelocity();
     }
 
     state.body = body;
@@ -99,7 +92,11 @@ export const rigidBody = r2d.system<
   dispose: (_, state, ctx) => {
     (ctx.world.plugins as any).box2d.world.DestroyBody(state.body);
   },
-  preStep: ({ transform, contacts, body }, state) => {
+  preStep: (entity, state) => {
+    const transform = entity.getStore('transform');
+    const contacts = entity.getStore('contacts');
+    const body = entity.getStore('body');
+
     state.body.SetPositionXY(transform.x, transform.y);
 
     if (contacts) {
@@ -123,7 +120,10 @@ export const rigidBody = r2d.system<
       body.velocity.y = y;
     }
   },
-  run: ({ transform, forces }, { body }, ctx) => {
+  run: (entity, { body }, ctx) => {
+    const transform = entity.getStore('transform');
+    const forces = entity.getStore('forces');
+
     const { x, y } = body.GetPosition();
     transform.x = x;
     transform.y = y;
@@ -144,7 +144,9 @@ export const rigidBody = r2d.system<
       }
     }
   },
-  postStep: ({ contacts }) => {
+  postStep: (entity) => {
+    const contacts = entity.getStore('contacts');
+
     if (contacts) {
       contacts.began = [];
       contacts.ended = [];

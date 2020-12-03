@@ -1,4 +1,4 @@
-import { r2d } from '../../../..';
+import * as r2d from '../../../..';
 import { EntityContact } from '../plugins/box2d';
 
 export const contacts = r2d.store('contacts', {

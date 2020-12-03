@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 import { FC, ReactElement } from 'react';
 import { Keyboard } from './input/keyboard';
 import { Pointer } from './input/Pointer';
+import { EntityWrapper } from './internal/EntityWrapper';
 import { System } from './system';
 
 type Empty = Record<string, any>;
@@ -56,10 +57,10 @@ export type SystemStates = {
 export type WorldContext<P extends Plugins = Record<string, Plugin<Empty>>> = {
   plugins: PluginApis<P>;
   input: InputTools;
-  prefabs: Record<string, Prefab>;
+  prefabs: Record<string, Prefab<any>>;
   store: GlobalStore;
   events: EventEmitter;
-  systems: System<any, any>[];
+  systems: System<any, any, any>[];
 } & WorldApi;
 
 export type FrameData = {
@@ -68,14 +69,14 @@ export type FrameData = {
 export type FrameCallback = (data: FrameData) => void | Promise<void>;
 
 export type StoreData<T extends Empty = Empty> = T;
-export type StoreCreator<T extends StoreData> = (
+export type StoreCreator<Kind extends string, T extends StoreData> = (
   overrides?: Partial<T>
-) => Store<T>;
-export type Store<T extends StoreData> = {
-  name: string;
+) => Store<Kind, T>;
+export type Store<Kind extends string, T extends StoreData> = {
+  kind: Kind;
   initial: T;
 };
-export type Stores = Record<string, Store<any> | undefined>;
+export type Stores = Record<string, Store<string, any>>;
 
 export type EntityData<S extends Stores = Stores> = {
   id: string;
@@ -90,26 +91,27 @@ export type EntityApi = {
   removeSelf(): void;
 };
 
-type ExtractStoreData<S extends Store<any> | undefined> = S extends Store<
+type ExtractStoreData<S extends Store<any, any> | undefined> = S extends Store<
+  any,
   infer T
 >
   ? T
   : never;
-type MappedStoreData<S extends Record<string, Store<any> | undefined>> = {
+type MappedStoreData<S extends Record<string, Store<any, any> | undefined>> = {
   [K in keyof S]: ExtractStoreData<S[K]>;
 };
 export type PrefabRenderProps<S extends Stores> = {
   stores: MappedStoreData<S>;
 };
 
-export type PrefabConfig<S extends Stores = Stores> = {
+export type PrefabConfig<S extends Stores> = {
   name: string;
   stores: S;
   Component?: FC<PrefabRenderProps<S>>;
   ManualComponent?: FC<PrefabRenderProps<S>>;
 };
 
-export type Prefab<S extends Stores = Stores> = {
+export type Prefab<S extends Stores> = {
   name: string;
   stores: S;
   Component: FC<PrefabRenderProps<S>>;
@@ -125,43 +127,49 @@ export type SystemProvidedState = any;
 export type DefaultedState<
   A extends Record<string, any> | undefined
 > = A extends undefined ? Empty : A;
-export type SystemContext<W extends WorldContext> = {
+export type SystemContext<
+  W extends WorldContext,
+  StoresByKind extends Record<string, Store<any, any>>
+> = {
   world: W;
-  entity: EntityData;
+  entity: EntityWrapper<StoresByKind>;
 };
-export type SystemRunContext<W extends WorldContext> = SystemContext<W> & {
+export type SystemRunContext<
+  W extends WorldContext,
+  StoresByKind extends Record<string, Store<any, any>>
+> = SystemContext<W, StoresByKind> & {
   frame: FrameData;
 };
 export type SystemRunFn<
-  T extends Record<string, Store<any> | undefined>,
   A,
-  W extends WorldContext
+  W extends WorldContext,
+  StoresByKind extends Record<string, Store<any, any>>
 > = (
-  stores: MappedStoreData<T>,
+  entity: EntityWrapper<StoresByKind>,
   state: DefaultedState<A>,
-  context: SystemRunContext<W>
+  context: SystemRunContext<W, StoresByKind>
 ) => void | Promise<void>;
 export type SystemInitFn<
-  T extends Record<string, Store<any> | undefined>,
   A,
-  W extends WorldContext
+  W extends WorldContext,
+  StoresByKind extends Record<string, Store<any, any>>
 > = (
-  stores: MappedStoreData<T>,
+  entity: EntityWrapper<StoresByKind>,
   state: DefaultedState<A>,
-  context: SystemContext<W>
+  context: SystemContext<W, StoresByKind>
 ) => void;
 export type SystemConfig<
-  T extends Record<string, Store<any> | undefined>,
   A,
+  StoresByKind extends Record<string, Store<any, any>> = {},
   W extends WorldContext = WorldContext
 > = {
   name: string;
   state?: A;
-  init?: SystemInitFn<T, A, W>;
-  dispose?: SystemInitFn<T, A, W>;
-  run: SystemRunFn<T, A, W>;
-  preStep?: SystemRunFn<T, A, W>;
-  postStep?: SystemRunFn<T, A, W>;
+  init?: SystemInitFn<A, W, StoresByKind>;
+  dispose?: SystemInitFn<A, W, StoresByKind>;
+  run: SystemRunFn<A, W, StoresByKind>;
+  preStep?: SystemRunFn<A, W, StoresByKind>;
+  postStep?: SystemRunFn<A, W, StoresByKind>;
   runsOn(prefab: Prefab<any>): boolean;
 };
 
@@ -171,3 +179,47 @@ export type SystemInstanceSnapshot = {
 };
 
 export type States = Record<string, unknown>;
+
+export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
+  k: infer I
+) => void
+  ? I
+  : never;
+
+export type MapValueUnion<T> = T extends Record<any, infer V> ? V : never;
+
+export type ExtractPrefabStores<P> = P extends Prefab<infer S> ? S : never;
+
+export type MappedPrefabStores<P extends Record<string, Prefab<any>>> = {
+  [K in keyof P]: StoresKeyedByKind<ExtractPrefabStores<P[K]>>;
+};
+
+export type FilterByKind<S extends Record<string, Store<string, any>>, Kind extends string> = {
+  [K in keyof S as S[K] extends Store<Kind, any> ? K : never]: S[K];
+};
+
+export type AllStoreKinds<S extends Record<string, Store<string, any>>> = S extends Record<string, Store<infer K, any>> ? K : never;
+
+export type StoresKeyedByKind<S> =
+  S extends Record<string, Store<infer K, any>>
+  ? {
+      [Kind in K]: UnionToIntersection<MapValueUnion<FilterByKind<S, Kind>>>;
+    }
+  : never;
+
+export type InferredPrefabsStores<
+  Prefabs extends Record<string, Prefab<Stores>>
+> = UnionToIntersection<MapValueUnion<MappedPrefabStores<Prefabs>>>
+
+export type InferredPrefabStoreKinds<Prefabs extends Record<string, Prefab<Stores>>> =
+    AllStoreKinds<MapValueUnion<Prefabs>['stores']>
+
+export type NormalizeStoresAndStoreCreators<
+  S extends
+    | Record<string, Store<string, any>>
+    | Record<string, StoreCreator<string, any>>
+> = S extends Record<string, StoreCreator<string, any>>
+  ? {
+      [K in keyof S]: ReturnType<S[K]>;
+    }
+  : S;

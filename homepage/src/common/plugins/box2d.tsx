@@ -1,4 +1,4 @@
-import { r2d } from '../../../..';
+import * as r2d from '../../../..';
 import {
   b2Contact,
   b2ContactListener,

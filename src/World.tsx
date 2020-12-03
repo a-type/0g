@@ -12,6 +12,7 @@ import {
   WorldApi,
   Store,
   StoreData,
+  Stores,
 } from './types';
 import { PluginProviders } from './internal/PluginProviders';
 import { keyboard, pointer } from './input';
@@ -28,7 +29,7 @@ import { addTreeNode, removeTreeNode, removeSubtree } from './internal/tree';
 export const worldContext = React.createContext<WorldContext | null>(null);
 
 export type WorldProps = {
-  prefabs: Record<string, Prefab>;
+  prefabs: Record<string, Prefab<Stores>>;
   useFrame?: FrameHook;
   plugins?: Plugins;
   scene?: GlobalStore;
@@ -56,16 +57,16 @@ const createGlobalStore = (initial: GlobalStore = defaultScene) =>
   proxy<GlobalStore>(initial);
 
 /** Copies initial values from all of a prefab's specified stores */
-const initializeStores = (prefab: Prefab) => {
+const initializeStores = (prefab: Prefab<Stores>) => {
   const stores: Record<string, StoreData> = {};
-  let entry: [string, Store<any> | undefined];
+  let entry: [string, Store<string, any> | undefined];
   for (entry of Object.entries(prefab.stores)) {
     stores[entry[0]] = { ...(entry[1]?.initial ?? {}) };
   }
   return stores;
 };
 
-function useWorldApi(store: GlobalStore, prefabs: Record<string, Prefab>) {
+function useWorldApi(store: GlobalStore, prefabs: Record<string, Prefab<any>>) {
   const get = React.useCallback(
     (id: string) => {
       return store.entities[id] ?? null;
@@ -176,7 +177,7 @@ export const World: React.FC<WorldProps> = ({
 
   const treeSnapshot = useProxy(globalStore.tree);
 
-  const prefabsRef = React.useRef<Record<string, Prefab>>({
+  const prefabsRef = React.useRef<Record<string, Prefab<any>>>({
     Scene: DefaultScenePrefab,
     ...prefabs,
   });

@@ -1,4 +1,4 @@
-import { r2d } from '../../../../src';
+import * as r2d from '../../../../src';
 
 export type TileData = {
   x: number;
@@ -8,9 +8,12 @@ export type TileData = {
   gap?: number;
 };
 
-export const spriteConfig = r2d.store<{
-  source: string;
-  tileData?: TileData;
-}>('spriteConfig', {
+export const spriteConfig = r2d.store<
+  'spriteConfig',
+  {
+    source: string;
+    tileData?: TileData;
+  }
+>('spriteConfig', {
   source: '<invalid>',
 });

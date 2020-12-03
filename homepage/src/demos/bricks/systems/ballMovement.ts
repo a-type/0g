@@ -1,22 +1,7 @@
-import { forces } from '../../../common/stores/forces';
-import { r2d } from '../../../../..';
-import { SIZE } from '../constants';
 import { vecGetLength } from 'math2d';
-import { Store } from '../../../../../src';
-import { transform } from '../../../common/stores/transform';
-import { body } from '../../../common/stores/body';
+import { game } from '../game';
 
-export const ballMovement = r2d.system<
-  {
-    transform: ReturnType<typeof transform>;
-    config: Store<{ speed: number }>;
-    body: ReturnType<typeof body>;
-    forces: ReturnType<typeof forces>;
-  },
-  {
-    started: boolean;
-  }
->({
+export const ballMovement = game.system({
   name: 'ballMovement',
   runsOn: (prefab) => {
     return prefab.name === 'Ball';
@@ -24,23 +9,23 @@ export const ballMovement = r2d.system<
   state: {
     started: false,
   },
-  run: (stores, state) => {
+  run: (entity, state) => {
+    const transform = entity.getStore('transform');
+    const body = entity.getStore('body');
+    const forces = entity.getStore('forces');
+    const config = entity.getStore('ballConfig');
+
     if (!state.started) {
       state.started = true;
-      stores.transform.x = 0;
-      stores.transform.y = 0;
-      const currentSpeed = vecGetLength(stores.body.velocity);
-      if (currentSpeed < stores.config.speed) {
-        stores.forces.impulse = {
+      transform.x = 0;
+      transform.y = 0;
+      const currentSpeed = vecGetLength(body.velocity);
+      if (currentSpeed < config.speed) {
+        forces.impulse = {
           x: 0,
-          y: (stores.config.speed - currentSpeed) * stores.body.mass,
+          y: (config.speed - currentSpeed) * body.mass,
         };
       }
     }
-
-    // if (stores.transform.y > SIZE * 1.5) {
-    //   stores.transform.x = 0;
-    //   stores.transform.y = 0;
-    // }
   },
 });

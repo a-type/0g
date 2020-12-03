@@ -1,3 +1,4 @@
+import { EntityWrapper } from './internal/EntityWrapper';
 import {
   SystemConfig,
   WorldContext,
@@ -8,35 +9,57 @@ import {
   DefaultedState,
   Prefab,
   Store,
+  Stores,
+  StoreCreator,
+  NormalizeStoresAndStoreCreators,
 } from './types';
 
-export function system<
-  S extends Record<string, Store<any> | undefined>,
-  A extends Record<string, unknown> = {}
->(config: SystemConfig<S, A, WorldContext>) {
-  return new System(config);
-}
+const entityWrappers = new WeakMap<EntityData, EntityWrapper<any>>();
 
 export class System<
-  S extends Record<string, Store<any> | undefined>,
   A extends Record<string, any> | undefined,
+  StoresByKind extends
+    | Record<string, Store<string, any>>
+    | Record<string, StoreCreator<string, any>>,
   W extends WorldContext = WorldContext
 > {
   /** Caches ephemeral runtime state per-entity. */
-  private stateCache = new WeakMap<EntityData, DefaultedState<A>>();
+  private stateCache = new WeakMap<EntityWrapper<any>, DefaultedState<A>>();
   /** User-defined setup fn */
-  private _init?: SystemInitFn<S, A, W>;
+  private _init?: SystemInitFn<
+    A,
+    W,
+    NormalizeStoresAndStoreCreators<StoresByKind>
+  >;
   /** User-defined teardown fn */
-  private _dispose?: SystemInitFn<S, A, W>;
+  private _dispose?: SystemInitFn<
+    A,
+    W,
+    NormalizeStoresAndStoreCreators<StoresByKind>
+  >;
   /** User-defined run implementation */
-  private _run: SystemRunFn<S, A, W>;
-  private _preStep?: SystemRunFn<S, A, W>;
-  private _postStep?: SystemRunFn<S, A, W>;
+  private _run: SystemRunFn<
+    A,
+    W,
+    NormalizeStoresAndStoreCreators<StoresByKind>
+  >;
+  private _preStep?: SystemRunFn<
+    A,
+    W,
+    NormalizeStoresAndStoreCreators<StoresByKind>
+  >;
+  private _postStep?: SystemRunFn<
+    A,
+    W,
+    NormalizeStoresAndStoreCreators<StoresByKind>
+  >;
   /** Defaulted initial state */
   private _initialState: DefaultedState<A>;
   private _runsOn: (prefab: Prefab<any>) => boolean;
 
-  constructor(cfg: SystemConfig<S, A, W>) {
+  constructor(
+    cfg: SystemConfig<A, NormalizeStoresAndStoreCreators<StoresByKind>, W>
+  ) {
     this._run = cfg.run;
     this._preStep = cfg.preStep;
     this._postStep = cfg.postStep;
@@ -46,38 +69,71 @@ export class System<
     this._runsOn = cfg.runsOn;
   }
 
-  private getOrInitState = (ctx: { world: W; entity: EntityData<S> }) => {
+  private getWrapper = (
+    entity: EntityData
+  ): EntityWrapper<NormalizeStoresAndStoreCreators<StoresByKind>> => {
+    let e = entityWrappers.get(entity);
+    if (!e) {
+      e = new EntityWrapper<NormalizeStoresAndStoreCreators<StoresByKind>>(
+        entity
+      );
+      entityWrappers.set(entity, e);
+    }
+    return e;
+  };
+
+  private getOrInitState = (ctx: { world: W; entity: EntityData }) => {
+    const entity = this.getWrapper(ctx.entity);
     let s: DefaultedState<A>;
-    const existing = this.stateCache.get(ctx.entity);
+    const existing = this.stateCache.get(entity);
     if (!existing) {
       s = this._initialState
         ? { ...this._initialState }
         : ({} as DefaultedState<A>);
-      this._init?.(ctx.entity.storesData, s, ctx);
-      this.stateCache.set(ctx.entity, s);
+      this._init?.(entity, s, { world: ctx.world, entity });
+      this.stateCache.set(entity, s);
     } else {
       s = existing;
     }
     return s;
   };
 
-  run = (ctx: { world: W; frame: FrameData; entity: EntityData<S> }) => {
-    this._run(ctx.entity.storesData, this.getOrInitState(ctx), ctx);
+  run = (ctx: { world: W; frame: FrameData; entity: EntityData }) => {
+    const entity = this.getWrapper(ctx.entity);
+    this._run(entity, this.getOrInitState(ctx), {
+      world: ctx.world,
+      frame: ctx.frame,
+      entity,
+    });
   };
 
-  preStep = (ctx: { world: W; frame: FrameData; entity: EntityData<S> }) => {
-    this._preStep?.(ctx.entity.storesData, this.getOrInitState(ctx), ctx);
+  preStep = (ctx: { world: W; frame: FrameData; entity: EntityData }) => {
+    const entity = this.getWrapper(ctx.entity);
+    this._preStep?.(entity, this.getOrInitState(ctx), {
+      world: ctx.world,
+      frame: ctx.frame,
+      entity,
+    });
   };
 
-  postStep = (ctx: { world: W; frame: FrameData; entity: EntityData<S> }) => {
-    this._postStep?.(ctx.entity.storesData, this.getOrInitState(ctx), ctx);
+  postStep = (ctx: { world: W; frame: FrameData; entity: EntityData }) => {
+    const entity = this.getWrapper(ctx.entity);
+    this._postStep?.(entity, this.getOrInitState(ctx), {
+      world: ctx.world,
+      frame: ctx.frame,
+      entity,
+    });
   };
 
-  dispose = (ctx: { world: W; entity: EntityData<S> }) => {
-    this._dispose?.(ctx.entity.storesData, this.getOrInitState(ctx), ctx);
+  dispose = (ctx: { world: W; entity: EntityData }) => {
+    const entity = this.getWrapper(ctx.entity);
+    this._dispose?.(entity, this.getOrInitState(ctx), {
+      world: ctx.world,
+      entity,
+    });
   };
 
-  runsOn = (prefab: Prefab<any>): prefab is Prefab<S> => {
+  runsOn = (prefab: Prefab<any>) => {
     return this._runsOn(prefab);
   };
 }

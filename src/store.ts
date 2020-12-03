@@ -1,11 +1,11 @@
 import { StoreCreator, StoreData } from './types';
 
-export function store<S extends StoreData>(
-  name: string,
+export function store<Kind extends string, S extends StoreData>(
+  kind: Kind,
   defaults: S
-): StoreCreator<S> {
+): StoreCreator<Kind, S> {
   return (overrides?: Partial<S>) => ({
-    name,
+    kind,
     initial: { ...defaults, ...overrides },
   });
 }

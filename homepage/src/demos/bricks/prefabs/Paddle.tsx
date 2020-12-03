@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { r2d } from '../../../../..';
+import * as r2d from '../../../../..';
 import { useBodyRef } from '../../../common/hooks/useBodyRef';
 import { transform } from '../../../common/stores/transform';
 import { bodyConfig } from '../../../common/stores/bodyConfig';

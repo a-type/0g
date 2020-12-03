@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Container, Sprite } from '@inlet/react-pixi';
-import { r2d } from '../../../../..';
+import * as r2d from '../../../../..';
 import { forces } from '../../../common/stores/forces';
 import { transform } from '../../../common/stores/transform';
 import { useTextureTile } from '../../../pixi/hooks/useTextureTile';

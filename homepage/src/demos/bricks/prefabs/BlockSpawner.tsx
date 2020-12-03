@@ -1,4 +1,4 @@
-import { r2d } from '../../../../..';
+import * as r2d from '../../../../..';
 import { transform } from '../../../common/stores/transform';
 
 export const BlockSpawner = r2d.prefab({

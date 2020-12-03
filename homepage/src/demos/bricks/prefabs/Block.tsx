@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { r2d } from '../../../../..';
+import * as r2d from '../../../../..';
 import { useBodyStyles } from '../../../common/hooks/useBodyStyles';
 import { bodyConfig } from '../../../common/stores/bodyConfig';
 import { contacts } from '../../../common/stores/contacts';

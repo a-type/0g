@@ -1,4 +1,4 @@
-import { r2d } from '../../../..';
+import * as r2d from '../../../..';
 
 export const body = r2d.store('body', {
   mass: 0,

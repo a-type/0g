@@ -339,3 +339,7 @@ const rigidBody = r2d.system({
   },
 });
 ```
+
+## Packaging Stores & Systems as Reusable
+
+TODO

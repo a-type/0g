@@ -1,14 +1,13 @@
-import { r2d } from '../../../..';
-import { Store } from '../../../../src';
+import * as r2d from '../../../..';
+import * as stores from '../stores';
 
-export const demoMovement = r2d.system<{
-  transform: Store<{ x: number; y: number }>;
-}>({
+export const demoMovement = new r2d.System<undefined, typeof stores>({
   name: 'demoMovement',
   runsOn: (prefab) => !!prefab.stores.useDemoMovement,
-  run: (stores, _, { frame: { delta }, entity: { id } }) => {
+  run: (entity, _, { frame: { delta }, entity: { id } }) => {
     console.debug(`running on ${id}`);
-    stores.transform.x = Math.cos(delta / 1000) * 100;
-    stores.transform.y = Math.sin(delta / 1000) * 100;
+    const transform = entity.getStore('transform');
+    transform.x = Math.cos(delta / 1000) * 100;
+    transform.y = Math.sin(delta / 1000) * 100;
   },
 });

@@ -1,27 +1,18 @@
-import { r2d } from '../../../../..';
+import * as r2d from '../../../../..';
 import { Store } from '../../../../../src';
 import { transform } from '../../../common/stores/transform';
+import { game } from '../game';
 
-export const blockSpawner = r2d.system<
-  {
-    transform: ReturnType<typeof transform>;
-    spawnerConfig: Store<{
-      horizontalCount: number;
-      verticalCount: number;
-      blockWidth: number;
-      blockHeight: number;
-    }>;
-  },
-  {
-    didSpawn: boolean;
-  }
->({
+export const blockSpawner = game.system({
   name: 'blockSpawner',
   runsOn: (prefab) => prefab.name === 'BlockSpawner',
   state: {
     didSpawn: false,
   },
-  run: ({ transform, spawnerConfig }, state, ctx) => {
+  run: (entity, state, ctx) => {
+    const transform = entity.getStore('transform');
+    const spawnerConfig = entity.getStore('blockSpawnerConfig');
+
     if (!state.didSpawn) {
       state.didSpawn = true;
       const x = transform.x;
