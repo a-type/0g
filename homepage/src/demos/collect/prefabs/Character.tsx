@@ -16,7 +16,17 @@ export const Character = r2d.prefab({
         y: 0,
         width: 16,
         height: 16,
-        gap: 2,
+        gap: 1,
+      },
+    }),
+    clothesSpriteConfig: spriteConfig({
+      source: charSheet,
+      tileData: {
+        x: 6,
+        y: 0,
+        width: 16,
+        height: 16,
+        gap: 1,
       },
     }),
     transform: box2d.stores.transform({
@@ -33,19 +43,23 @@ export const Character = r2d.prefab({
       speed: 12,
     })(),
   },
-  Component: ({ stores: { transform, spriteConfig } }) => {
+  Component: ({ stores: { transform, spriteConfig, clothesSpriteConfig } }) => {
     const { source, tileData } = spriteConfig;
     // you can use hooks here!
 
     // suspense-based asset loading
     const baseTexture = useTextureTile(source, tileData);
+    const clothesTexture = useTextureTile(
+      clothesSpriteConfig.source,
+      clothesSpriteConfig.tileData
+    );
 
     return (
       <Container x={transform.x} y={transform.y}>
         {/* Body */}
         <Sprite texture={baseTexture} />
         {/* Clothes */}
-        {/* <Sprite texture={clothesTexture} /> */}
+        <Sprite texture={clothesTexture} />
       </Container>
     );
   },

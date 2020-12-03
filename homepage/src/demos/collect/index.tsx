@@ -1,12 +1,12 @@
 import 'react-app-polyfill/ie11';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { World, defaultScene } from '../../../..';
+import { defaultScene } from '../../../..';
 import { Stage } from '@inlet/react-pixi';
-import * as prefabs from './prefabs';
 import '../../../../src/tools/tools.css';
 import './index.css';
 import { game } from './game';
+import './systems';
 
 function SceneLoader() {
   const [scene, setScene] = React.useState<any | null>(null);

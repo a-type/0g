@@ -9,6 +9,7 @@ export function useTextureTile(
     y: number;
     width: number;
     height: number;
+    gap?: number;
   }
 ) {
   const sheet = useAsset(
@@ -27,8 +28,8 @@ export function useTextureTile(
     if (tileData) {
       const s = sheet.clone();
       s.frame = new Rectangle(
-        tileData.x,
-        tileData.y,
+        tileData.x * (tileData.width + (tileData.gap ?? 0)),
+        tileData.y * (tileData.height + (tileData.gap ?? 0)),
         tileData.width,
         tileData.height
       );
