@@ -36,7 +36,6 @@ export function useBodyRef<T extends HTMLElement>(
       }px) translate(-50%, -50%) rotate(${angle ?? 0}rad)`;
     };
 
-    console.log(stores.transform);
     const unsubTransform = subscribe(stores.transform, updateTransform);
     const unsubBody = subscribe(stores.bodyConfig, updateBody);
 
