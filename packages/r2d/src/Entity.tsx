@@ -64,7 +64,6 @@ export function Entity({ id, treeNode }: EntityProps) {
 
   useRunSystems(world, entity);
 
-  console.log(treeNode)
   const children = useProxy(treeNode.children);
 
   const childEntries = React.useMemo(() => {
