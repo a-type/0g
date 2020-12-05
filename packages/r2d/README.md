@@ -212,7 +212,7 @@ TODO
 - Since systems are defined as mutations on the game, it's really easy to forget to import their modules, and then you have no systems.
 - Stores is a bad name - maybe Aspects?
 
-## New Ideas
+## Entity Lifecycle
 
 There is no generic concept of "children."
 However, different Prefabs may construct specialized Stores which manage some particular concept of hierarchy.
@@ -225,42 +225,48 @@ const Bricks = r2d.prefab({
   stores: {
     config: r2d.store('brickConfig', {
       rows: 2,
-      columns: 5
+      columns: 5,
     }),
     transform: r2d.store('transform', { x: 0, y: 0 }),
   },
-  Component: ({ stores: { config: { rows, columns }, transform: { x, y }} }) => {
+  Component: ({
+    stores: {
+      config: { rows, columns },
+      transform: { x, y },
+    },
+  }) => {
     return (
       <>
-        {new Array(columns).fill(null).map((_, h) => (
+        {new Array(columns).fill(null).map((_, h) =>
           new Array(rows).fill(null).map((_, v) => (
             <Entity
               prefab="Brick"
               key={`${h}_${v}`}
               id={`${h}_${v}`}
               initial={{
-                transform: { x: x + h * 10, y: y + v * 10 }
+                transform: { x: x + h * 10, y: y + v * 10 },
               }}
             />
-          ))
-        ))}
+          )),
+        )}
       </>
     );
-  }
-})
+  },
+});
 ```
 
 Entities can only control their children's initial configuration:
+
 - Prefab
 - Initial Stores
 - ID
-Otherwise the child is managed by Systems like the parent.
-When an Entity is mounted it is added to the scene with its initial Stores and Prefab.
-When an Entity is mounted it is assigned an ID if it was not given one.
-When an Entity is unmounted it is removed from the scene.
-If an Entity is mounted and it is already present in the World data, it connects to that data.
-Therefore, when a saved scene is loaded and Entities begin rendering their children, those children seamlessly recover their prior state.
-Orphaned Entities are cleaned up periodically.
+  Otherwise the child is managed by Systems like the parent.
+  When an Entity is mounted it is added to the scene with its initial Stores and Prefab.
+  When an Entity is mounted it is assigned an ID if it was not given one.
+  When an Entity is unmounted it is removed from the scene.
+  If an Entity is mounted and it is already present in the World data, it connects to that data.
+  Therefore, when a saved scene is loaded and Entities begin rendering their children, those children seamlessly recover their prior state.
+  Orphaned Entities are cleaned up periodically.
 
 Because of this approach we remove any imperative concepts of Entity management from World.
 No `add` or `destroy`, etc.
@@ -277,9 +283,9 @@ const newEntity = {
   id: 'player',
   prefab: 'Player',
   initial: {
-    transform: { x: 0, y: 0}
-  }
-}
+    transform: { x: 0, y: 0 },
+  },
+};
 const scene = world.get('scene');
 scene.getStore('children')[newEntity.id] = newEntity;
 ```
@@ -303,15 +309,6 @@ bricks.getStore('brickPositions').push({ x: 10, y: 50 });
 
 Supposing that `brickPositions` was a list of locations to place `Brick` Prefabs.
 
-## Component Ideas
-
-Remove Component/ManualComponent distinction.
-All Components are "manual."
-But users can create Components which utilize `useProxy` to be reactive.
-For example, `<Sprite>` or `<Body>` etc.
-The existence of RigidBody concepts should also move to Components.
-There they can be managed in lifecycle, cleaning up when the Entity unmounts.
-
 ## Structure / Flow Ideas
 
 Maybe we should start with Stores instead of Prefabs.
@@ -329,7 +326,7 @@ const Player = game.prefab({
     transform: 'transform',
     // overrides
     body: ['body', { shape: 'capsule' }],
-  }
+  },
 });
 ```
 
@@ -340,7 +337,7 @@ const Player = game.prefab({
   name: 'Player',
   stores: {
     transform: game.store.transform({ x: 0, y: 10 }),
-  }
+  },
 });
 ```
 
@@ -353,8 +350,8 @@ const body = game.system({
     const transform = game.store.transform.get(e);
     // or even...
     game.store.forces.applyImpulse(e, { x: 0, y: 10 });
-  }
-})
+  },
+});
 ```
 
 Then Stores can define APIs for users to streamline tasks.

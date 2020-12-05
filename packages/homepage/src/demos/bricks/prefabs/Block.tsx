@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as r2d from 'r2d';
-import { useBodyStyles } from '../../../common/hooks/useBodyStyles';
 import { box2d } from '../../../common/plugins';
+import { useBodyRef } from '../../../common/hooks/useBodyRef';
 
 export const Block = r2d.prefab({
   name: 'Block',
@@ -17,6 +17,6 @@ export const Block = r2d.prefab({
     })(),
   },
   Component: ({ stores }) => {
-    return <button style={useBodyStyles(stores)}>Boop</button>;
+    return <button ref={useBodyRef(stores)}>Boop</button>;
   },
 });

@@ -11,7 +11,7 @@ export const Paddle = r2d.prefab({
     body: box2d.stores.body(),
     forces: box2d.stores.forces(),
   },
-  ManualComponent: ({ stores }) => {
+  Component: ({ stores }) => {
     return (
       <input
         placeholder="I'm a paddle"

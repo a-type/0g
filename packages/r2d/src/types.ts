@@ -106,8 +106,7 @@ export type PrefabRenderProps<S extends Stores> = {
 export type PrefabConfig<S extends Stores> = {
   name: string;
   stores: S;
-  Component?: FC<PrefabRenderProps<S>>;
-  ManualComponent?: FC<PrefabRenderProps<S>>;
+  Component: FC<PrefabRenderProps<S>>;
 };
 
 export type Prefab<S extends Stores> = {

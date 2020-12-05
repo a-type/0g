@@ -8,7 +8,7 @@ export const DefaultScenePrefab = prefab({
   stores: {
     children: children(),
   },
-  ManualComponent: ({ stores: { children } }) =>
+  Component: ({ stores: { children } }) =>
     children ? (
       <>
         <Children entities={children} />

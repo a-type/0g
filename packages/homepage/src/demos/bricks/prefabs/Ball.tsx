@@ -13,7 +13,7 @@ export const Ball = r2d.prefab({
     body: box2d.stores.body(),
     config: r2d.store('ballConfig', { speed: 12 })(),
   },
-  ManualComponent: ({ stores }) => {
+  Component: ({ stores }) => {
     return <span ref={useBodyRef(stores)} className="Ball" />;
   },
 });

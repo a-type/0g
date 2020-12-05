@@ -43,7 +43,10 @@ export const Character = r2d.prefab({
       speed: 12,
     })(),
   },
-  Component: ({ stores: { transform, spriteConfig, clothesSpriteConfig } }) => {
+  Component: ({ stores }) => {
+    const { transform, spriteConfig, clothesSpriteConfig } = r2d.useProxy(
+      stores
+    );
     const { source, tileData } = spriteConfig;
     // you can use hooks here!
 

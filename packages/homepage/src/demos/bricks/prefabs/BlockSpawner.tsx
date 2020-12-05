@@ -24,7 +24,8 @@ export const BlockSpawner = r2d.prefab({
       blockHeight: 2.5,
     })(),
   },
-  Component: ({ stores: { transform, spawnerConfig }, id }) => {
+  Component: ({ stores, id }) => {
+    const { transform, spawnerConfig } = r2d.useProxy(stores);
     return (
       <>
         {spawnerConfig.blocks.map((row, h) => {
