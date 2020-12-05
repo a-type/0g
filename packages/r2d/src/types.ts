@@ -33,7 +33,12 @@ export type InputTools = {
 
 export type GlobalStore = {
   entities: Record<string, EntityData>;
+  // Purely for efficiency: this is a less frequently updating
+  // map which just indicates all the existing entity IDs.
+  ids: Record<string, boolean>;
 };
+
+export type SavedScene = Pick<GlobalStore, 'entities'>;
 
 export type WorldApi = {
   get(id: string): EntityData | null;

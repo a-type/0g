@@ -10,6 +10,7 @@ import {
   EntityData,
   WorldApi,
   Stores,
+  SavedScene,
 } from './types';
 import { PluginProviders } from './internal/PluginProviders';
 import { keyboard, pointer } from './input';
@@ -28,43 +29,46 @@ export type WorldProps = {
   prefabs: Record<string, Prefab<Stores>>;
   useFrame?: FrameHook;
   plugins?: Plugins;
-  scene?: GlobalStore;
+  scene?: SavedScene;
   systems: System<any, any>[];
 };
 
 export type ExtractPrefabNames<W extends WorldProps> = keyof W['prefabs'];
 
 export const defaultScene = {
-  tree: {
-    id: 'scene',
-    children: {},
-  },
   entities: {
     scene: {
       id: 'scene',
       storesData: {},
       prefab: 'Scene',
-      parentId: null,
     },
   },
 };
 
-const createGlobalStore = (initial: GlobalStore = defaultScene) =>
-  proxy<GlobalStore>(initial);
+const createGlobalStore = (initial: SavedScene = defaultScene) => {
+  const ids = Object.keys(initial.entities).reduce((acc, id) => {
+    acc[id] = true;
+    return acc;
+  }, {} as Record<string, boolean>);
+  return proxy<GlobalStore>({
+    ...initial,
+    ids,
+  });
+};
 
 function useWorldApi(store: GlobalStore, prefabs: Record<string, Prefab<any>>) {
   const get = React.useCallback(
     (id: string) => {
       return store.entities[id] ?? null;
     },
-    [store]
+    [store],
   );
 
   const add = React.useCallback(
     (
       prefabName: string,
       initialStores: Record<string, any> = {},
-      ownId: string | null = null
+      ownId: string | null = null,
     ) => {
       const id = ownId || `${prefabName}-${shortid()}`;
 
@@ -77,18 +81,20 @@ function useWorldApi(store: GlobalStore, prefabs: Record<string, Prefab<any>>) {
       };
 
       store.entities[id] = entity;
+      store.ids[id] = true;
       return store.entities[id];
     },
-    [store, prefabs]
+    [store, prefabs],
   );
 
   const destroy = React.useCallback(
     (id: string) => {
-      const e= store.entities[id];
+      const e = store.entities[id];
       delete store.entities[id];
+      delete store.ids[id];
       return e;
     },
-    [store]
+    [store],
   );
 
   return {
@@ -164,9 +170,9 @@ export const World: React.FC<WorldProps> = ({
           apis[name] = plugin.api;
           return apis;
         },
-        {}
+        {},
       ),
-    [plugins]
+    [plugins],
   );
 
   const api = useWorldApi(globalStore, prefabsRef.current);
@@ -176,7 +182,7 @@ export const World: React.FC<WorldProps> = ({
     (id: string) => {
       removeList.push(id);
     },
-    [removeList]
+    [removeList],
   );
 
   // React.useEffect(() => {
@@ -199,7 +205,7 @@ export const World: React.FC<WorldProps> = ({
       remove,
       systems: systemsRef.current,
     }),
-    [events, prefabsRef, globalStore, pluginApis, get, add, remove]
+    [events, prefabsRef, globalStore, pluginApis, get, add, remove],
   );
 
   const disposeEntity = React.useCallback(
@@ -210,7 +216,7 @@ export const World: React.FC<WorldProps> = ({
         system.dispose(ctx);
       }
     },
-    [context]
+    [context],
   );
 
   const [paused, setPaused] = React.useState(false);
@@ -243,7 +249,7 @@ export const World: React.FC<WorldProps> = ({
       keyboard.frame();
       pointer.frame();
     },
-    [events, pluginsList, removeList, destroy, disposeEntity]
+    [events, pluginsList, removeList, destroy, disposeEntity],
   );
   useFrame(loop, paused);
 

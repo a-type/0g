@@ -2,7 +2,13 @@ import * as React from 'react';
 import { useProxy } from 'valtio';
 import { useInitial } from './internal/useInitial';
 import { System } from './system';
-import { WorldContext, FrameData, EntityData, StoreData } from './types';
+import {
+  WorldContext,
+  FrameData,
+  EntityData,
+  StoreData,
+  Prefab,
+} from './types';
 import { useWorld } from './World';
 
 export type EntityProps = {
@@ -11,14 +17,19 @@ export type EntityProps = {
   initial: Record<string, StoreData>;
 };
 
-function useRunSystems(world: WorldContext, entity: EntityData | null) {
-  const prefab = entity && world.prefabs[entity.prefab];
+function useRunSystems(
+  world: WorldContext,
+  entity: EntityData | null,
+  prefab: Prefab<any>,
+) {
   const runnableSystems = React.useMemo(() => {
+    console.log('runnableSystems');
     if (!prefab) return [];
     return world.systems.filter((s) => s.runsOn(prefab));
   }, [world.systems, prefab]);
 
   React.useLayoutEffect(() => {
+    console.log('register handlers');
     function runSystems(
       runHandle: 'run' | 'preStep' | 'postStep',
       frame: FrameData,
@@ -71,16 +82,17 @@ export function Entity(props: EntityProps) {
     return null;
   }
 
-  const entitiesSnapshot = useProxy(world.store.entities);
-  const entitySnapshot = entitiesSnapshot[id] ?? null;
+  const idsSnapshot = useProxy(world.store.ids);
   const entity = world.store.entities[id] ?? null;
+  const entityExists = !!idsSnapshot[id];
   // enforce presence in World
   React.useEffect(() => {
-    if (!entitySnapshot) {
+    console.log('setup effect');
+    if (!entityExists) {
       console.debug(`initializing ${id}`);
       world.add(prefabName, initial, id);
     }
-  }, [entitySnapshot, prefabName, prefab, initial, id]);
+  }, [entityExists, prefabName, prefab, initial, id]);
   // remove from World on unmount
   React.useEffect(
     () => () => {
@@ -89,7 +101,7 @@ export function Entity(props: EntityProps) {
     [id],
   );
 
-  useRunSystems(world, entity);
+  useRunSystems(world, entity, prefab);
 
   // still loading
   if (!entity) return null;
