@@ -13,7 +13,14 @@ export const brickBreaker = game.system({
       const other = ctx.world.get(contact.otherId);
       if (!other) continue;
       if (other.prefab === 'Block') {
-        ctx.world.remove(other.id);
+        // TODO: store api or entity wrapper here!!!
+        const spawnerId = other.storesData.spawner.id;
+        const spawner = ctx.world.get(spawnerId);
+        if (!spawner) throw new Error('No spawner');
+        // tell spawner to stop rendering it
+        spawner.storesData.spawnerConfig.blocks[other.storesData.spawner.x][
+          other.storesData.spawner.y
+        ] = false;
       }
     }
   },

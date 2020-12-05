@@ -7,7 +7,10 @@ import { System } from './system';
 
 type Empty = Record<string, any>;
 
-export type Plugin<API extends Empty = Empty, S extends Record<string, StoreCreator<string, any>> = {}> = {
+export type Plugin<
+  API extends Empty = Empty,
+  S extends Record<string, StoreCreator<string, any>> = {}
+> = {
   wrap?: (content: ReactElement) => ReactElement;
   api: API;
   // TODO: return stuff to add to context?
@@ -29,23 +32,18 @@ export type InputTools = {
 };
 
 export type GlobalStore = {
-  tree: TreeNode;
   entities: Record<string, EntityData>;
-};
-
-export type TreeNode = {
-  id: string;
-  children: Record<string, TreeNode>;
 };
 
 export type WorldApi = {
   get(id: string): EntityData | null;
+  // TODO: private?
   add(
     prefabName: string,
     initialStores?: Record<string, any>,
-    parentId?: string | null,
-    id?: string | null
+    id?: string | null,
   ): EntityData;
+  // TODO: private?
   remove(id: string): void;
 };
 
@@ -71,7 +69,7 @@ export type FrameCallback = (data: FrameData) => void | Promise<void>;
 
 export type StoreData<T extends Empty = Empty> = T;
 export type StoreCreator<Kind extends string, T extends StoreData> = (
-  overrides?: Partial<T>
+  overrides?: Partial<T>,
 ) => Store<Kind, T>;
 export type Store<Kind extends string, T extends StoreData> = {
   kind: Kind;
@@ -83,8 +81,6 @@ export type EntityData<S extends Stores = Stores> = {
   id: string;
   prefab: string;
   storesData: MappedStoreData<S>;
-  /** only root scene has null */
-  parentId: string | null;
 };
 
 export type EntityApi = {
@@ -104,6 +100,7 @@ type MappedStoreData<S extends Record<string, Store<string, any>>> = {
 };
 export type PrefabRenderProps<S extends Stores> = {
   stores: MappedStoreData<S>;
+  id: string;
 };
 
 export type PrefabConfig<S extends Stores> = {
@@ -149,7 +146,7 @@ export type SystemRunFn<
 > = (
   entity: EntityWrapper<StoresByKind>,
   state: DefaultedState<A>,
-  context: SystemRunContext<W, StoresByKind>
+  context: SystemRunContext<W, StoresByKind>,
 ) => void | Promise<void>;
 export type SystemInitFn<
   A,
@@ -158,7 +155,7 @@ export type SystemInitFn<
 > = (
   entity: EntityWrapper<StoresByKind>,
   state: DefaultedState<A>,
-  context: SystemContext<W, StoresByKind>
+  context: SystemContext<W, StoresByKind>,
 ) => void;
 export type SystemConfig<
   A,
@@ -182,9 +179,9 @@ export type SystemInstanceSnapshot = {
 
 export type States = Record<string, unknown>;
 
-export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
-  k: infer I
-) => void
+export type UnionToIntersection<U> = (
+  U extends any ? (k: U) => void : never
+) extends (k: infer I) => void
   ? I
   : never;
 
@@ -196,14 +193,18 @@ export type MappedPrefabStores<P extends Record<string, Prefab<any>>> = {
   [K in keyof P]: StoresKeyedByKind<ExtractPrefabStores<P[K]>>;
 };
 
-export type FilterByKind<S extends Record<string, Store<string, any>>, Kind extends string> = {
+export type FilterByKind<
+  S extends Record<string, Store<string, any>>,
+  Kind extends string
+> = {
   [K in keyof S as S[K] extends Store<Kind, any> ? K : never]: S[K];
 };
 
-export type AllStoreKinds<S extends Record<string, Store<string, any>>> = S extends Record<string, Store<infer K, any>> ? K : never;
+export type AllStoreKinds<
+  S extends Record<string, Store<string, any>>
+> = S extends Record<string, Store<infer K, any>> ? K : never;
 
-export type StoresKeyedByKind<S> =
-  S extends Record<string, Store<infer K, any>>
+export type StoresKeyedByKind<S> = S extends Record<string, Store<infer K, any>>
   ? {
       [Kind in K]: UnionToIntersection<MapValueUnion<FilterByKind<S, Kind>>>;
     }
@@ -211,10 +212,11 @@ export type StoresKeyedByKind<S> =
 
 export type InferredPrefabsStores<
   Prefabs extends Record<string, Prefab<Stores>>
-> = UnionToIntersection<MapValueUnion<MappedPrefabStores<Prefabs>>>
+> = UnionToIntersection<MapValueUnion<MappedPrefabStores<Prefabs>>>;
 
-export type InferredPrefabStoreKinds<Prefabs extends Record<string, Prefab<Stores>>> =
-    AllStoreKinds<MapValueUnion<Prefabs>['stores']>
+export type InferredPrefabStoreKinds<
+  Prefabs extends Record<string, Prefab<Stores>>
+> = AllStoreKinds<MapValueUnion<Prefabs>['stores']>;
 
 export type NormalizeStoresAndStoreCreators<
   S extends

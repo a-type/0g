@@ -10,9 +10,6 @@ export class EntityWrapper<
   get id() {
     return this.data.id;
   }
-  get parentId() {
-    return this.data.parentId;
-  }
 
   getStore<K extends keyof StoresByKind>(
     storeKind: K

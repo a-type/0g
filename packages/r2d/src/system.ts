@@ -9,7 +9,6 @@ import {
   DefaultedState,
   Prefab,
   Store,
-  Stores,
   StoreCreator,
   NormalizeStoresAndStoreCreators,
 } from './types';

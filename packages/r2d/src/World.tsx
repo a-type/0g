@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useFrame as useFrameDefault, FrameHook } from './useFrame';
-import { proxy, useProxy } from 'valtio';
+import { proxy } from 'valtio';
 import {
   Plugins,
   Prefab,
@@ -8,10 +8,7 @@ import {
   GlobalStore,
   FrameData,
   EntityData,
-  TreeNode,
   WorldApi,
-  Store,
-  StoreData,
   Stores,
 } from './types';
 import { PluginProviders } from './internal/PluginProviders';
@@ -21,10 +18,9 @@ import { Entity } from './Entity';
 import { DefaultScenePrefab } from './DefaultScenePrefab';
 import shortid from 'shortid';
 import { mergeDeepRight } from 'ramda';
-import { Html } from './tools/Html';
 import { DebugUI } from './tools/DebugUI';
 import { System } from './system';
-import { addTreeNode, removeTreeNode, removeSubtree } from './internal/tree';
+import { initializeStores } from './internal/initializeStores';
 
 export const worldContext = React.createContext<WorldContext | null>(null);
 
@@ -56,16 +52,6 @@ export const defaultScene = {
 const createGlobalStore = (initial: GlobalStore = defaultScene) =>
   proxy<GlobalStore>(initial);
 
-/** Copies initial values from all of a prefab's specified stores */
-const initializeStores = (prefab: Prefab<Stores>) => {
-  const stores: Record<string, StoreData> = {};
-  let entry: [string, Store<string, any>];
-  for (entry of Object.entries(prefab.stores)) {
-    stores[entry[0]] = { __kind: entry[1].kind, ...entry[1].initial };
-  }
-  return stores;
-};
-
 function useWorldApi(store: GlobalStore, prefabs: Record<string, Prefab<any>>) {
   const get = React.useCallback(
     (id: string) => {
@@ -78,11 +64,9 @@ function useWorldApi(store: GlobalStore, prefabs: Record<string, Prefab<any>>) {
     (
       prefabName: string,
       initialStores: Record<string, any> = {},
-      parentId: string | null | undefined = undefined,
       ownId: string | null = null
     ) => {
       const id = ownId || `${prefabName}-${shortid()}`;
-      const defaultedParentId = parentId === undefined ? 'scene' : null;
 
       const prefab = prefabs[prefabName];
 
@@ -90,16 +74,9 @@ function useWorldApi(store: GlobalStore, prefabs: Record<string, Prefab<any>>) {
         id,
         prefab: prefabName,
         storesData: mergeDeepRight(initializeStores(prefab), initialStores),
-        parentId: defaultedParentId,
       };
 
       store.entities[id] = entity;
-      // FIXME: not a fan of this hardcoding
-      // don't add the scene to the tree - it is the root element
-      // already and always present.
-      if (id !== 'scene') {
-        addTreeNode(store, defaultedParentId, id);
-      }
       return store.entities[id];
     },
     [store, prefabs]
@@ -107,8 +84,9 @@ function useWorldApi(store: GlobalStore, prefabs: Record<string, Prefab<any>>) {
 
   const destroy = React.useCallback(
     (id: string) => {
-      const node = removeTreeNode(store, id);
-      return removeSubtree(store, node);
+      const e= store.entities[id];
+      delete store.entities[id];
+      return e;
     },
     [store]
   );
@@ -120,20 +98,11 @@ function useWorldApi(store: GlobalStore, prefabs: Record<string, Prefab<any>>) {
   };
 }
 
-function walkAndAdd(
-  api: WorldApi,
-  parentId: string | null,
-  node: TreeNode,
-  scene: GlobalStore
-): void {
-  const entity = scene.entities[node.id];
-  api.add(entity.prefab, entity.storesData, parentId, entity.id);
-  Object.values(node.children).forEach((n) =>
-    walkAndAdd(api, entity.id, n, scene)
-  );
-}
 function loadProvidedScene(api: WorldApi, scene: GlobalStore) {
-  walkAndAdd(api, null, scene.tree, scene);
+  let entity: EntityData;
+  for (entity of Object.values(scene.entities)) {
+    api.add(entity.prefab, entity.storesData, entity.id);
+  }
 }
 
 function useDebugMode(setPaused: (p: boolean) => void) {
@@ -164,18 +133,16 @@ export const World: React.FC<WorldProps> = ({
   systems,
 }) => {
   // validation
-  if (scene && (!scene.tree || !scene.entities)) {
-    throw new Error('Invalid scene prop, must have tree and entities');
+  if (scene && !scene.entities) {
+    throw new Error('Invalid scene prop, must have entities');
   }
 
-  const [globalStore] = React.useState(() => createGlobalStore());
+  const [globalStore] = React.useState(() => createGlobalStore(scene));
 
   // DEBUG
   React.useEffect(() => {
     (window as any).globalStore = globalStore;
   }, [globalStore]);
-
-  const treeSnapshot = useProxy(globalStore.tree);
 
   const prefabsRef = React.useRef<Record<string, Prefab<any>>>({
     Scene: DefaultScenePrefab,
@@ -212,10 +179,10 @@ export const World: React.FC<WorldProps> = ({
     [removeList]
   );
 
-  React.useEffect(() => {
-    if (scene) loadProvidedScene({ get, add, remove }, scene);
-    // TODO: reset after scene change?
-  }, [scene, get, add, remove]);
+  // React.useEffect(() => {
+  //   if (scene) loadProvidedScene({ get, add, remove }, scene);
+  //   // TODO: reset after scene change?
+  // }, [scene, get, add, remove]);
 
   const context = React.useMemo<WorldContext>(
     () => ({
@@ -268,8 +235,8 @@ export const World: React.FC<WorldProps> = ({
       // Cleanup removed entity subtrees
       let id = removeList.shift();
       while (id) {
-        const removedEntities = destroy(id);
-        removedEntities.forEach(disposeEntity);
+        const removed = destroy(id);
+        disposeEntity(removed);
         id = removeList.shift();
       }
 
@@ -282,21 +249,22 @@ export const World: React.FC<WorldProps> = ({
 
   const isDebug = useDebugMode(setPaused);
 
-  const isEmpty = Object.keys(treeSnapshot.children).length === 0;
-
   return (
     <worldContext.Provider value={context}>
       <PluginProviders plugins={plugins}>
         <>
-          <Entity id={treeSnapshot.id} treeNode={globalStore.tree} />
+          <Entity id="scene" prefab="Scene" initial={{}} />
           {isDebug && <DebugUI />}
-          {isEmpty && !isDebug && (
-            <Html className="panel fixed-left">
-              The scene is empty. Press / to edit
-            </Html>
-          )}
         </>
       </PluginProviders>
     </worldContext.Provider>
   );
 };
+
+export function useWorld() {
+  const world = React.useContext(worldContext);
+  if (!world) {
+    throw new Error('Must be called within World');
+  }
+  return world;
+}

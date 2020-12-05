@@ -1,12 +1,14 @@
 import * as React from 'react';
 import { useProxy } from 'valtio';
+import { useInitial } from './internal/useInitial';
 import { System } from './system';
-import { WorldContext, FrameData, EntityData, TreeNode } from './types';
-import { worldContext } from './World';
+import { WorldContext, FrameData, EntityData, StoreData } from './types';
+import { useWorld } from './World';
 
 export type EntityProps = {
   id: string;
-  treeNode: TreeNode;
+  prefab: string;
+  initial: Record<string, StoreData>;
 };
 
 function useRunSystems(world: WorldContext, entity: EntityData | null) {
@@ -19,7 +21,7 @@ function useRunSystems(world: WorldContext, entity: EntityData | null) {
   React.useLayoutEffect(() => {
     function runSystems(
       runHandle: 'run' | 'preStep' | 'postStep',
-      frame: FrameData
+      frame: FrameData,
     ) {
       if (!entity) return;
 
@@ -54,50 +56,47 @@ function useRunSystems(world: WorldContext, entity: EntityData | null) {
   }, [world, entity, runnableSystems]);
 }
 
-export function Entity({ id, treeNode }: EntityProps) {
-  const world = React.useContext(worldContext);
-  if (!world) {
-    throw new Error('Entity must be rendered inside a World');
+export function Entity(props: EntityProps) {
+  // nothing can be changed when props change.
+  const prefabName = useInitial(props.prefab);
+  const initial = useInitial(props.initial);
+  const id = useInitial(props.id);
+
+  const world = useWorld();
+
+  const prefab = world.prefabs[prefabName];
+
+  if (!prefab) {
+    console.error(`Missing prefab ${prefabName}`);
+    return null;
   }
 
+  const entitiesSnapshot = useProxy(world.store.entities);
+  const entitySnapshot = entitiesSnapshot[id] ?? null;
   const entity = world.store.entities[id] ?? null;
+  // enforce presence in World
+  React.useEffect(() => {
+    if (!entitySnapshot) {
+      console.debug(`initializing ${id}`);
+      world.add(prefabName, initial, id);
+    }
+  }, [entitySnapshot, prefabName, prefab, initial, id]);
+  // remove from World on unmount
+  React.useEffect(
+    () => () => {
+      world.remove(id);
+    },
+    [id],
+  );
 
   useRunSystems(world, entity);
 
-  const children = useProxy(treeNode.children);
-
-  const childEntries = React.useMemo(() => {
-    return children ? Object.entries(children) : [];
-  }, [children]);
-
-  if (!entity) {
-    console.warn(`Rendered null entity ${id}`);
-    return null;
-  }
-
-  const prefab = entity && world.prefabs[entity.prefab];
-
-  if (!prefab) {
-    console.warn(`Missing prefab ${entity.prefab}`);
-    return null;
-  }
+  // still loading
+  if (!entity) return null;
 
   return (
     <React.Suspense fallback={null}>
-      <prefab.Component stores={entity.storesData}>
-        {/*
-          I think because Valtio doesn't always update snapshots
-          synchronously, we can end up with a child entry which
-          doesn't actually exist on the treeNode. Ignore it.
-         */}
-        {childEntries.map((entry) => !!treeNode.children[entry[0]] && (
-          <Entity
-            id={entry[0]}
-            key={entry[0]}
-            treeNode={treeNode.children[entry[0]]}
-          />
-        ))}
-      </prefab.Component>
+      <prefab.Component stores={entity.storesData} id={id} />
     </React.Suspense>
   );
 }

@@ -211,3 +211,152 @@ TODO
 
 - Since systems are defined as mutations on the game, it's really easy to forget to import their modules, and then you have no systems.
 - Stores is a bad name - maybe Aspects?
+
+## New Ideas
+
+There is no generic concept of "children."
+However, different Prefabs may construct specialized Stores which manage some particular concept of hierarchy.
+For example, the `Bricks` Prefab in Brick Breaker might have a Store which controls its brick pattern.
+It then renders child Entities using the `Entity` component.
+
+```tsx
+const Bricks = r2d.prefab({
+  name: 'Bricks',
+  stores: {
+    config: r2d.store('brickConfig', {
+      rows: 2,
+      columns: 5
+    }),
+    transform: r2d.store('transform', { x: 0, y: 0 }),
+  },
+  Component: ({ stores: { config: { rows, columns }, transform: { x, y }} }) => {
+    return (
+      <>
+        {new Array(columns).fill(null).map((_, h) => (
+          new Array(rows).fill(null).map((_, v) => (
+            <Entity
+              prefab="Brick"
+              key={`${h}_${v}`}
+              id={`${h}_${v}`}
+              initial={{
+                transform: { x: x + h * 10, y: y + v * 10 }
+              }}
+            />
+          ))
+        ))}
+      </>
+    );
+  }
+})
+```
+
+Entities can only control their children's initial configuration:
+- Prefab
+- Initial Stores
+- ID
+Otherwise the child is managed by Systems like the parent.
+When an Entity is mounted it is added to the scene with its initial Stores and Prefab.
+When an Entity is mounted it is assigned an ID if it was not given one.
+When an Entity is unmounted it is removed from the scene.
+If an Entity is mounted and it is already present in the World data, it connects to that data.
+Therefore, when a saved scene is loaded and Entities begin rendering their children, those children seamlessly recover their prior state.
+Orphaned Entities are cleaned up periodically.
+
+Because of this approach we remove any imperative concepts of Entity management from World.
+No `add` or `destroy`, etc.
+World also no longer stores the Tree in its data.
+The Tree is implicit and constructed in React by Entities.
+
+The Scene is the only built-in Prefab.
+The Scene has a special Store which is a generic children container.
+Other Entities can use this Store, too, if they just want generic children.
+It works like this:
+
+```tsx
+const newEntity = {
+  id: 'player',
+  prefab: 'Player',
+  initial: {
+    transform: { x: 0, y: 0}
+  }
+}
+const scene = world.get('scene');
+scene.getStore('children')[newEntity.id] = newEntity;
+```
+
+Then the Scene will render the new Entity.
+When rendered the Entity will be stored in World data.
+To remove an Entity from Scene you do:
+
+```ts
+delete world.get('scene').getStore('children')[id];
+```
+
+This generic `children` Store is the least specialized concept of children.
+It is therefore the most verbose.
+For example, if an Entity only renders one kind of child, you could do:
+
+```ts
+const bricks = world.get('bricks');
+bricks.getStore('brickPositions').push({ x: 10, y: 50 });
+```
+
+Supposing that `brickPositions` was a list of locations to place `Brick` Prefabs.
+
+## Component Ideas
+
+Remove Component/ManualComponent distinction.
+All Components are "manual."
+But users can create Components which utilize `useProxy` to be reactive.
+For example, `<Sprite>` or `<Body>` etc.
+The existence of RigidBody concepts should also move to Components.
+There they can be managed in lifecycle, cleaning up when the Entity unmounts.
+
+## Structure / Flow Ideas
+
+Maybe we should start with Stores instead of Prefabs.
+Define all the Stores, pass them to `create`, get a Game.
+Then register Prefabs and Systems on Game.
+Downside: no quick, anonymous inline Stores.
+Upside: easier TypeScript workings, better uniqueness enforcement on Store Kind.
+Prefabs could also shorthand stores by referencing Kind directly, maybe.
+
+```ts
+const Player = game.prefab({
+  name: 'Player',
+  stores: {
+    // defaults
+    transform: 'transform',
+    // overrides
+    body: ['body', { shape: 'capsule' }],
+  }
+});
+```
+
+Or maybe we expose `stores` on Game. They could have a more verbose API.
+
+```ts
+const Player = game.prefab({
+  name: 'Player',
+  stores: {
+    transform: game.store.transform({ x: 0, y: 10 }),
+  }
+});
+```
+
+Systems could also utilize `game.store` instead of having to wrap Entities for store extraction.
+
+```ts
+const body = game.system({
+  name: 'body',
+  run: (e) => {
+    const transform = game.store.transform.get(e);
+    // or even...
+    game.store.forces.applyImpulse(e, { x: 0, y: 10 });
+  }
+})
+```
+
+Then Stores can define APIs for users to streamline tasks.
+But all logic remains pure, because Store APIs are pure.
+It's not a bad idea...
