@@ -10,14 +10,11 @@ import {
 import { EntityContact } from './box2d';
 import * as stores from './stores';
 
-export const rigidBody = new r2d.System<
-  {
-    body: b2Body;
-    newContactsCache: EntityContact[];
-    endedContactsCache: EntityContact[];
-  },
-  typeof stores
->({
+export const rigidBody = new r2d.System<{
+  body: b2Body;
+  newContactsCache: EntityContact[];
+  endedContactsCache: EntityContact[];
+}>({
   name: 'rigidBody',
   runsOn: (prefab) => {
     return !!prefab.stores.transform && !!prefab.stores.bodyConfig;
@@ -28,9 +25,9 @@ export const rigidBody = new r2d.System<
     endedContactsCache: new Array<EntityContact>(),
   },
   init: (entity, state, ctx) => {
-    const transform = entity.getStore('transform');
+    const transform = stores.transform.get(entity)!;
     const { x, y } = transform;
-    const bodyConfig = entity.getStore('bodyConfig');
+    const bodyConfig = stores.bodyConfig.get(entity)!;
     const {
       density,
       friction,
@@ -67,7 +64,7 @@ export const rigidBody = new r2d.System<
     }
     body.CreateFixture(fix);
 
-    const bodyStore = entity.getStore('body');
+    const bodyStore = stores.body.get(entity);
     if (bodyStore) {
       bodyStore.mass = body.GetMass();
       bodyStore.angularVelocity = body.GetAngularVelocity();
@@ -93,9 +90,9 @@ export const rigidBody = new r2d.System<
     (ctx.world.plugins as any).box2d.world.DestroyBody(state.body);
   },
   preStep: (entity, state) => {
-    const transform = entity.getStore('transform');
-    const contacts = entity.getStore('contacts');
-    const body = entity.getStore('body');
+    const transform = stores.transform.get(entity)!;
+    const contacts = stores.contacts.get(entity);
+    const body = stores.body.get(entity);
 
     state.body.SetPositionXY(transform.x, transform.y);
 
@@ -121,8 +118,8 @@ export const rigidBody = new r2d.System<
     }
   },
   run: (entity, { body }, ctx) => {
-    const transform = entity.getStore('transform');
-    const forces = entity.getStore('forces');
+    const transform = stores.transform.get(entity)!;
+    const forces = stores.forces.get(entity);
 
     const { x, y } = body.GetPosition();
     transform.x = x;
@@ -141,7 +138,7 @@ export const rigidBody = new r2d.System<
     }
   },
   postStep: (entity) => {
-    const contacts = entity.getStore('contacts');
+    const contacts = stores.contacts.get(entity);
 
     if (contacts) {
       contacts.began = [];

@@ -74,11 +74,13 @@ function useWorldApi(store: GlobalStore, prefabs: Record<string, Prefab<any>>) {
 
       const prefab = prefabs[prefabName];
 
+      console.debug(`Adding ${id} (${prefabName})`);
       const entity: EntityData = {
         id,
         prefab: prefabName,
         storesData: mergeDeepRight(initializeStores(prefab), initialStores),
       };
+      console.debug(`Stores: `, entity.storesData);
 
       store.entities[id] = entity;
       store.ids[id] = true;

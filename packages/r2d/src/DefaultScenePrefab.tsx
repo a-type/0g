@@ -1,9 +1,11 @@
 import * as React from 'react';
 import { children } from './children';
 import { Children } from './components/Children';
-import { prefab } from './prefab';
+import { Prefab } from './types';
 
-export const DefaultScenePrefab = prefab({
+export const DefaultScenePrefab: Prefab<{
+  children: ReturnType<typeof children>;
+}> = {
   name: 'Scene',
   stores: {
     children: children(),
@@ -14,4 +16,4 @@ export const DefaultScenePrefab = prefab({
         <Children entities={children} />
       </>
     ) : null,
-});
+};

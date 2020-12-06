@@ -1,15 +1,14 @@
 import * as React from 'react';
 import { Container, Sprite } from '@inlet/react-pixi';
 import * as r2d from 'r2d';
-import { useTextureTile } from '../../../pixi/hooks/useTextureTile';
+import { useTextureTile } from '../../../common/plugins/pixi/hooks/useTextureTile';
 import charSheet from '../assets/roguelikeChar_transparent.png';
-import { spriteConfig } from '../../../pixi/stores/spriteConfig';
-import { box2d } from '../../../common/plugins';
+import { game } from '../game';
 
-export const Character = r2d.prefab({
+export const Character = game.prefab({
   name: 'Character',
   stores: {
-    spriteConfig: spriteConfig({
+    spriteConfig: game.stores.spriteConfig({
       source: charSheet,
       tileData: {
         x: 0,
@@ -19,7 +18,7 @@ export const Character = r2d.prefab({
         gap: 1,
       },
     }),
-    clothesSpriteConfig: spriteConfig({
+    clothesSpriteConfig: game.stores.spriteConfig({
       source: charSheet,
       tileData: {
         x: 6,
@@ -29,19 +28,17 @@ export const Character = r2d.prefab({
         gap: 1,
       },
     }),
-    transform: box2d.stores.transform({
+    transform: game.stores.transform({
       x: 200,
       y: 200,
     }),
-    bodyConfig: box2d.stores.bodyConfig({
+    bodyConfig: game.stores.bodyConfig({
       shape: 'rectangle',
       width: 16,
       height: 16,
     }),
-    forces: box2d.stores.forces(),
-    config: r2d.store('characterConfig', {
-      speed: 12,
-    })(),
+    forces: game.stores.forces(),
+    config: game.stores.characterConfig,
   },
   Component: ({ stores }) => {
     const { transform, spriteConfig, clothesSpriteConfig } = r2d.useProxy(

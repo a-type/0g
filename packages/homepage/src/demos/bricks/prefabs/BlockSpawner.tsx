@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as r2d from 'r2d';
 import { Entity } from 'r2d';
-import { box2d } from '../../../common/plugins';
+import { game } from '../game';
 
 function getBlockX(x: number, h: number, w: number, t: number) {
   return x + h * w - (t * w) / 2;
@@ -10,19 +10,11 @@ function getBlockY(y: number, v: number, h: number, t: number) {
   return y + v * h - (t * h) / 2;
 }
 
-export const BlockSpawner = r2d.prefab({
+export const BlockSpawner = game.prefab({
   name: 'BlockSpawner',
   stores: {
-    transform: box2d.stores.transform(),
-    spawnerConfig: r2d.store('blockSpawnerConfig', {
-      blocks: [
-        [true, true, true, true, true],
-        [true, true, true, true, true],
-        [true, true, true, true, true],
-      ],
-      blockWidth: 5,
-      blockHeight: 2.5,
-    })(),
+    transform: game.stores.transform(),
+    spawnerConfig: game.stores.spawnerConfig(),
   },
   Component: ({ stores, id }) => {
     const { transform, spawnerConfig } = r2d.useProxy(stores);

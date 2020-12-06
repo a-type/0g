@@ -10,10 +10,10 @@ export const ballMovement = game.system({
     started: false,
   },
   run: (entity, state) => {
-    const transform = entity.getStore('transform');
-    const body = entity.getStore('body');
-    const forces = entity.getStore('forces');
-    const config = entity.getStore('ballConfig');
+    const transform = game.stores.transform.get(entity)!;
+    const body = game.stores.body.get(entity)!;
+    const forces = game.stores.forces.get(entity)!;
+    const config = game.stores.ballConfig.get(entity)!;
 
     if (!state.started) {
       state.started = true;

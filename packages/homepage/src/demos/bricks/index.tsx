@@ -1,14 +1,15 @@
 import 'react-app-polyfill/ie11';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { GlobalStore } from 'r2d';
+import { SavedScene } from 'r2d';
 import { PX_SCALE, SIZE } from './constants';
 import './index.css';
 import 'r2d/src/tools/tools.css';
 import './systems';
+import './prefabs';
 import { game } from './game';
 
-const world: GlobalStore = {
+const world: SavedScene = {
   entities: {
     scene: {
       id: 'scene',

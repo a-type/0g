@@ -7,8 +7,8 @@ export const paddleMovement = game.system({
     initialY: null,
   } as { initialY: null | number },
   run: (entity, state, ctx) => {
-    const transform = entity.getStore('transform');
-    const forces = entity.getStore('forces');
+    const transform = game.stores.transform.get(entity)!;
+    const forces = game.stores.forces.get(entity)!;
 
     if (state.initialY !== null) state.initialY = transform.y;
 

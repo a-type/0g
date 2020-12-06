@@ -1,15 +1,14 @@
 import * as React from 'react';
-import * as r2d from 'r2d';
 import { useBodyRef } from '../../../common/hooks/useBodyRef';
-import { box2d } from '../../../common/plugins';
+import { game } from '../game';
 
-export const Paddle = r2d.prefab({
+export const Paddle = game.prefab({
   name: 'Paddle',
   stores: {
-    transform: box2d.stores.transform(),
-    bodyConfig: box2d.stores.bodyConfig(),
-    body: box2d.stores.body(),
-    forces: box2d.stores.forces(),
+    transform: game.stores.transform(),
+    bodyConfig: game.stores.bodyConfig(),
+    body: game.stores.body(),
+    forces: game.stores.forces(),
   },
   Component: ({ stores }) => {
     return (
