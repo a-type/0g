@@ -1,14 +1,24 @@
 import * as React from 'react';
 import { useBodyRef } from '../../../common/hooks/useBodyRef';
+import { SIZE } from '../constants';
 import { game } from '../game';
 
 export const Paddle = game.prefab({
   name: 'Paddle',
   stores: {
     transform: game.stores.transform(),
-    bodyConfig: game.stores.bodyConfig(),
-    body: game.stores.body(),
-    forces: game.stores.forces(),
+    body: game.stores.body({
+      config: {
+        shape: 'rectangle',
+        density: 1,
+        width: SIZE / 3,
+        height: SIZE / 20,
+        restitution: 1,
+        angle: 0,
+        friction: 0.25,
+        fixedRotation: true,
+      },
+    }),
   },
   Component: ({ stores }) => {
     return (

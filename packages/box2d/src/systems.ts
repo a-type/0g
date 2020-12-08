@@ -7,7 +7,7 @@ import {
   b2PolygonShape,
   b2World,
 } from '@flyover/box2d';
-import { EntityContact } from './box2d';
+import { EntityContact } from './index';
 import * as stores from './stores';
 
 export const rigidBody = new r2d.System<{
@@ -17,7 +17,7 @@ export const rigidBody = new r2d.System<{
 }>({
   name: 'rigidBody',
   runsOn: (prefab) => {
-    return !!prefab.stores.transform && !!prefab.stores.bodyConfig;
+    return !!prefab.stores.transform && !!prefab.stores.body;
   },
   state: {
     body: (null as unknown) as b2Body,
@@ -27,27 +27,32 @@ export const rigidBody = new r2d.System<{
   init: (entity, state, ctx) => {
     const transform = stores.transform.get(entity)!;
     const { x, y } = transform;
-    const bodyConfig = stores.bodyConfig.get(entity)!;
+    const bodyStore = stores.body.get(entity)!;
     const {
-      density,
-      friction,
-      frictionAir,
-      isStatic,
-      angle,
-      restitution,
-      fixedRotation,
-    } = bodyConfig;
+      // TODO: verify assumptions about defaults
+      density = 1,
+      friction = 0.5,
+      isStatic = false,
+      angle = 0,
+      restitution = 0.5,
+      fixedRotation = false,
+      linearDamping = 0,
+      angularDamping = 0,
+    } = bodyStore.config;
     const world = ctx.world.plugins.box2d.world as b2World;
 
     const body = world.CreateBody({
       type: isStatic ? b2BodyType.b2_staticBody : b2BodyType.b2_dynamicBody,
       angle,
       position: { x, y },
-      linearDamping: frictionAir,
-      angularDamping: 0.00001,
-      awake: true,
-      allowSleep: false,
+      linearDamping,
       fixedRotation,
+      angularDamping,
+      allowSleep: false,
+      awake: true,
+      userData: {
+        entityId: entity.id,
+      },
     });
     const fix = new b2FixtureDef();
     fix.density = density;
@@ -55,23 +60,22 @@ export const rigidBody = new r2d.System<{
     fix.friction = friction;
     fix.userData = { entityId: ctx.entity.id };
 
-    if (bodyConfig.shape === 'rectangle') {
+    if (bodyStore.config.shape === 'rectangle') {
       const shape = new b2PolygonShape();
-      shape.SetAsBox(bodyConfig.width / 2, bodyConfig.height / 2);
+      shape.SetAsBox(bodyStore.config.width / 2, bodyStore.config.height / 2);
       fix.shape = shape;
     } else {
-      fix.shape = new b2CircleShape(bodyConfig.radius);
+      fix.shape = new b2CircleShape(bodyStore.config.radius);
     }
     body.CreateFixture(fix);
 
-    const bodyStore = stores.body.get(entity);
-    if (bodyStore) {
-      bodyStore.mass = body.GetMass();
-      bodyStore.angularVelocity = body.GetAngularVelocity();
-      bodyStore.velocity = body.GetLinearVelocity();
-    }
+    bodyStore.mass = body.GetMass();
+    bodyStore.angularVelocity = body.GetAngularVelocity();
+    bodyStore.velocity = body.GetLinearVelocity();
 
     state.body = body;
+    (window as any).bodies = (window as any).bodies || [];
+    (window as any).bodies.push(body);
 
     // subscribe to contacts
     const onBeginContact = (contact: EntityContact) => {
@@ -88,11 +92,12 @@ export const rigidBody = new r2d.System<{
   },
   dispose: (_, state, ctx) => {
     (ctx.world.plugins as any).box2d.world.DestroyBody(state.body);
+    (ctx.world.plugins as any).box2d.contacts.unsubscribe(ctx.entity.id);
   },
   preStep: (entity, state) => {
     const transform = stores.transform.get(entity)!;
     const contacts = stores.contacts.get(entity);
-    const body = stores.body.get(entity);
+    const body = stores.body.get(entity)!;
 
     state.body.SetPositionXY(transform.x, transform.y);
 
@@ -110,31 +115,27 @@ export const rigidBody = new r2d.System<{
     state.newContactsCache = [];
     state.endedContactsCache = [];
 
-    if (body) {
-      body.angularVelocity = state.body.GetAngularVelocity();
-      const { x, y } = state.body.GetLinearVelocity();
-      body.velocity.x = x;
-      body.velocity.y = y;
-    }
+    body.angularVelocity = state.body.GetAngularVelocity();
+    const { x, y } = state.body.GetLinearVelocity();
+    body.velocity.x = x;
+    body.velocity.y = y;
   },
   run: (entity, { body }, ctx) => {
     const transform = stores.transform.get(entity)!;
-    const forces = stores.forces.get(entity);
+    const bodyStore = stores.body.get(entity)!;
 
     const { x, y } = body.GetPosition();
     transform.x = x;
     transform.y = y;
     transform.angle = body.GetAngle();
 
-    if (forces) {
-      if (forces.impulse) {
-        body.ApplyLinearImpulseToCenter(forces.impulse, true);
-        forces.impulse = null;
-      }
-      if (forces.velocity) {
-        body.SetLinearVelocity(forces.velocity);
-        forces.velocity = null;
-      }
+    if (bodyStore.forces.impulse) {
+      body.ApplyLinearImpulseToCenter(bodyStore.forces.impulse, true);
+      bodyStore.forces.impulse = null;
+    }
+    if (bodyStore.forces.velocity) {
+      body.SetLinearVelocity(bodyStore.forces.velocity);
+      bodyStore.forces.velocity = null;
     }
   },
   postStep: (entity) => {

@@ -1,4 +1,4 @@
-import { EntityContact } from '../../../common/plugins/box2d/box2d';
+import { EntityContact } from '@r2d/box2d';
 import { game } from '../game';
 
 export const brickBreaker = game.system({

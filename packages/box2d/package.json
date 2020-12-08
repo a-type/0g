@@ -1,0 +1,40 @@
+{
+  "name": "@r2d/box2d",
+  "version": "0.0.1",
+  "description": "box2d plugin for r2d",
+  "files": [
+    "dist",
+    "dist-esm"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist-esm/index.js",
+  "typings": "./dist-esm/index.d.ts",
+  "author": "Grant Forrest <gaforres@gmail.com>",
+  "license": "MIT",
+  "private": false,
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch --bail",
+    "build:cjs": "tsc",
+    "build:esm": "tsc -m es6 --outDir dist-esm",
+    "build": "concurrently \"npm run build:cjs\" \"npm run build:esm\"",
+    "watch:cjs": "tsc --watch",
+    "watch:esm": "tsc -m es6 --outDir dist-esm --watch",
+    "watch": "concurrently \"npm run watch:cjs\" \"npm run watch:esm\"",
+    "prepublishOnly": "npm run build:cjs && npm run build:esm",
+    "release": "npm publish --access public"
+  },
+  "peerDependencies": {
+    "@flyover/box2d": "^1.0.1",
+    "r2d": "link:../r2d"
+  },
+  "dependencies": {
+    "@tsdotnet/object-pool": "^1.0.6",
+    "math2d": "^3.0.0"
+  },
+  "devDependencies": {
+    "@flyover/box2d": "^1.0.1",
+    "@types/react": "^17.0.0",
+    "concurrently": "^5.3.0"
+  }
+}

@@ -1,14 +1,14 @@
 import * as React from 'react';
 import { Container, Sprite } from '@inlet/react-pixi';
 import * as r2d from 'r2d';
-import { useTextureTile } from '../../../common/plugins/pixi/hooks/useTextureTile';
 import charSheet from '../assets/roguelikeChar_transparent.png';
 import { game } from '../game';
+import { useSprite } from '@r2d/pixi';
 
 export const Character = game.prefab({
   name: 'Character',
   stores: {
-    spriteConfig: game.stores.spriteConfig({
+    spriteConfig: game.stores.sprite({
       source: charSheet,
       tileData: {
         x: 0,
@@ -18,7 +18,7 @@ export const Character = game.prefab({
         gap: 1,
       },
     }),
-    clothesSpriteConfig: game.stores.spriteConfig({
+    clothesSpriteConfig: game.stores.sprite({
       source: charSheet,
       tileData: {
         x: 6,
@@ -32,12 +32,14 @@ export const Character = game.prefab({
       x: 200,
       y: 200,
     }),
-    bodyConfig: game.stores.bodyConfig({
-      shape: 'rectangle',
-      width: 16,
-      height: 16,
+    bodyConfig: game.stores.body({
+      config: {
+        shape: 'rectangle',
+        width: 16,
+        height: 16,
+        density: 1,
+      },
     }),
-    forces: game.stores.forces(),
     config: game.stores.characterConfig,
   },
   Component: ({ stores }) => {
@@ -48,8 +50,8 @@ export const Character = game.prefab({
     // you can use hooks here!
 
     // suspense-based asset loading
-    const baseTexture = useTextureTile(source, tileData);
-    const clothesTexture = useTextureTile(
+    const baseTexture = useSprite(source, tileData);
+    const clothesTexture = useSprite(
       clothesSpriteConfig.source,
       clothesSpriteConfig.tileData
     );

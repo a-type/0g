@@ -4,8 +4,8 @@ export const characterMovement = game.system({
   name: 'characterMovement',
   runsOn: (prefab) => prefab.name === 'Character',
   run: (entity, _, ctx) => {
-    const config = entity.getStore('characterConfig');
-    const forces = entity.getStore('forces');
+    const config = game.stores.characterConfig.get(entity)!;
+    const body = game.stores.body.get(entity)!;
 
     const velocity = { x: 0, y: 0 };
     if (ctx.world.input.keyboard.getKeyPressed('ArrowLeft'))
@@ -17,6 +17,6 @@ export const characterMovement = game.system({
     if (ctx.world.input.keyboard.getKeyPressed('ArrowDown'))
       velocity.y = config.speed;
 
-    forces.velocity = velocity;
+    body.forces.velocity = velocity;
   },
 });

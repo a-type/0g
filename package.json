@@ -5,7 +5,8 @@
   "description": "",
   "workspaces": {
     "packages": [
-      "packages/*"
+      "packages/*",
+      "demos/*"
     ],
     "nohoist": [
       "**"

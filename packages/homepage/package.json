@@ -11,6 +11,8 @@
   "dependencies": {
     "@flyover/box2d": "^1.0.1",
     "@inlet/react-pixi": "^6.0.6",
+    "@r2d/box2d": "link:../box2d",
+    "@r2d/pixi": "link:../pixi",
     "@react-spring/web": "^9.0.0-rc.3",
     "@tsdotnet/object-pool": "^1.0.6",
     "math2d": "^3.0.0",

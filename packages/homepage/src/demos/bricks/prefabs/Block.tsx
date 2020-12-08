@@ -6,9 +6,16 @@ export const Block = game.prefab({
   name: 'Block',
   stores: {
     transform: game.stores.transform(),
-    bodyConfig: game.stores.bodyConfig(),
+    body: game.stores.body({
+      config: {
+        shape: 'rectangle',
+        width: 5,
+        height: 2.5,
+        isStatic: true,
+        fixedRotation: true,
+      },
+    }),
     contacts: game.stores.contacts(),
-    forces: game.stores.forces(),
     spawner: game.stores.blockSpawner(),
   },
   Component: ({ stores }) => {

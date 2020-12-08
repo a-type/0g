@@ -1,4 +1,4 @@
-import { mergeDeepRight } from 'ramda';
+import { mergeDeepRight, clone } from 'ramda';
 import { EntityData, Store, StoreApi, StoreData } from './types';
 
 export function store<Kind extends string, S extends StoreData>(
@@ -6,9 +6,8 @@ export function store<Kind extends string, S extends StoreData>(
   defaults: S,
   api: StoreApi = {},
 ): Store<Kind, S> {
-  console.log(`Creating store ${kind}`, defaults);
   const store = ((overrides?: Partial<S>) => {
-    const merged = mergeDeepRight(defaults, overrides || {}) as S;
+    const merged = mergeDeepRight(clone(defaults), overrides || {}) as S;
     return { ...merged, __kind: kind };
   }) as Store<Kind, S, typeof api>;
   store.isData = function isData(data: StoreData): data is S {

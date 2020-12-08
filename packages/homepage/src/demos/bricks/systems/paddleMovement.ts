@@ -8,9 +8,9 @@ export const paddleMovement = game.system({
   } as { initialY: null | number },
   run: (entity, state, ctx) => {
     const transform = game.stores.transform.get(entity)!;
-    const forces = game.stores.forces.get(entity)!;
+    const body = game.stores.body.get(entity)!;
 
-    if (state.initialY !== null) state.initialY = transform.y;
+    if (state.initialY === null) state.initialY = transform.y;
 
     const velocity = { x: 0, y: 0 };
     if (
@@ -25,7 +25,7 @@ export const paddleMovement = game.system({
       velocity.x = 12;
     }
 
-    forces.velocity = velocity;
+    body.forces.velocity = velocity;
     transform.y = state.initialY || transform.y;
   },
 });

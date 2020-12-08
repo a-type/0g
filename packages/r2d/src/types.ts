@@ -71,6 +71,14 @@ export type FrameData = {
 };
 export type FrameCallback = (data: FrameData) => void | Promise<void>;
 
+type DeepPartial<T> = {
+  [P in keyof T]?: T[P] extends Array<infer U>
+    ? Array<DeepPartial<U>>
+    : T[P] extends ReadonlyArray<infer U>
+    ? ReadonlyArray<DeepPartial<U>>
+    : DeepPartial<T[P]> | T[P];
+};
+
 export type StoreData<T extends Empty = Empty> = T;
 export type Store<
   Kind extends string,

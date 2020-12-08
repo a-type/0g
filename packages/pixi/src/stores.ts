@@ -8,12 +8,12 @@ export type TileData = {
   gap?: number;
 };
 
-export const spriteConfig = r2d.store<
-  'spriteConfig',
+export const sprite = r2d.store<
+  'sprite',
   {
     source: string;
     tileData?: TileData;
   }
->('spriteConfig', {
+>('sprite', {
   source: '<invalid>',
 });

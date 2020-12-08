@@ -1,17 +1,9 @@
-import { Texture, BaseTexture, Rectangle } from 'pixi.js';
 import { useMemo } from 'react';
+import { Texture, BaseTexture, Rectangle } from 'pixi.js';
 import { useAsset } from 'use-asset';
+import { TileData } from './stores';
 
-export function useTextureTile(
-  source: string,
-  tileData?: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    gap?: number;
-  }
-) {
+export const useSprite = (source: string, tileData?: TileData) => {
   const sheet = useAsset(
     (src: string) => {
       const baseTex = BaseTexture.from(src);
@@ -37,4 +29,4 @@ export function useTextureTile(
     }
     return sheet;
   }, [sheet, tileData]);
-}
+};

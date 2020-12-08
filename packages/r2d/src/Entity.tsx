@@ -23,13 +23,11 @@ function useRunSystems(
   prefab: Prefab<any>,
 ) {
   const runnableSystems = React.useMemo(() => {
-    console.log('runnableSystems');
     if (!prefab) return [];
     return world.systems.filter((s) => s.runsOn(prefab));
   }, [world.systems, prefab]);
 
   React.useLayoutEffect(() => {
-    console.log('register handlers');
     function runSystems(
       runHandle: 'run' | 'preStep' | 'postStep',
       frame: FrameData,
@@ -87,9 +85,7 @@ export function Entity(props: EntityProps) {
   const entityExists = !!idsSnapshot[id];
   // enforce presence in World
   React.useEffect(() => {
-    console.log('setup effect');
     if (!entityExists) {
-      console.debug(`initializing ${id}`);
       world.add(prefabName, initial, id);
     }
   }, [entityExists, prefabName, prefab, initial, id]);

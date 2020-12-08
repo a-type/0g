@@ -6,37 +6,42 @@ import {
   b2World,
 } from '@flyover/box2d';
 import ObjectPool from '@tsdotnet/object-pool';
-import { rigidBody } from './rigidBody';
+import * as systems from './systems';
 import * as stores from './stores';
+
+export * as systems from './systems';
+export * as stores from './stores';
 
 export type EntityContact = {
   selfId: string | null;
   otherId: string | null;
   contact: b2Contact;
   otherFixture: b2Fixture;
+  selfFixture: b2Fixture;
 };
 
-const contactPool = new ObjectPool((): [EntityContact, EntityContact] => {
-  return [
-    {
-      selfId: null as any,
-      otherId: null as any,
-      contact: null as any,
-      otherFixture: null as any,
-    },
-    {
-      selfId: null as any,
-      otherId: null as any,
-      contact: null as any,
-      otherFixture: null as any,
-    },
-  ];
-});
+const contactPool = new ObjectPool((): [EntityContact, EntityContact] => [
+  {
+    selfId: null as any,
+    otherId: null as any,
+    contact: null as any,
+    otherFixture: null as any,
+    selfFixture: null as any,
+  },
+  {
+    selfId: null as any,
+    otherId: null as any,
+    contact: null as any,
+    otherFixture: null as any,
+    selfFixture: null as any,
+  },
+]);
 
 const contactPairCache = new WeakMap<
   b2Contact,
   [EntityContact, EntityContact]
 >();
+
 function getOrCreatePair(contact: b2Contact) {
   let pair = contactPairCache.get(contact);
   if (pair) return pair;
@@ -49,10 +54,12 @@ function getOrCreatePair(contact: b2Contact) {
   pair[0].otherId = bId;
   pair[0].contact = contact;
   pair[0].otherFixture = contact.GetFixtureB();
+  pair[0].selfFixture = contact.GetFixtureA();
   pair[1].selfId = bId;
   pair[1].otherId = aId;
   pair[1].contact = contact;
   pair[1].otherFixture = contact.GetFixtureA();
+  pair[1].selfFixture = contact.GetFixtureB();
   return pair;
 }
 
@@ -126,9 +133,7 @@ export const box2d = (world: b2World) => {
     run: () => {
       world.Step(60 / 1000, 8, 3);
     },
-    systems: {
-      rigidBody: rigidBody,
-    },
-    stores: stores,
+    systems,
+    stores,
   });
 };

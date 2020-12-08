@@ -2465,6 +2465,19 @@
     eventemitter3 "^3.1.0"
     url "^0.11.0"
 
+"@r2d/box2d@link:packages/box2d":
+  version "0.0.1"
+  dependencies:
+    "@flyover/box2d" "^1.0.1"
+    "@tsdotnet/object-pool" "^1.0.6"
+    math2d "^3.0.0"
+
+"@r2d/pixi@link:packages/pixi":
+  version "0.0.1"
+  dependencies:
+    pixi.js "^5.3.3"
+    use-asset "^0.2.0"
+
 "@react-spring/animated@9.0.0-rc.3":
   version "9.0.0-rc.3"
   resolved "https://registry.yarnpkg.com/@react-spring/animated/-/animated-9.0.0-rc.3.tgz#e792cb76aacecfc78db2be6020ac11ce96503eb5"

@@ -1,11 +1,11 @@
 import { useLayoutEffect, useRef } from 'react';
 import { subscribe } from 'r2d';
-import { BodyConfigData } from '../plugins/box2d/stores/bodyConfig';
+import { stores as box2dStores } from '@r2d/box2d';
 
 export function useBodyRef<T extends HTMLElement>(
   stores: {
-    transform: { x: number; y: number; angle: number };
-    bodyConfig: BodyConfigData;
+    transform: ReturnType<typeof box2dStores['transform']>;
+    body: ReturnType<typeof box2dStores['body']>;
   },
   pixelScale = 10
 ) {
@@ -16,13 +16,13 @@ export function useBodyRef<T extends HTMLElement>(
       if (!ref.current) return;
 
       const width =
-        stores.bodyConfig.shape === 'circle'
-          ? stores.bodyConfig.radius * 2 * pixelScale
-          : stores.bodyConfig.width * pixelScale;
+        stores.body.config.shape === 'circle'
+          ? stores.body.config.radius * 2 * pixelScale
+          : stores.body.config.width * pixelScale;
       const height =
-        stores.bodyConfig.shape === 'circle'
-          ? stores.bodyConfig.radius * 2 * pixelScale
-          : stores.bodyConfig.height * pixelScale;
+        stores.body.config.shape === 'circle'
+          ? stores.body.config.radius * 2 * pixelScale
+          : stores.body.config.height * pixelScale;
 
       ref.current.style.width = `${width}px`;
       ref.current.style.height = `${height}px`;
@@ -37,7 +37,7 @@ export function useBodyRef<T extends HTMLElement>(
     };
 
     const unsubTransform = subscribe(stores.transform, updateTransform);
-    const unsubBody = subscribe(stores.bodyConfig, updateBody);
+    const unsubBody = subscribe(stores.body, updateBody);
 
     updateBody();
     updateTransform();
@@ -46,7 +46,7 @@ export function useBodyRef<T extends HTMLElement>(
       unsubTransform();
       unsubBody();
     };
-  }, [stores.transform, stores.bodyConfig, ref]);
+  }, [stores.transform, stores.body.config, ref]);
 
   return ref;
 }

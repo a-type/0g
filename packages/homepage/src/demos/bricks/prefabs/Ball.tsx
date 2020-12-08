@@ -5,11 +5,18 @@ import { useBodyRef } from '../../../common/hooks/useBodyRef';
 export const Ball = game.prefab({
   name: 'Ball',
   stores: {
-    bodyConfig: game.stores.bodyConfig(),
     transform: game.stores.transform(),
-    forces: game.stores.forces(),
     contacts: game.stores.contacts(),
-    body: game.stores.body(),
+    body: game.stores.body({
+      config: {
+        shape: 'circle',
+        radius: 1,
+        fixedRotation: true,
+        friction: 0.25,
+        restitution: 1,
+        bullet: true,
+      },
+    }),
     config: game.stores.ballConfig(),
   },
   Component: ({ stores }) => {
