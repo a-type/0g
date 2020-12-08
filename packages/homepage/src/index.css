@@ -1,0 +1,32 @@
+html,
+body {
+  margin: 0;
+  font-family: monospace;
+  background-color: #333;
+  color: #eee;
+}
+
+h1 {
+  font-size: 30vmin;
+}
+
+a {
+  color: inherit;
+}
+a:visited {
+  color: inherit;
+}
+
+.hero {
+  background-color: #111;
+  width: 100vw;
+  height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.demos {
+  padding: 32px;
+}
