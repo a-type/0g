@@ -1,12 +1,12 @@
 {
-  "name": "library-homepage",
+  "name": "homepage",
+  "private": true,
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
     "start": "parcel ./src/index.html ./src/demos/**/index.html",
-    "build": "parcel build ./src/index.html ./src/demos/**/index.html",
-    "build:gh": "parcel build ./src/index.html ./src/demos/**/index.html --public-url /0g/ --out-dir ../docs"
+    "build": "parcel build ./src/index.html ./src/demos/**/index.html --public-url /0g/ --out-dir ../../docs"
   },
   "dependencies": {
     "@flyover/box2d": "^1.0.1",

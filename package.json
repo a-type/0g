@@ -14,7 +14,9 @@
   },
   "scripts": {
     "test": "jest",
-    "test:cov": "jest --coverage"
+    "test:cov": "jest --coverage",
+    "build": "lerna run --scope 0g build && lerna run --scope @0g/* build",
+    "homepage": "lerna run --scope homepage build"
   },
   "repository": {
     "type": "git",

@@ -13,23 +13,14 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: 12
-      - run: npm ci
-      - run: npm run build --if-present
+      - run: yarn
 
       # cleanup
       - run: rm -rf docs
-
-      # storybook
-      - run: npm run storybook:build
-
-      # typedoc
-      - run: npm run typedoc
-
+      # build libraries
+      - run: yarn build
       # homepage
-      - run: npm ci
-        working-directory: homepage
-      - run: npm run build:gh
-        working-directory: homepage
+      - run: yarn homepage
       - name: Github Pages
         uses: crazy-max/ghaction-github-pages@v1.2.5
         with:
