@@ -1,5 +1,5 @@
 {
-  "name": "@r2d/lerna",
+  "name": "@0g/lerna",
   "private": true,
   "version": "1.0.0",
   "description": "",
@@ -18,14 +18,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/a-type/r2d.git"
+    "url": "git+https://github.com/a-type/0g.git"
   },
   "author": "Grant Forrest <gaforres@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/a-type/r2d/issues"
+    "url": "https://github.com/a-type/0g/issues"
   },
-  "homepage": "https://github.com/a-type/r2d#readme",
+  "homepage": "https://github.com/a-type/0g#readme",
   "publishConfig": {
     "access": "public"
   },

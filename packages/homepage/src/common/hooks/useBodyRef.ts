@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef } from 'react';
-import { subscribe } from 'r2d';
-import { stores as box2dStores } from '@r2d/box2d';
+import { subscribe } from '0g';
+import { stores as box2dStores } from '@0g/box2d';
 
 export function useBodyRef<T extends HTMLElement>(
   stores: {

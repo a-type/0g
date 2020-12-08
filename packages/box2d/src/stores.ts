@@ -1,7 +1,7 @@
-import * as r2d from 'r2d';
+import * as g from '0g';
 import { EntityContact } from '.';
 
-export const transform = r2d.store('transform', {
+export const transform = g.store('transform', {
   x: 0,
   y: 0,
   angle: 0,
@@ -29,7 +29,7 @@ export type BodyConfigData = {
     }
 );
 
-export const body = r2d.store('body', {
+export const body = g.store('body', {
   mass: 0,
   velocity: { x: 0, y: 0 },
   angularVelocity: 0,
@@ -51,7 +51,7 @@ export const body = r2d.store('body', {
   },
 });
 
-export const contacts = r2d.store('contacts', {
+export const contacts = g.store('contacts', {
   began: new Array<EntityContact>(),
   current: new Array<EntityContact>(),
   ended: new Array<EntityContact>(),

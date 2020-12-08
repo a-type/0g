@@ -1,4 +1,4 @@
-import * as r2d from 'r2d';
+import * as g from '0g';
 import {
   b2Contact,
   b2ContactListener,
@@ -125,7 +125,7 @@ export const box2d = (world: b2World) => {
   const contacts = new ContactListener();
   world.SetContactListener(contacts);
 
-  return r2d.plugin({
+  return g.plugin({
     api: {
       world,
       contacts,

@@ -5,20 +5,20 @@
   "license": "MIT",
   "scripts": {
     "start": "parcel ./src/index.html ./src/demos/**/index.html",
-    "build": "parcel build src/index.html demos/**/index.html",
-    "build:gh": "parcel build src/index.html demos/**/index.html --public-url /r2d/ --out-dir ../docs"
+    "build": "parcel build ./src/index.html ./src/demos/**/index.html",
+    "build:gh": "parcel build ./src/index.html ./src/demos/**/index.html --public-url /0g/ --out-dir ../docs"
   },
   "dependencies": {
     "@flyover/box2d": "^1.0.1",
     "@inlet/react-pixi": "^6.0.6",
-    "@r2d/box2d": "link:../box2d",
-    "@r2d/pixi": "link:../pixi",
+    "@0g/box2d": "link:../box2d",
+    "@0g/pixi": "link:../pixi",
     "@react-spring/web": "^9.0.0-rc.3",
     "@tsdotnet/object-pool": "^1.0.6",
     "math2d": "^3.0.0",
     "matter-js": "^0.14.2",
     "pixi.js": "^5.3.3",
-    "r2d": "link:../r2d",
+    "0g": "link:../0g",
     "react": "^17.0.0",
     "react-dom": "^17.0.0",
     "react-app-polyfill": "^1.0.0",

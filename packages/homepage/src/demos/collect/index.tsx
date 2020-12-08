@@ -1,9 +1,9 @@
 import 'react-app-polyfill/ie11';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { defaultScene } from 'r2d';
+import { defaultScene } from '0g';
 import { Stage } from '@inlet/react-pixi';
-import 'r2d/src/tools/tools.css';
+import '0g/src/tools/tools.css';
 import './index.css';
 import { game } from './game';
 import './systems';

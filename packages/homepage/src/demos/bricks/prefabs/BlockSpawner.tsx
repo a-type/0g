@@ -1,6 +1,6 @@
 import * as React from 'react';
-import * as r2d from 'r2d';
-import { Entity } from 'r2d';
+import * as g from '0g';
+import { Entity } from '0g';
 import { game } from '../game';
 
 function getBlockX(x: number, h: number, w: number, t: number) {
@@ -17,7 +17,7 @@ export const BlockSpawner = game.prefab({
     spawnerConfig: game.stores.spawnerConfig(),
   },
   Component: ({ stores, id }) => {
-    const { transform, spawnerConfig } = r2d.useProxy(stores);
+    const { transform, spawnerConfig } = g.useProxy(stores);
     return (
       <>
         {spawnerConfig.blocks.map((row, h) => {

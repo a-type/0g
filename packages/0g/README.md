@@ -52,7 +52,7 @@ The data is the boundary.
 Stores are just shapes of data.
 
 ```tsx
-export const transformStore = r2d.store('transform', {
+export const transformStore = 0g.store('transform', {
   x: 0,
   y: 0,
   angle: 0,

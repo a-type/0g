@@ -1,7 +1,7 @@
 {
-  "name": "@r2d/pixi",
+  "name": "@0g/pixi",
   "version": "0.0.1",
-  "description": "pixi plugin for r2d",
+  "description": "pixi plugin for 0g",
   "files": [
     "dist",
     "dist-esm"
@@ -25,7 +25,7 @@
     "release": "npm publish --access public"
   },
   "peerDependencies": {
-    "r2d": "link:../r2d",
+    "0g": "link:../0g",
     "react": "^17.0.0"
   },
   "dependencies": {

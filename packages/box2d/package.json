@@ -1,7 +1,7 @@
 {
-  "name": "@r2d/box2d",
+  "name": "@0g/box2d",
   "version": "0.0.1",
-  "description": "box2d plugin for r2d",
+  "description": "box2d plugin for 0g",
   "files": [
     "dist",
     "dist-esm"
@@ -26,7 +26,7 @@
   },
   "peerDependencies": {
     "@flyover/box2d": "^1.0.1",
-    "r2d": "link:../r2d"
+    "0g": "link:../0g"
   },
   "dependencies": {
     "@tsdotnet/object-pool": "^1.0.6",

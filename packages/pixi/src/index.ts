@@ -1,10 +1,10 @@
-import * as r2d from 'r2d';
+import * as g from '0g';
 import * as stores from './stores';
 
 export * as stores from './stores';
 export * from './useSprite';
 
-export const pixi = r2d.plugin({
+export const pixi = g.plugin({
   api: {},
   stores,
 });

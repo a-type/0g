@@ -1,5 +1,5 @@
-import * as r2d from 'r2d';
+import * as g from '0g';
 
-export const characterConfig = r2d.store('characterConfig', {
+export const characterConfig = g.store('characterConfig', {
   speed: 12,
 });

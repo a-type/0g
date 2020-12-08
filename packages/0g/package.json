@@ -1,5 +1,5 @@
 {
-  "name": "r2d",
+  "name": "0g",
   "version": "0.0.2",
   "description": "",
   "files": [
@@ -26,7 +26,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/a-type/r2d.git"
+    "url": "git+https://github.com/a-type/0g.git"
   },
   "keywords": [],
   "author": {
@@ -36,9 +36,9 @@
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/a-type/r2d/issues"
+    "url": "https://github.com/a-type/0g/issues"
   },
-  "homepage": "https://github.com/a-type/r2d#readme",
+  "homepage": "https://github.com/a-type/0g#readme",
   "peerDependencies": {
     "react": "^17.0.0",
     "react-dom": "^17.0.0"

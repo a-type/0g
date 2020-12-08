@@ -1,4 +1,4 @@
-import * as r2d from 'r2d';
+import * as g from '0g';
 
 export type TileData = {
   x: number;
@@ -8,7 +8,7 @@ export type TileData = {
   gap?: number;
 };
 
-export const sprite = r2d.store<
+export const sprite = g.store<
   'sprite',
   {
     source: string;

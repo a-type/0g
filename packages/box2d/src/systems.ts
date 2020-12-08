@@ -1,4 +1,4 @@
-import * as r2d from 'r2d';
+import * as g from '0g';
 import {
   b2Body,
   b2BodyType,
@@ -10,7 +10,7 @@ import {
 import { EntityContact } from './index';
 import * as stores from './stores';
 
-export const rigidBody = new r2d.System<{
+export const rigidBody = new g.System<{
   body: b2Body;
   newContactsCache: EntityContact[];
   endedContactsCache: EntityContact[];

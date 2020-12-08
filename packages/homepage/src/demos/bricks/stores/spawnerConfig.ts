@@ -1,6 +1,6 @@
-import * as r2d from 'r2d';
+import * as g from '0g';
 
-export const spawnerConfig = r2d.store('spawnerConfig', {
+export const spawnerConfig = g.store('spawnerConfig', {
   blocks: [
     [true, true, true, true, true],
     [true, true, true, true, true],

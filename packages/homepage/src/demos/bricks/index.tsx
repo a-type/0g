@@ -1,10 +1,10 @@
 import 'react-app-polyfill/ie11';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { SavedScene } from 'r2d';
+import { SavedScene } from '0g';
 import { PX_SCALE, SIZE } from './constants';
 import './index.css';
-import 'r2d/src/tools/tools.css';
+import '0g/src/tools/tools.css';
 import './systems';
 import './prefabs';
 import { game } from './game';

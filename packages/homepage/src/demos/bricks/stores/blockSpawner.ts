@@ -1,6 +1,6 @@
-import * as r2d from 'r2d';
+import * as g from '0g';
 
-export const blockSpawner = r2d.store('blockSpawner', {
+export const blockSpawner = g.store('blockSpawner', {
   id: null as string | null,
   x: 0,
   y: 0,
