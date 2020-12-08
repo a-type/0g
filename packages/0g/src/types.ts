@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import { FC, ReactElement } from 'react';
 import { Keyboard } from './input/keyboard';
-import { Pointer } from './input/Pointer';
+import { Pointer } from './input/pointer';
 import { System } from './system';
 
 type Empty = Record<string, any>;
