@@ -1,10 +1,17 @@
 import * as g from '0g';
 import { EntityContact } from '.';
+import { IVec, vecAdd } from 'math2d';
 
 export const transform = g.store('transform', {
   x: 0,
   y: 0,
   angle: 0,
+  get position() {
+    return {
+      x: this.x,
+      y: this.y,
+    };
+  },
 });
 
 export type BodyConfigData = {
@@ -46,8 +53,18 @@ export const body = g.store('body', {
     fixedRotation: false,
   } as BodyConfigData,
   forces: {
-    velocity: null as { x: number; y: number } | null,
-    impulse: null as { x: number; y: number } | null,
+    velocity: null as IVec | null,
+    impulse: null as IVec | null,
+    force: null as IVec | null,
+    addVelocity(vel: IVec) {
+      this.velocity = vecAdd(this.velocity ?? { x: 0, y: 0 }, vel);
+    },
+    addImpulse(force: IVec) {
+      this.impulse = vecAdd(this.impulse ?? { x: 0, y: 0 }, force);
+    },
+    addForce(force: IVec) {
+      this.force = vecAdd(this.force ?? { x: 0, y: 0 }, force);
+    },
   },
 });
 

@@ -21,10 +21,10 @@ export const ballMovement = game.system({
       transform.y = 0;
       const currentSpeed = vecGetLength(body.velocity);
       if (currentSpeed < config.speed) {
-        body.forces.impulse = {
+        body.forces.addImpulse({
           x: 0,
           y: (config.speed - currentSpeed) * body.mass,
-        };
+        });
       }
     }
 

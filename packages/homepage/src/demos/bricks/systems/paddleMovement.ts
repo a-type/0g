@@ -25,7 +25,7 @@ export const paddleMovement = game.system({
       velocity.x = 12;
     }
 
-    body.forces.velocity = velocity;
+    body.forces.addVelocity(velocity);
     transform.y = state.initialY || transform.y;
   },
 });
