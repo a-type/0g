@@ -1,14 +1,11 @@
 import * as React from 'react';
 import { useFrame as useFrameDefault, FrameHook } from './useFrame';
-import { proxy } from 'valtio';
 import {
   Plugins,
   Prefab,
   WorldContext,
-  GlobalStore,
   FrameData,
   EntityData,
-  WorldApi,
   Stores,
   SavedScene,
 } from './types';
@@ -22,6 +19,7 @@ import { mergeDeepRight } from 'ramda';
 import { DebugUI } from './tools/DebugUI';
 import { System } from './system';
 import { initializeStores } from './internal/initializeStores';
+import { WorldState } from './internal/WorldState';
 
 export const worldContext = React.createContext<WorldContext | null>(null);
 
@@ -45,18 +43,7 @@ export const defaultScene = {
   },
 };
 
-const createGlobalStore = (initial: SavedScene = defaultScene) => {
-  const ids = Object.keys(initial.entities).reduce((acc, id) => {
-    acc[id] = true;
-    return acc;
-  }, {} as Record<string, boolean>);
-  return proxy<GlobalStore>({
-    ...initial,
-    ids,
-  });
-};
-
-function useWorldApi(store: GlobalStore, prefabs: Record<string, Prefab<any>>) {
+function useWorldApi(store: WorldState, prefabs: Record<string, Prefab<any>>) {
   const get = React.useCallback(
     (id: string) => {
       return store.entities[id] ?? null;
@@ -81,7 +68,6 @@ function useWorldApi(store: GlobalStore, prefabs: Record<string, Prefab<any>>) {
       };
 
       store.entities[id] = entity;
-      store.ids[id] = true;
       return store.entities[id];
     },
     [store, prefabs],
@@ -91,7 +77,6 @@ function useWorldApi(store: GlobalStore, prefabs: Record<string, Prefab<any>>) {
     (id: string) => {
       const e = store.entities[id];
       delete store.entities[id];
-      delete store.ids[id];
       return e;
     },
     [store],
@@ -102,13 +87,6 @@ function useWorldApi(store: GlobalStore, prefabs: Record<string, Prefab<any>>) {
     add,
     destroy,
   };
-}
-
-function loadProvidedScene(api: WorldApi, scene: GlobalStore) {
-  let entity: EntityData;
-  for (entity of Object.values(scene.entities)) {
-    api.add(entity.prefab, entity.storesData, entity.id);
-  }
 }
 
 function useDebugMode(setPaused: (p: boolean) => void) {
@@ -143,12 +121,14 @@ export const World: React.FC<WorldProps> = ({
     throw new Error('Invalid scene prop, must have entities');
   }
 
-  const [globalStore] = React.useState(() => createGlobalStore(scene));
+  const [worldState] = React.useState(
+    () => new WorldState(scene?.entities ?? {}),
+  );
 
   // DEBUG
   React.useEffect(() => {
-    (window as any).globalStore = globalStore;
-  }, [globalStore]);
+    (window as any).worldState = worldState;
+  }, [worldState]);
 
   const prefabsRef = React.useRef<Record<string, Prefab<any>>>({
     Scene: DefaultScenePrefab,
@@ -175,7 +155,7 @@ export const World: React.FC<WorldProps> = ({
     [plugins],
   );
 
-  const api = useWorldApi(globalStore, prefabsRef.current);
+  const api = useWorldApi(worldState, prefabsRef.current);
   const { get, add, destroy } = api;
   const [removeList] = React.useState(() => new Array<string>());
   const remove = React.useCallback(
@@ -194,7 +174,7 @@ export const World: React.FC<WorldProps> = ({
     () => ({
       events,
       prefabs: prefabsRef.current,
-      store: globalStore,
+      store: worldState,
       input: {
         keyboard,
         pointer,
@@ -205,7 +185,7 @@ export const World: React.FC<WorldProps> = ({
       remove,
       systems: systemsRef.current,
     }),
-    [events, prefabsRef, globalStore, pluginApis, get, add, remove],
+    [events, prefabsRef, worldState, pluginApis, get, add, remove],
   );
 
   const disposeEntity = React.useCallback(

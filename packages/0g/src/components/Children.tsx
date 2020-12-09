@@ -1,5 +1,5 @@
+import { observer } from 'mobx-react-lite';
 import * as React from 'react';
-import { useProxy } from 'valtio';
 import { Entity } from '../Entity';
 import { StoreData } from '../types';
 
@@ -10,15 +10,13 @@ export type ChildrenProps = {
   >;
 };
 
-export function Children({ entities }: ChildrenProps) {
-  const snapshot = useProxy(entities);
-
+export const Children = observer(({ entities }: ChildrenProps) => {
   return (
     <>
-      {Object.keys(snapshot).map((id) => {
+      {Object.keys(entities).map((id) => {
         if (!entities[id]) return null;
         return <Entity key={id} {...entities[id]} />;
       })}
     </>
   );
-}
+});

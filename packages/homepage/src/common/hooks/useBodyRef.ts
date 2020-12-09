@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef } from 'react';
-import { subscribe } from '0g';
 import { stores as box2dStores } from '@0g/box2d';
+import { autorun } from 'mobx';
 
 export function useBodyRef<T extends HTMLElement>(
   stores: {
@@ -12,9 +12,7 @@ export function useBodyRef<T extends HTMLElement>(
   const ref = useRef<T>(null);
 
   useLayoutEffect(() => {
-    const updateBody = () => {
-      if (!ref.current) return;
-
+    return autorun(() => {
       const width =
         stores.body.config.shape === 'circle'
           ? stores.body.config.radius * 2 * pixelScale
@@ -23,29 +21,16 @@ export function useBodyRef<T extends HTMLElement>(
         stores.body.config.shape === 'circle'
           ? stores.body.config.radius * 2 * pixelScale
           : stores.body.config.height * pixelScale;
-
-      ref.current.style.width = `${width}px`;
-      ref.current.style.height = `${height}px`;
-    };
-    const updateTransform = () => {
-      if (!ref.current) return;
-
       const { x, y, angle } = stores.transform;
-      ref.current.style.transform = `translate(${x * pixelScale}px, ${
-        y * pixelScale
-      }px) translate(-50%, -50%) rotate(${angle ?? 0}rad)`;
-    };
 
-    const unsubTransform = subscribe(stores.transform, updateTransform);
-    const unsubBody = subscribe(stores.body, updateBody);
-
-    updateBody();
-    updateTransform();
-
-    return () => {
-      unsubTransform();
-      unsubBody();
-    };
+      if (ref.current) {
+        ref.current.style.width = `${width}px`;
+        ref.current.style.height = `${height}px`;
+        ref.current.style.transform = `translate(${x * pixelScale}px, ${
+          y * pixelScale
+        }px) translate(-50%, -50%) rotate(${angle ?? 0}rad)`;
+      }
+    });
   }, [stores.transform, stores.body.config, ref]);
 
   return ref;
