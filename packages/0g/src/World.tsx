@@ -26,7 +26,7 @@ export type WorldProps = {
   prefabs: Record<string, Prefab<Stores>>;
   useFrame?: FrameHook;
   plugins?: Plugins;
-  scene?: SavedScene;
+  scene?: EntityData;
   systems: System<any, any>[];
 };
 
@@ -88,21 +88,16 @@ function useWorldApi(store: WorldState, prefabs: Record<string, Prefab<any>>) {
   };
 }
 
+const emptyScene = { id: 'scene', prefab: 'Scene', storesData: {} };
+
 export const World: React.FC<WorldProps> = ({
   prefabs,
   useFrame = useFrameDefault,
   plugins = {},
-  scene,
+  scene = emptyScene,
   systems,
 }) => {
-  // validation
-  if (scene && !scene.entities) {
-    throw new Error('Invalid scene prop, must have entities');
-  }
-
-  const [worldState] = React.useState(
-    () => new WorldState(scene?.entities ?? {}),
-  );
+  const [worldState] = React.useState(() => new WorldState({}));
 
   // DEBUG
   React.useEffect(() => {
@@ -143,11 +138,6 @@ export const World: React.FC<WorldProps> = ({
     },
     [removeList],
   );
-
-  // React.useEffect(() => {
-  //   if (scene) loadProvidedScene({ get, add, remove }, scene);
-  //   // TODO: reset after scene change?
-  // }, [scene, get, add, remove]);
 
   const context = React.useMemo<WorldContext>(
     () => ({
@@ -216,7 +206,11 @@ export const World: React.FC<WorldProps> = ({
     <worldContext.Provider value={context}>
       <PluginProviders plugins={plugins}>
         <>
-          <Entity id="scene" prefab="Scene" initial={{}} />
+          <Entity
+            id={scene.id || 'scene'}
+            prefab={scene.prefab || 'Scene'}
+            initial={scene.storesData}
+          />
         </>
       </PluginProviders>
     </worldContext.Provider>

@@ -10,13 +10,15 @@ export type ChildrenProps = {
   >;
 };
 
-export const Children = observer(({ entities }: ChildrenProps) => {
-  return (
-    <>
-      {Object.keys(entities).map((id) => {
-        if (!entities[id]) return null;
-        return <Entity key={id} {...entities[id]} />;
-      })}
-    </>
-  );
-});
+export const Children = observer(
+  ({ entities: { __kind, ...entities } }: ChildrenProps) => {
+    return (
+      <>
+        {Object.keys(entities).map((id) => {
+          if (!entities[id]) return null;
+          return <Entity key={id} {...entities[id]} />;
+        })}
+      </>
+    );
+  },
+);

@@ -8,74 +8,70 @@ import './systems';
 import './prefabs';
 import { game } from './game';
 
-const world: SavedScene = {
-  entities: {
-    scene: {
-      id: 'scene',
-      prefab: 'Scene',
-      storesData: {
-        children: {
-          paddle: {
-            id: 'paddle',
-            prefab: 'Paddle',
-            initial: {
-              transform: { x: 0, y: SIZE / 2 },
+const scene = {
+  id: 'scene',
+  prefab: 'Scene',
+  storesData: {
+    children: {
+      paddle: {
+        id: 'paddle',
+        prefab: 'Paddle',
+        initial: {
+          transform: { x: 0, y: SIZE / 2 },
+        },
+      },
+      ball: {
+        id: 'ball',
+        prefab: 'Ball',
+        initial: {
+          transform: { x: 0, y: 0 },
+        },
+      },
+      leftWall: {
+        id: 'leftWall',
+        prefab: 'Wall',
+        initial: {
+          body: {
+            config: {
+              width: 5,
+              height: SIZE,
             },
           },
-          ball: {
-            id: 'ball',
-            prefab: 'Ball',
-            initial: {
-              transform: { x: 0, y: 0 },
+          transform: { x: -SIZE / 2, y: 0 },
+        },
+      },
+      rightWall: {
+        id: 'rightWall',
+        prefab: 'Wall',
+        initial: {
+          body: {
+            config: {
+              width: 5,
+              height: SIZE,
             },
           },
-          leftWall: {
-            id: 'leftWall',
-            prefab: 'Wall',
-            initial: {
-              body: {
-                config: {
-                  width: 5,
-                  height: SIZE,
-                },
-              },
-              transform: { x: -SIZE / 2, y: 0 },
+          transform: { x: SIZE / 2, y: 0 },
+        },
+      },
+      topWall: {
+        id: 'topWall',
+        prefab: 'Wall',
+        initial: {
+          body: {
+            config: {
+              width: SIZE,
+              height: 0.5,
             },
           },
-          rightWall: {
-            id: 'rightWall',
-            prefab: 'Wall',
-            initial: {
-              body: {
-                config: {
-                  width: 5,
-                  height: SIZE,
-                },
-              },
-              transform: { x: SIZE / 2, y: 0 },
-            },
-          },
-          topWall: {
-            id: 'topWall',
-            prefab: 'Wall',
-            initial: {
-              body: {
-                config: {
-                  width: SIZE,
-                  height: 0.5,
-                },
-              },
-              transform: { x: 0, y: -SIZE / 2 },
-            },
-          },
-          blockSpawner: {
-            id: 'blockSpawner',
-            prefab: 'BlockSpawner',
-            initial: {
-              transform: {
-                y: -SIZE / 3,
-              },
-            },
+          transform: { x: 0, y: -SIZE / 2 },
+        },
+      },
+      blockSpawner: {
+        id: 'blockSpawner',
+        prefab: 'BlockSpawner',
+        initial: {
+          transform: {
+            y: -SIZE / 3,
           },
         },
       },
@@ -95,7 +91,7 @@ const App = () => {
       }}
     >
       <div className="CenterSpaceTransformer">
-        <game.World scene={world} />
+        <game.World scene={scene} />
       </div>
     </div>
   );
