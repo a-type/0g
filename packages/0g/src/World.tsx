@@ -16,7 +16,6 @@ import { Entity } from './Entity';
 import { DefaultScenePrefab } from './DefaultScenePrefab';
 import shortid from 'shortid';
 import { mergeDeepRight } from 'ramda';
-import { DebugUI } from './tools/DebugUI';
 import { System } from './system';
 import { initializeStores } from './internal/initializeStores';
 import { WorldState } from './internal/WorldState';
@@ -87,26 +86,6 @@ function useWorldApi(store: WorldState, prefabs: Record<string, Prefab<any>>) {
     add,
     destroy,
   };
-}
-
-function useDebugMode(setPaused: (p: boolean) => void) {
-  const [isDebug, setIsDebug] = React.useState(false);
-  React.useEffect(() => {
-    function handleKey(ev: KeyboardEvent) {
-      if (ev.key === '/') {
-        setIsDebug((v) => {
-          setPaused(!v);
-          return !v;
-        });
-      }
-    }
-    window.addEventListener('keypress', handleKey);
-    return () => {
-      window.removeEventListener('keypress', handleKey);
-    };
-  }, [setPaused]);
-
-  return isDebug;
 }
 
 export const World: React.FC<WorldProps> = ({
@@ -233,14 +212,11 @@ export const World: React.FC<WorldProps> = ({
   );
   useFrame(loop, paused);
 
-  const isDebug = useDebugMode(setPaused);
-
   return (
     <worldContext.Provider value={context}>
       <PluginProviders plugins={plugins}>
         <>
           <Entity id="scene" prefab="Scene" initial={{}} />
-          {isDebug && <DebugUI />}
         </>
       </PluginProviders>
     </worldContext.Provider>
