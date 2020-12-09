@@ -4,7 +4,6 @@ import * as ReactDOM from 'react-dom';
 import { SavedScene } from '0g';
 import { PX_SCALE, SIZE } from './constants';
 import './index.css';
-import '0g/src/tools/tools.css';
 import './systems';
 import './prefabs';
 import { game } from './game';
