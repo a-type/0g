@@ -1,5 +1,4 @@
 import * as React from 'react';
-import * as g from '0g';
 import { Entity } from '0g';
 import { game } from '../game';
 
@@ -17,7 +16,7 @@ export const BlockSpawner = game.prefab({
     spawnerConfig: game.stores.spawnerConfig(),
   },
   Component: ({ stores, id }) => {
-    const { transform, spawnerConfig } = g.useProxy(stores);
+    const { transform, spawnerConfig } = stores;
     return (
       <>
         {spawnerConfig.blocks.map((row, h) => {

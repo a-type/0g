@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 import { FC, ReactElement } from 'react';
 import { Keyboard } from './input/keyboard';
 import { Pointer } from './input/pointer';
+import { WorldState } from './internal/WorldState';
 import { System } from './system';
 
 type Empty = Record<string, any>;
@@ -61,7 +62,7 @@ export type WorldContext<P extends Plugins = Record<string, Plugin<Empty>>> = {
   plugins: PluginApis<P>;
   input: InputTools;
   prefabs: Record<string, Prefab<any>>;
-  store: GlobalStore;
+  store: WorldState;
   events: EventEmitter;
   systems: System<any, any>[];
 } & WorldApi;

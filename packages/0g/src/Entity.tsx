@@ -1,5 +1,5 @@
+import { observer } from 'mobx-react-lite';
 import * as React from 'react';
-import { useProxy } from 'valtio';
 import { useInitial } from './internal/useInitial';
 import { System } from './system';
 import {
@@ -65,7 +65,7 @@ function useRunSystems(
   }, [world, entity, runnableSystems]);
 }
 
-export function Entity(props: EntityProps) {
+export const Entity = observer((props: EntityProps) => {
   // nothing can be changed when props change.
   const prefabName = useInitial(props.prefab);
   const initial = useInitial(props.initial);
@@ -80,9 +80,8 @@ export function Entity(props: EntityProps) {
     return null;
   }
 
-  const idsSnapshot = useProxy(world.store.ids);
   const entity = world.store.entities[id] ?? null;
-  const entityExists = !!idsSnapshot[id];
+  const entityExists = !!entity;
   // enforce presence in World
   React.useEffect(() => {
     if (!entityExists) {
@@ -107,4 +106,6 @@ export function Entity(props: EntityProps) {
       <prefab.Component stores={entity.storesData} id={id} />
     </React.Suspense>
   );
-}
+});
+
+Entity.displayName = 'Entity';

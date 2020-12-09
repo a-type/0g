@@ -7,7 +7,6 @@
   dependencies:
     ramda "^0.27.1"
     shortid "^2.2.16"
-    valtio "^0.4.5"
 
 "@0g/box2d@link:packages/box2d":
   version "0.0.1"
@@ -7910,6 +7909,16 @@ mkdirp@^0.5.0, mkdirp@^0.5.1, mkdirp@~0.5.1:
   dependencies:
     minimist "^1.2.5"
 
+mobx-react-lite@^3.1.6:
+  version "3.1.6"
+  resolved "https://registry.yarnpkg.com/mobx-react-lite/-/mobx-react-lite-3.1.6.tgz#e7f4809ab66edd1acca5adb00c6b88c600ae1952"
+  integrity sha512-MM3x9BLt5nC7iE/ILA5n2+hfrplEKYbFjqROEuGkzBdZP/KD+Z44+2gseczRrTG0xFuiPWfEzgT68+6/zqOiEw==
+
+mobx@^6.0.4:
+  version "6.0.4"
+  resolved "https://registry.yarnpkg.com/mobx/-/mobx-6.0.4.tgz#8fc3e3629a3346f8afddf5bd954411974744dad1"
+  integrity sha512-wT2QJT9tW19VSHo9x7RPKU3z/I2Ps6wUS8Kb1OO+kzmg7UY3n4AkcaYG6jq95Lp1R9ohjC/NGYuT2PtuvBjhFg==
+
 modify-values@^1.0.0:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/modify-values/-/modify-values-1.0.1.tgz#b3939fa605546474e3e3e3c63d64bd43b4ee6022"
@@ -9414,11 +9423,6 @@ protoduck@^5.0.1:
   integrity sha512-WxoCeDCoCBY55BMvj4cAEjdVUFGRWed9ZxPlqTKYyw1nDDTQ4pqmnIMAGfJlg7Dx35uB/M+PHJPTmGOvaCaPTg==
   dependencies:
     genfun "^5.0.0"
-
-proxy-compare@1.1.3:
-  version "1.1.3"
-  resolved "https://registry.yarnpkg.com/proxy-compare/-/proxy-compare-1.1.3.tgz#c47cb249f54a8a11a2e06876ddd6435c2d02716c"
-  integrity sha512-sw8CFZoQ6UYoRpeU48jiaiVpCYYnnIiFH8eLMmi1V3MJOq7hkBLtjRe8SiXSuYZm/iIjlPfln6ncNn5V+T5AJg==
 
 psl@^1.1.28:
   version "1.8.0"
@@ -11475,13 +11479,6 @@ use-memo-one@^1.1.0:
   resolved "https://registry.yarnpkg.com/use-memo-one/-/use-memo-one-1.1.1.tgz#39e6f08fe27e422a7d7b234b5f9056af313bd22c"
   integrity sha512-oFfsyun+bP7RX8X2AskHNTxu+R3QdE/RC5IefMbqptmACAA/gfol1KDD5KRzPsGMa62sWxGZw+Ui43u6x4ddoQ==
 
-use-subscription@1.5.1:
-  version "1.5.1"
-  resolved "https://registry.yarnpkg.com/use-subscription/-/use-subscription-1.5.1.tgz#73501107f02fad84c6dd57965beb0b75c68c42d1"
-  integrity sha512-Xv2a1P/yReAjAbhylMfFplFKj9GssgTwN7RlcTxBujFQcloStWNDQdc4g4NRWH9xS4i/FDk04vQBptAXoF3VcA==
-  dependencies:
-    object-assign "^4.1.1"
-
 use@^3.1.0:
   version "3.1.1"
   resolved "https://registry.yarnpkg.com/use/-/use-3.1.1.tgz#d50c8cac79a19fbc20f2911f56eb973f4e10070f"
@@ -11561,14 +11558,6 @@ validate-npm-package-name@^3.0.0:
   integrity sha1-X6kS2B630MdK/BQN5zF/DKffQ34=
   dependencies:
     builtins "^1.0.3"
-
-valtio@^0.4.5:
-  version "0.4.5"
-  resolved "https://registry.yarnpkg.com/valtio/-/valtio-0.4.5.tgz#7794514e08e3bf96d1d5299d4fbc5593df087fd7"
-  integrity sha512-lH9+ExlxxAXkgKdXi2o1Wx6UYQqwjoQg1bPVjoOFbbg4VnG1qGe42OHwMXUFkNZcPQimAFoCpyoinemEasZyrQ==
-  dependencies:
-    proxy-compare "1.1.3"
-    use-subscription "1.5.1"
 
 vendors@^1.0.0:
   version "1.0.4"

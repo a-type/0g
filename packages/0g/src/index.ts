@@ -6,4 +6,5 @@ export * from './system';
 export * from './plugin';
 export * from './create';
 export * from './Entity';
-export { subscribe, useProxy } from 'valtio';
+
+import './internal/mobxConfiguration';

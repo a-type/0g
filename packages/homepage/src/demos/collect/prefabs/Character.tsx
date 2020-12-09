@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { Container, Sprite } from '@inlet/react-pixi';
-import * as g from '0g';
 import charSheet from '../assets/roguelikeChar_transparent.png';
 import { game } from '../game';
 import { useSprite } from '@0g/pixi';
@@ -43,7 +42,7 @@ export const Character = game.prefab({
     config: game.stores.characterConfig,
   },
   Component: ({ stores }) => {
-    const { transform, spriteConfig, clothesSpriteConfig } = g.useProxy(stores);
+    const { transform, spriteConfig, clothesSpriteConfig } = stores;
     const { source, tileData } = spriteConfig;
     // you can use hooks here!
 

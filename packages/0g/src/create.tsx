@@ -10,6 +10,7 @@ import {
   SystemConfig,
 } from './types';
 import { World } from './World';
+import { observer } from 'mobx-react-lite';
 
 export function create<
   Stores extends Record<string, Store<string, any, any>>,
@@ -41,10 +42,17 @@ export function create<
       systems.push(sys);
       return sys;
     },
-    prefab: <S extends Record<string, StoreData>>(config: PrefabConfig<S>) => {
+    prefab: <S extends Record<string, StoreData>>({
+      Component,
+      ...config
+    }: PrefabConfig<S>) => {
+      const ObserverComponent = observer(Component);
+      ObserverComponent.displayName = config.name;
       // not much to do...
-      prefabs[config.name] = config;
-      config.Component.displayName = config.name;
+      prefabs[config.name] = {
+        ...config,
+        Component: ObserverComponent,
+      };
       return config;
     },
     stores: allStores as CombineStores<Stores, Plugins>,
