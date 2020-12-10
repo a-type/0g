@@ -1,1 +1,0 @@
-export { characterMovement } from './characterMovement';

@@ -2,7 +2,8 @@ name: Homepage
 
 on:
   push:
-    branches: master
+    branches:
+    - master
 
 jobs:
   build:
@@ -20,7 +21,9 @@ jobs:
       # build libraries
       - run: yarn build
       # homepage
-      - run: yarn homepage
+      - run: yarn build
+        working-directory: ./packages/website
+      - run: cp -r ./packages/website/dist ./docs
       - name: Github Pages
         uses: crazy-max/ghaction-github-pages@v1.2.5
         with:

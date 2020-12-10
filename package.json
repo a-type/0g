@@ -13,7 +13,7 @@
     "test": "jest",
     "test:cov": "jest --coverage",
     "build": "lerna run --scope 0g build && lerna run --scope @0g/* build",
-    "homepage": "lerna run --scope homepage build"
+    "homepage": "lerna run --scope website build"
   },
   "repository": {
     "type": "git",
