@@ -22,6 +22,13 @@ export const brickBreaker = game.system({
         game.stores.spawnerConfig.get(spawner)!.blocks[
           other.storesData.spawner.x
         ][other.storesData.spawner.y] = false;
+
+        // also make the paddle a little smaller
+        const paddle = ctx.world.get('paddle')!;
+        const bodyStore = game.stores.body.get(paddle)!;
+        if (bodyStore.config.shape === 'rectangle') {
+          bodyStore.config.width -= 1;
+        }
       }
     }
   },

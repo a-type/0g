@@ -9,12 +9,9 @@ import {
 } from '@flyover/box2d';
 import { EntityContact } from './index';
 import * as stores from './stores';
+import { reaction } from 'mobx';
 
-export const rigidBody = new g.System<{
-  body: b2Body;
-  newContactsCache: EntityContact[];
-  endedContactsCache: EntityContact[];
-}>({
+export const rigidBody = new g.System({
   name: 'rigidBody',
   runsOn: (prefab) => {
     return !!prefab.stores.transform && !!prefab.stores.body;
@@ -23,59 +20,73 @@ export const rigidBody = new g.System<{
     body: (null as unknown) as b2Body,
     newContactsCache: new Array<EntityContact>(),
     endedContactsCache: new Array<EntityContact>(),
+    cleanupSubscriptions: () => {},
   },
   init: (entity, state, ctx) => {
     const transform = stores.transform.get(entity)!;
-    const { x, y } = transform;
     const bodyStore = stores.body.get(entity)!;
-    const {
-      // TODO: verify assumptions about defaults
-      density = 1,
-      friction = 0.5,
-      isStatic = false,
-      angle = 0,
-      restitution = 0.5,
-      fixedRotation = false,
-      linearDamping = 0,
-      angularDamping = 0,
-    } = bodyStore.config;
-    const world = ctx.world.plugins.box2d.world as b2World;
 
-    const body = world.CreateBody({
-      type: isStatic ? b2BodyType.b2_staticBody : b2BodyType.b2_dynamicBody,
-      angle,
-      position: { x, y },
-      linearDamping,
-      fixedRotation,
-      angularDamping,
-      allowSleep: false,
-      awake: true,
-      userData: {
-        entityId: entity.id,
+    // create / recreate body when config changes
+    state.cleanupSubscriptions = reaction(
+      () => ({ ...bodyStore.config }),
+      (config) => {
+        console.log('recreating body', ctx.entity.id);
+        // remove old body
+        if (state.body) {
+          ctx.world.plugins.box2d.world.DestroyBody(state.body);
+        }
+
+        const {
+          // TODO: verify assumptions about defaults
+          density = 1,
+          friction = 0.5,
+          isStatic = false,
+          angle = 0,
+          restitution = 0.5,
+          fixedRotation = false,
+          linearDamping = 0,
+          angularDamping = 0,
+        } = config;
+
+        const { x, y } = transform;
+        const world = ctx.world.plugins.box2d.world as b2World;
+
+        const body = world.CreateBody({
+          type: isStatic ? b2BodyType.b2_staticBody : b2BodyType.b2_dynamicBody,
+          angle,
+          position: { x, y },
+          linearDamping,
+          fixedRotation,
+          angularDamping,
+          allowSleep: false,
+          awake: true,
+          userData: {
+            entityId: entity.id,
+          },
+        });
+        const fix = new b2FixtureDef();
+        fix.density = density;
+        fix.restitution = restitution;
+        fix.friction = friction;
+        fix.userData = { entityId: ctx.entity.id };
+
+        if (config.shape === 'rectangle') {
+          const shape = new b2PolygonShape();
+          shape.SetAsBox(config.width / 2, config.height / 2);
+          fix.shape = shape;
+        } else {
+          fix.shape = new b2CircleShape(config.radius);
+        }
+        body.CreateFixture(fix);
+
+        bodyStore.mass = body.GetMass();
+        bodyStore.angularVelocity = body.GetAngularVelocity();
+        bodyStore.velocity = body.GetLinearVelocity();
+
+        state.body = body;
       },
-    });
-    const fix = new b2FixtureDef();
-    fix.density = density;
-    fix.restitution = restitution;
-    fix.friction = friction;
-    fix.userData = { entityId: ctx.entity.id };
-
-    if (bodyStore.config.shape === 'rectangle') {
-      const shape = new b2PolygonShape();
-      shape.SetAsBox(bodyStore.config.width / 2, bodyStore.config.height / 2);
-      fix.shape = shape;
-    } else {
-      fix.shape = new b2CircleShape(bodyStore.config.radius);
-    }
-    body.CreateFixture(fix);
-
-    bodyStore.mass = body.GetMass();
-    bodyStore.angularVelocity = body.GetAngularVelocity();
-    bodyStore.velocity = body.GetLinearVelocity();
-
-    state.body = body;
-    (window as any).bodies = (window as any).bodies || [];
-    (window as any).bodies.push(body);
+      { fireImmediately: true }
+    );
 
     // subscribe to contacts
     const onBeginContact = (contact: EntityContact) => {
@@ -91,8 +102,9 @@ export const rigidBody = new g.System<{
     });
   },
   dispose: (_, state, ctx) => {
-    (ctx.world.plugins as any).box2d.world.DestroyBody(state.body);
-    (ctx.world.plugins as any).box2d.contacts.unsubscribe(ctx.entity.id);
+    ctx.world.plugins.box2d.world.DestroyBody(state.body);
+    ctx.world.plugins.box2d.contacts.unsubscribe(ctx.entity.id);
+    state.cleanupSubscriptions?.();
   },
   preStep: (entity, state) => {
     const transform = stores.transform.get(entity)!;
