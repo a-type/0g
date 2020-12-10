@@ -25,7 +25,7 @@ jobs:
         working-directory: ./packages/website
         env:
           SKIP_PREFLIGHT_CHECK: true
-      - run: cp -r ./packages/website/dist ./docs
+      - run: cp -r ./packages/website/build ./docs
       - name: Github Pages
         uses: crazy-max/ghaction-github-pages@v1.2.5
         with:
