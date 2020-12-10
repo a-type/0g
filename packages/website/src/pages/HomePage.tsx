@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { Flex, Text } from 'rebass';
+import { BricksGame } from '../demos/bricks/BricksGame';
 
 export function HomePage() {
   return (
@@ -11,7 +12,7 @@ export function HomePage() {
         width="100vw"
         height="80vh"
       >
-        {/* Game goes here ... */}
+        <BricksGame />
       </Flex>
       <section>
         <Text>Stuff about library goes here</Text>
