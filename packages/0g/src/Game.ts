@@ -24,10 +24,7 @@ export class GameState {
   }
 }
 
-export enum GamePlayState {
-  Running,
-  Paused,
-}
+export type GamePlayState = 'paused' | 'running';
 
 export enum GameEvent {
   Step = 'step',
@@ -89,7 +86,7 @@ export class Game extends EventEmitter {
     plugins = {},
     requestFrame = requestAnimationFrame.bind(window),
     cancelFrame = cancelAnimationFrame.bind(window),
-    initialPlayState: initialState = GamePlayState.Running,
+    initialPlayState: initialState = 'running',
   }: {
     systems: Record<string, System<any>>;
     plugins?: Record<string, Plugin>;
@@ -112,7 +109,7 @@ export class Game extends EventEmitter {
     this._raf = requestFrame;
     this._cancelRaf = cancelFrame;
     this._playState = initialState;
-    if (this._playState === GamePlayState.Running) {
+    if (this._playState === 'running') {
       this.resume();
     }
   }
@@ -125,6 +122,12 @@ export class Game extends EventEmitter {
   }
   get plugins() {
     return this._plugins;
+  }
+  get playState() {
+    return this._playState;
+  }
+  get isPaused() {
+    return this._playState === 'paused';
   }
 
   get = (id: string) => {
@@ -168,13 +171,13 @@ export class Game extends EventEmitter {
   };
 
   resume = () => {
-    this._playState = GamePlayState.Running;
+    this._playState = 'running';
     this._lastFrameTime = null;
     this.runFrame(performance.now());
   };
 
   pause = () => {
-    this._playState = GamePlayState.Paused;
+    this._playState = 'paused';
     // TODO: does this make sense?
     // this._cancelRaf(this._frameHandle);
   };
@@ -194,7 +197,7 @@ export class Game extends EventEmitter {
   input = input;
 
   private runFrame = (time: DOMHighResTimeStamp) => {
-    if (this._playState === GamePlayState.Running)
+    if (this._playState === 'running')
       this._frameHandle = this._raf(this.runFrame);
 
     this._frameContext.delta = this._delta =

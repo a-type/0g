@@ -29,11 +29,11 @@ export const ballMovement = new System({
         });
       }
     } else {
-      if (vecGetLength(body.velocity) < config.speed) {
+      if (Math.abs(vecGetLength(body.velocity) - config.speed) > 0.001) {
         body.forces.addImpulse(
           vecScale(
             vecNormalize(body.velocity),
-            config.speed - vecGetLength(body.velocity) * body.mass
+            (config.speed - vecGetLength(body.velocity)) * body.mass
           )
         );
       }

@@ -5,6 +5,7 @@ import * as systems from './systems';
 
 const game = new Game({
   systems,
+  initialPlayState: 'paused',
 });
 
 (window as any).game = game;

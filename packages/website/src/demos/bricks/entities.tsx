@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { entity } from '0g';
+import React, { useCallback, useEffect, useState } from 'react';
+import { entity, useGame } from '0g';
 import { stores } from './stores';
 import { useBodyRef } from '@0g/box2d/web';
 import { Button } from '../../components/Button';
@@ -142,7 +142,19 @@ export const Paddle = entity(
     config: stores.paddleConfig(),
   },
   ({ stores }) => {
-    return <Button ref={useBodyRef(stores)}>Start</Button>;
+    const game = useGame();
+    const handleClick = useCallback(() => {
+      if (game.isPaused) {
+        game.resume();
+      } else {
+        game.pause();
+      }
+    }, [game]);
+    return (
+      <Button onClick={handleClick} ref={useBodyRef(stores)}>
+        Start
+      </Button>
+    );
   }
 );
 
