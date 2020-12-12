@@ -1,6 +1,6 @@
 import { System } from '0g';
 import { EntityContact, systems as box2dSystems } from '@0g/box2d';
-import { vecGetLength } from 'math2d';
+import { vecGetLength, vecNormalize, vecScale } from 'math2d';
 import { stores } from './stores';
 
 export const { rigidBody, physicsWorld } = box2dSystems;
@@ -27,6 +27,15 @@ export const ballMovement = new System({
           x: 0,
           y: (config.speed - currentSpeed) * body.mass,
         });
+      }
+    } else {
+      if (vecGetLength(body.velocity) < config.speed) {
+        body.forces.addImpulse(
+          vecScale(
+            vecNormalize(body.velocity),
+            config.speed - vecGetLength(body.velocity) * body.mass
+          )
+        );
       }
     }
 
@@ -89,6 +98,6 @@ export const paddleMovement = new System({
     }
 
     body.forces.addVelocity(velocity);
-    // transform.y = state.initialY || transform.y;
+    transform.y = state.initialY || transform.y;
   },
 });

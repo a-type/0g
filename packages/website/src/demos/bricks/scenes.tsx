@@ -19,7 +19,7 @@ const debris = new Array(20).fill(null).map((_, i) => ({
   y: Math.random() * 40 - 20,
   angle: Math.random() * Math.PI * 2,
   key: i,
-  velocity: vecScale(randomUnit(), Math.random() * 0.05),
+  velocity: vecScale(randomUnit(), Math.random() * 0.1),
   angularVelocity: Math.random() * 0.05 - 0.025,
 }));
 
