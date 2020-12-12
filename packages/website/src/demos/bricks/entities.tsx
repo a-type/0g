@@ -3,7 +3,7 @@ import { entity } from '0g';
 import { stores } from './stores';
 import { useBodyRef } from '@0g/box2d/web';
 import { Button } from '../../components/Button';
-import { autorun } from 'mobx';
+import { RectangleBodyConfig } from '@0g/box2d';
 
 export const Ball = entity(
   'Ball',
@@ -136,6 +136,7 @@ export const Paddle = entity(
         angle: 0,
         friction: 0.25,
         fixedRotation: true,
+        linearDamping: 0,
       },
     }),
     config: stores.paddleConfig(),
@@ -183,6 +184,31 @@ export const Wall = entity(
           backgroundColor: showHit ? 'white' : 'transparent',
         }}
       />
+    );
+  }
+);
+
+export const Debris = entity(
+  'Debris',
+  {
+    transform: stores.transform(),
+    body: stores.body({
+      config: {
+        shape: 'rectangle',
+        width: 10,
+        height: 10,
+        restitution: 0.5,
+        friction: 0,
+      },
+    }),
+    config: stores.debrisConfig(),
+  },
+  ({ stores }) => {
+    const size = (stores.body.config as RectangleBodyConfig).width;
+    return (
+      <div ref={useBodyRef(stores)} css={{ fontSize: size * 10 }}>
+        {stores.config.text}
+      </div>
     );
   }
 );

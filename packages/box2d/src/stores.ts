@@ -2,6 +2,7 @@ import * as g from '0g';
 import { EntityContact } from './ContactListener';
 import { IVec, vecAdd } from 'math2d';
 import { DEFAULT_WORLD_NAME } from './constants';
+import { BodyConfigData } from './types';
 
 export const transform = g.store('transform', {
   x: 0,
@@ -14,29 +15,6 @@ export const transform = g.store('transform', {
     };
   },
 });
-
-export type BodyConfigData = {
-  friction?: number;
-  isStatic?: boolean;
-  angle?: number;
-  restitution?: number;
-  bullet?: boolean;
-  fixedRotation?: boolean;
-  density?: number;
-  angularDamping?: number;
-  linearDamping?: number;
-  worldName?: string;
-} & (
-  | {
-      shape: 'circle';
-      radius: number;
-    }
-  | {
-      shape: 'rectangle';
-      width: number;
-      height: number;
-    }
-);
 
 export const body = g.store('body', {
   mass: 0,

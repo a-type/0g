@@ -89,6 +89,6 @@ export const paddleMovement = new System({
     }
 
     body.forces.addVelocity(velocity);
-    transform.y = state.initialY || transform.y;
+    // transform.y = state.initialY || transform.y;
   },
 });

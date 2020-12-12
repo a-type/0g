@@ -37,5 +37,8 @@ export const stores = {
       );
     },
   }),
-  paddleConfig: store('paddleConfig', { speed: 12 }),
+  paddleConfig: store('paddleConfig', { speed: 16 }),
+  debrisConfig: store('debrisConfig', {
+    text: '%',
+  }),
 };

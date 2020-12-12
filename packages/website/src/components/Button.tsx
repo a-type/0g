@@ -15,6 +15,8 @@ export const Button = styled.button((props) => ({
 
   transition: '0.2s ease all',
 
+  border: 'none',
+
   '&:active': {
     transform: 'scale(0.9)',
   },
