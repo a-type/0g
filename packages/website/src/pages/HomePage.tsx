@@ -1,21 +1,21 @@
 import * as React from 'react';
-import { Flex, Text } from 'rebass';
 import { BricksGame } from '../demos/bricks/BricksGame';
 
 export function HomePage() {
   return (
     <article>
-      <Flex
-        flexDirection="column"
-        alignItems="center"
-        p={2}
-        width="100vw"
-        height="80vh"
+      <div
+        css={(theme) => ({
+          flexDirection: 'column',
+          alignItems: 'center',
+          width: '100vw',
+          height: '80vh',
+        })}
       >
         <BricksGame />
-      </Flex>
-      <section>
-        <Text>Stuff about library goes here</Text>
+      </div>
+      <section css={(theme) => ({ padding: theme.space[2] })}>
+        <p>Stuff about library goes here</p>
       </section>
     </article>
   );

@@ -2,14 +2,14 @@ import { EventEmitter } from 'events';
 import { FC, ReactElement } from 'react';
 import { Keyboard } from './input/keyboard';
 import { Pointer } from './input/pointer';
-import { WorldState } from './internal/WorldState';
+import { Game } from './Game';
 import { System } from './system';
 
 type Empty = Record<string, any>;
 
 export type Plugin<
   API extends Empty = Empty,
-  S extends Record<string, Store<string, any, any>> = {}
+  S extends Record<string, Store<string, any, any>> = any
 > = {
   wrap?: (content: ReactElement) => ReactElement;
   api: API;
@@ -18,7 +18,7 @@ export type Plugin<
     world: WorldContext;
     frame: FrameData;
   }) => void | Promise<void>;
-  systems?: Record<string, System<any, any>>;
+  systems?: Record<string, System<any>>;
   stores: S;
 };
 export type Plugins = Record<string, Plugin>;
@@ -31,40 +31,26 @@ export type InputTools = {
   pointer: Pointer;
 };
 
-export type GlobalStore = {
-  entities: Record<string, EntityData>;
-  // Purely for efficiency: this is a less frequently updating
-  // map which just indicates all the existing entity IDs.
-  ids: Record<string, boolean>;
-};
-
-export type SavedScene = Pick<GlobalStore, 'entities'>;
-
 export type WorldApi = {
-  get(id: string): EntityData | null;
+  get(id: string): EntityData<any> | null;
   // TODO: private?
-  add(
-    prefabName: string,
-    initialStores?: Record<string, any>,
-    id?: string | null,
-  ): EntityData;
+  add(initialStores?: Record<string, any>, id?: string | null): EntityData<any>;
   // TODO: private?
   remove(id: string): void;
 };
 
 export type SystemStates = {
-  get(entity: EntityData, systemAlias: string): any;
-  getAll(entity: EntityData): Record<string, any>;
-  add(entity: EntityData, systemAlias: string, initial: any): void;
+  get(entity: EntityData<any>, systemAlias: string): any;
+  getAll(entity: EntityData<any>): Record<string, any>;
+  add(entity: EntityData<any>, systemAlias: string, initial: any): void;
 };
 
 export type WorldContext<P extends Plugins = Record<string, Plugin<Empty>>> = {
   plugins: PluginApis<P>;
   input: InputTools;
-  prefabs: Record<string, Prefab<any>>;
-  store: WorldState;
+  store: Game;
   events: EventEmitter;
-  systems: System<any, any>[];
+  systems: System<any>[];
 } & WorldApi;
 
 export type FrameData = {
@@ -80,101 +66,72 @@ type DeepPartial<T> = {
     : DeepPartial<T[P]> | T[P];
 };
 
-export type StoreData<T extends Empty = Empty> = T;
+export type StoreData<Kind extends string, T extends {}> = T & { __kind: Kind };
 export type Store<
   Kind extends string,
-  T extends StoreData,
+  T extends {},
   Api extends StoreApi = {}
 > = {
   kind: Kind;
   initial: T;
-  (overrides?: Partial<T>): T & { __kind: Kind };
-  isData(data: StoreData): data is T;
-  get(entity: EntityData): T | null;
-  getAll(entity: EntityData): T[];
+  (overrides?: Partial<T>): StoreData<Kind, T>;
+  isData(data: StoreData<string, any>): data is StoreData<Kind, T>;
+  get(entity: EntityData<any>): StoreData<Kind, T> | null;
+  getAll(entity: EntityData<any>): StoreData<Kind, T>[];
 } & Api;
 export type StoreApi = Record<string, StoreApiMethod>;
-export type StoreApiMethod = (entity: EntityData, ...args: any[]) => any;
-export type Stores = Record<string, Store<string, any, any>>;
+export type StoreApiMethod = (entity: EntityData<any>, ...args: any[]) => any;
+export type StoreMap = Record<string, Store<string, any, any>>;
 
-export type EntityData<S extends Stores = Stores> = {
+export type EntityData<S extends Record<string, StoreData<string, any>>> = {
   id: string;
-  prefab: string;
-  storesData: MappedStoreData<S>;
+  storesData: S;
 };
 
-export type EntityApi = {
-  addChild(prefabName: string, initialStores?: Stores, id?: string): EntityData;
-  removeSelf(): void;
-};
-
-// type ExtractStoreData<S extends Store<string, any>> = S extends Store<
-//   any,
-//   infer T
-// >
-//   ? T
-//   : never;
-type ExtractStoreData<S> = S extends Store<string, infer D> ? D : never;
-type MappedStoreData<S extends Record<string, Store<string, any, any>>> = {
+type ExtractStoreData<S> = S extends Store<infer K, infer D>
+  ? StoreData<K, D>
+  : never;
+export type MappedStoreData<
+  S extends Record<string, Store<string, any, any>>
+> = {
   [K in keyof S]: ExtractStoreData<S[K]>;
-};
-export type PrefabRenderProps<S extends Record<string, StoreData>> = {
-  stores: S;
-  id: string;
-};
-
-export type PrefabConfig<S extends Record<string, StoreData>> = {
-  name: string;
-  stores: S;
-  Component: FC<PrefabRenderProps<S>>;
-};
-
-export type Prefab<S extends Record<string, StoreData>> = {
-  name: string;
-  stores: S;
-  Component: FC<PrefabRenderProps<S>>;
-};
-
-export type SystemStateRegistry = {
-  [entityId: string]: {
-    [systemKey: string]: any;
-  };
 };
 
 export type SystemProvidedState = any;
 export type DefaultedState<
   A extends Record<string, any> | undefined
 > = A extends undefined ? Empty : A;
-export type SystemContext<W extends WorldContext> = {
-  world: W;
-  entity: EntityData;
+export type SystemContext = {
+  game: Game;
+  entity: EntityData<any>;
 };
-export type SystemRunContext<W extends WorldContext> = SystemContext<W> & {
-  frame: FrameData;
+export type SystemRunContext = SystemContext & {
+  delta: number;
 };
-export type SystemRunFn<A, W extends WorldContext> = (
-  entity: EntityData,
+export type SystemRunFn<A> = (
+  entity: EntityData<any>,
   state: DefaultedState<A>,
-  context: SystemRunContext<W>,
+  context: SystemRunContext,
 ) => void | Promise<void>;
-export type SystemInitFn<A, W extends WorldContext> = (
-  entity: EntityData,
+export type SystemInitFn<A> = (
+  entity: EntityData<any>,
   state: DefaultedState<A>,
-  context: SystemContext<W>,
+  context: SystemContext,
 ) => void;
-export type SystemConfig<A, W extends WorldContext = WorldContext> = {
+export type SystemConfig<A> = {
   name: string;
   state?: A;
-  init?: SystemInitFn<A, W>;
-  dispose?: SystemInitFn<A, W>;
-  run: SystemRunFn<A, W>;
-  preStep?: SystemRunFn<A, W>;
-  postStep?: SystemRunFn<A, W>;
-  runsOn(prefab: Prefab<any>): boolean;
+  init?: SystemInitFn<A>;
+  dispose?: SystemInitFn<A>;
+  run: SystemRunFn<A>;
+  preStep?: SystemRunFn<A>;
+  postStep?: SystemRunFn<A>;
+  requires: Store<string, any>[];
+  priority?: number;
 };
 
 export type SystemInstanceSnapshot = {
-  stores: Stores;
+  stores: StoreMap;
   state: any;
 };
 
@@ -188,13 +145,7 @@ export type UnionToIntersection<U> = (
 
 export type MapValueUnion<T> = T extends Record<any, infer V> ? V : never;
 
-export type ExtractPrefabStores<P> = P extends Prefab<infer S> ? S : never;
-
 export type ExtractPluginStores<P> = P extends Plugin<any, infer S> ? S : never;
-
-export type MappedPrefabStores<P extends Record<string, Prefab<any>>> = {
-  [K in keyof P]: StoresKeyedByKind<ExtractPrefabStores<P[K]>>;
-};
 
 export type MappedPluginStores<P extends Record<string, Plugin>> = {
   [K in keyof P]: StoresKeyedByKind<ExtractPluginStores<P[K]>>;
@@ -217,18 +168,10 @@ export type StoresKeyedByKind<S> = S extends Record<string, Store<infer K, any>>
     }
   : never;
 
-export type InferredPrefabsStores<
-  Prefabs extends Record<string, Prefab<Stores>>
-> = UnionToIntersection<MapValueUnion<MappedPrefabStores<Prefabs>>>;
-
-export type InferredPrefabStoreKinds<
-  Prefabs extends Record<string, Prefab<Stores>>
-> = AllStoreKinds<MapValueUnion<Prefabs>['stores']>;
-
 export type InferredPluginsStores<
   Plugins extends Record<string, Plugin>
 > = UnionToIntersection<MapValueUnion<MappedPluginStores<Plugins>>>;
 export type CombineStores<
-  BaseStores extends Stores,
+  BaseStores extends StoreMap,
   Plugins extends Record<string, Plugin>
 > = BaseStores & InferredPluginsStores<Plugins>;

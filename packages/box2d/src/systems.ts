@@ -7,22 +7,21 @@ import {
   b2PolygonShape,
   b2World,
 } from '@flyover/box2d';
-import { EntityContact } from './index';
+import { ContactListener, EntityContact } from './ContactListener';
 import * as stores from './stores';
 import { reaction } from 'mobx';
+import { DEFAULT_WORLD_NAME } from './constants';
 
 export const rigidBody = new g.System({
   name: 'rigidBody',
-  runsOn: (prefab) => {
-    return !!prefab.stores.transform && !!prefab.stores.body;
-  },
+  requires: [stores.body, stores.transform],
   state: {
     body: (null as unknown) as b2Body,
     newContactsCache: new Array<EntityContact>(),
     endedContactsCache: new Array<EntityContact>(),
     cleanupSubscriptions: () => {},
   },
-  init: (entity, state, ctx) => {
+  init: (entity, state, { game }) => {
     const transform = stores.transform.get(entity)!;
     const bodyStore = stores.body.get(entity)!;
 
@@ -30,10 +29,20 @@ export const rigidBody = new g.System({
     state.cleanupSubscriptions = reaction(
       () => ({ ...bodyStore.config }),
       (config) => {
-        console.log('recreating body', ctx.entity.id);
+        const world = game.getGlobal<b2World>(
+          bodyStore.config.worldName ?? DEFAULT_WORLD_NAME
+        );
+
+        if (!world) {
+          throw new Error(
+            'No physics world - make sure you rendered a <Physics /> component'
+          );
+        }
+
+        console.log('recreating body', entity.id);
         // remove old body
         if (state.body) {
-          ctx.world.plugins.box2d.world.DestroyBody(state.body);
+          world.DestroyBody(state.body);
         }
 
         const {
@@ -49,7 +58,6 @@ export const rigidBody = new g.System({
         } = config;
 
         const { x, y } = transform;
-        const world = ctx.world.plugins.box2d.world as b2World;
 
         const body = world.CreateBody({
           type: isStatic ? b2BodyType.b2_staticBody : b2BodyType.b2_dynamicBody,
@@ -68,7 +76,7 @@ export const rigidBody = new g.System({
         fix.density = density;
         fix.restitution = restitution;
         fix.friction = friction;
-        fix.userData = { entityId: ctx.entity.id };
+        fix.userData = { entityId: entity.id };
 
         if (config.shape === 'rectangle') {
           const shape = new b2PolygonShape();
@@ -96,15 +104,32 @@ export const rigidBody = new g.System({
       state.endedContactsCache.push(contact);
     };
 
-    (ctx.world.plugins.box2d as any).contacts.subscribe(ctx.entity.id, {
-      onBeginContact,
-      onEndContact,
-    });
+    if (stores.contacts.get(entity)) {
+      const contactListener = game.getGlobal<ContactListener>(
+        `${bodyStore.config.worldName}Contacts`
+      );
+      contactListener.subscribe(entity.id, {
+        onBeginContact,
+        onEndContact,
+      });
+    }
   },
-  dispose: (_, state, ctx) => {
-    ctx.world.plugins.box2d.world.DestroyBody(state.body);
-    ctx.world.plugins.box2d.contacts.unsubscribe(ctx.entity.id);
+  dispose: (entity, state, { game }) => {
+    if (!entity) {
+      throw new Error(`Dispose called with no entity`);
+    }
     state.cleanupSubscriptions?.();
+
+    const worldName = stores.body.get(entity)!.config.worldName;
+
+    if (state.body) {
+      const world = game.getGlobal<b2World>(worldName ?? DEFAULT_WORLD_NAME);
+      world.DestroyBody(state.body);
+    }
+
+    game
+      .getGlobal<ContactListener>(`${worldName}Contacts`)
+      .unsubscribe(entity.id);
   },
   preStep: (entity, state) => {
     const transform = stores.transform.get(entity)!;
@@ -132,7 +157,7 @@ export const rigidBody = new g.System({
     body.velocity.x = x;
     body.velocity.y = y;
   },
-  run: (entity, { body }, ctx) => {
+  run: (entity, { body }) => {
     const transform = stores.transform.get(entity)!;
     const bodyStore = stores.body.get(entity)!;
 
@@ -157,5 +182,42 @@ export const rigidBody = new g.System({
       contacts.began = [];
       contacts.ended = [];
     }
+  },
+});
+
+export const physicsWorld = new g.System({
+  name: 'physicsWorld',
+  priority: -Infinity,
+  requires: [stores.worldConfig],
+  state: {
+    world: null as null | b2World,
+  },
+  init: (entity, state, { game }) => {
+    const config = stores.worldConfig.get(entity)!;
+    const world = new b2World(config.gravity);
+    const contactListener = new ContactListener();
+    world.SetContactListener(contactListener);
+
+    game.setGlobal(config.worldName ?? DEFAULT_WORLD_NAME, world);
+    game.setGlobal(`${config.worldName}Contacts`, contactListener);
+
+    console.debug(
+      `Added Physics World: ${config.worldName ?? DEFAULT_WORLD_NAME}`
+    );
+
+    state.world = world;
+
+    // debug
+    (window as any).box2d = (window as any).box2d || {};
+    (window as any).box2d[config.worldName ?? DEFAULT_WORLD_NAME] = world;
+  },
+  run: (entity, state) => {
+    const config = stores.worldConfig.get(entity)!;
+    state.world?.Step(
+      60 / 1000,
+      config.velocityIterations,
+      config.positionIterations,
+      config.particleIterations
+    );
   },
 });

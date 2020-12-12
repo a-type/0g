@@ -1,6 +1,7 @@
 import * as g from '0g';
-import { EntityContact } from '.';
+import { EntityContact } from './ContactListener';
 import { IVec, vecAdd } from 'math2d';
+import { DEFAULT_WORLD_NAME } from './constants';
 
 export const transform = g.store('transform', {
   x: 0,
@@ -24,6 +25,7 @@ export type BodyConfigData = {
   density?: number;
   angularDamping?: number;
   linearDamping?: number;
+  worldName?: string;
 } & (
   | {
       shape: 'circle';
@@ -51,6 +53,7 @@ export const body = g.store('body', {
     restitution: 0,
     bullet: false,
     fixedRotation: false,
+    worldName: DEFAULT_WORLD_NAME,
   } as BodyConfigData,
   forces: {
     velocity: null as IVec | null,
@@ -72,4 +75,13 @@ export const contacts = g.store('contacts', {
   began: new Array<EntityContact>(),
   current: new Array<EntityContact>(),
   ended: new Array<EntityContact>(),
+});
+
+export const worldConfig = g.store('worldConfig', {
+  gravity: { x: 0, y: 0 },
+  velocityIterations: 8,
+  positionIterations: 3,
+  particleIterations: undefined as number | undefined,
+  /** This is used in the game's globals registry */
+  worldName: DEFAULT_WORLD_NAME as string | undefined,
 });

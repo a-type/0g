@@ -1,9 +1,14 @@
+const path = require('path');
+
 module.exports = {
   webpack: {
     alias: {
-      // react: '../../node_modules/react',
-      // 'react-dom': '../../node_modules/react-dom',
-      // 'babel-loader': '../../node_modules/babel-loader'
-    }
+      react: path.resolve('./node_modules/react'),
+      'react-dom': path.resolve('./node_modules/react-dom'),
+      'babel-loader': path.resolve('./node_modules/babel-loader'),
+    },
+  },
+  babel: {
+    presets: ['@emotion/babel-preset-css-prop']
   }
-}
+};

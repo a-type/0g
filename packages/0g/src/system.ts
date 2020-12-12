@@ -1,4 +1,4 @@
-import { EntityWrapper } from './internal/EntityWrapper';
+import { Game } from './Game';
 import {
   SystemConfig,
   WorldContext,
@@ -7,40 +7,41 @@ import {
   SystemRunFn,
   SystemInitFn,
   DefaultedState,
-  Prefab,
+  StoreMap,
+  Store,
+  StoreData,
 } from './types';
 
-export class System<
-  A extends Record<string, any> | undefined,
-  W extends WorldContext = WorldContext
-> {
+export class System<A extends Record<string, any> | undefined> {
   private _name: string;
+  private _priority: number = 0;
   /** Caches ephemeral runtime state per-entity. */
-  private stateCache = new WeakMap<EntityData, DefaultedState<A>>();
+  private stateCache = new WeakMap<EntityData<any>, DefaultedState<A>>();
   /** User-defined setup fn */
-  private _init?: SystemInitFn<A, W>;
+  private _init?: SystemInitFn<A>;
   /** User-defined teardown fn */
-  private _dispose?: SystemInitFn<A, W>;
+  private _dispose?: SystemInitFn<A>;
   /** User-defined run implementation */
-  private _run: SystemRunFn<A, W>;
-  private _preStep?: SystemRunFn<A, W>;
-  private _postStep?: SystemRunFn<A, W>;
+  private _run: SystemRunFn<A>;
+  private _preStep?: SystemRunFn<A>;
+  private _postStep?: SystemRunFn<A>;
   /** Defaulted initial state */
   private _initialState: DefaultedState<A>;
-  private _runsOn: (prefab: Prefab<any>) => boolean;
+  private _requires: Store<string, any>[];
 
-  constructor(cfg: SystemConfig<A, W>) {
+  constructor(cfg: SystemConfig<A>) {
     this._run = cfg.run;
     this._preStep = cfg.preStep;
     this._postStep = cfg.postStep;
     this._initialState = (cfg.state || {}) as DefaultedState<A>;
     this._init = cfg.init;
     this._dispose = cfg.dispose;
-    this._runsOn = cfg.runsOn;
+    this._requires = cfg.requires || [];
     this._name = cfg.name;
+    this._priority = cfg.priority || 0;
   }
 
-  private getOrInitState = (ctx: { world: W; entity: EntityData }) => {
+  private getState = (ctx: { game: Game; entity: EntityData<any> }) => {
     let s: DefaultedState<A>;
     const existing = this.stateCache.get(ctx.entity);
     if (!existing) {
@@ -55,27 +56,42 @@ export class System<
     return s;
   };
 
-  run = (ctx: { world: W; frame: FrameData; entity: EntityData }) => {
-    this._run(ctx.entity, this.getOrInitState(ctx), ctx);
+  init = (ctx: { game: Game; entity: EntityData<any> }) => {
+    const s = this._initialState
+      ? { ...this._initialState }
+      : ({} as DefaultedState<A>);
+    this._init?.(ctx.entity, s, ctx);
+    this.stateCache.set(ctx.entity, s);
   };
 
-  preStep = (ctx: { world: W; frame: FrameData; entity: EntityData }) => {
-    this._preStep?.(ctx.entity, this.getOrInitState(ctx), ctx);
+  run = (ctx: { game: Game; delta: number; entity: EntityData<any> }) => {
+    this._run(ctx.entity, this.getState(ctx), ctx);
   };
 
-  postStep = (ctx: { world: W; frame: FrameData; entity: EntityData }) => {
-    this._postStep?.(ctx.entity, this.getOrInitState(ctx), ctx);
+  preStep = (ctx: { game: Game; delta: number; entity: EntityData<any> }) => {
+    this._preStep?.(ctx.entity, this.getState(ctx), ctx);
   };
 
-  dispose = (ctx: { world: W; entity: EntityData }) => {
-    this._dispose?.(ctx.entity, this.getOrInitState(ctx), ctx);
+  postStep = (ctx: { game: Game; delta: number; entity: EntityData<any> }) => {
+    this._postStep?.(ctx.entity, this.getState(ctx), ctx);
   };
 
-  runsOn = (prefab: Prefab<any>) => {
-    return this._runsOn(prefab);
+  dispose = (ctx: { game: Game; entity: EntityData<any> }) => {
+    this._dispose?.(ctx.entity, this.getState(ctx), ctx);
+  };
+
+  runsOn = (stores: Record<string, StoreData<string, any>>) => {
+    const storeList = Object.values(stores);
+    return this._requires.every((Store) => {
+      return !!storeList.find((S) => S.__kind === Store.kind);
+    });
   };
 
   get name() {
     return this._name;
+  }
+
+  get priority() {
+    return this._priority;
   }
 }

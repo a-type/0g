@@ -4,7 +4,7 @@ export * from './types';
 export * from './store';
 export * from './system';
 export * from './plugin';
-export * from './create';
 export * from './Entity';
+export * from './Game';
 
 import './internal/mobxConfiguration';

@@ -1,34 +1,13 @@
-## Prefabs, Systems, and Stores
+# `0G`
 
-### Prefabs
-
-Prefabs describe what it takes to create a type of Entity.
-Prefabs declare a name, which is globally unique and used elsewhere to refer to it.
-Prefabs declare Stores, which determine what kind of Entity it shall be.
-Prefabs declare a Component, which defines how the Prefab shows up in the scene.
-
-```tsx
-// TODO: update code example
-```
-
-Prefab render is more versatile than it seems though.
-As long as you have data to power it, you can render anything.
-
-```tsx
-Component: ({ stores: { transform, sprites } }) => (
-  <group position={transform.position.toArray()}>
-    {sprites.map((sprite) => (
-      <Sprite {...sprite} key={sprite.id} />
-    ))}
-  </group>
-);
-```
-
+## Entities, Systems, and Stores
 ### Entities
 
-Prefabs become Entities when instantiated.
+Entities describe what it takes to create a type of Entity.
+Entities declare a name, which is globally unique and used elsewhere to refer to it.
+Entities declare Stores, which determine what kind of Entity it shall be.
+Entities declare a Component, which defines how it shows up in the scene.
 Entities have an ID which identifies them.
-Entities store Store data corresponding to their Prefab's Stores.
 
 ### Systems
 
@@ -100,7 +79,6 @@ Entities expose only certain things publicly.
 ```tsx
 type EntityData = {
   id: string;
-  prefab: string;
   storesData: {
     [alias: string]: any;
   };
@@ -110,9 +88,10 @@ type EntityData = {
 ## Editor (TODO)
 
 Scenes are really defined entirely by saved Entities and their Stores.
-So to construct a scene we start with making our Prefabs.
-Once we have Prefabs, we can open an Editor.
-The Editor can create Entities from Prefabs and define their Store data.
+So to construct a scene we start with making our Entities.
+Each Scene begins with a single Scene entity, which has children.
+Once we have a Scene, we can open the editor.
+The Editor can create Entities and define their Store data by adding them to Scene or others.
 The Editor renders the initial state of all Entities.
 But the Editor isn't only for initial states.
 We can bring up the Editor any time during gameplay to tweak.
@@ -135,27 +114,26 @@ TODO
 
 ## Known issues
 
-- Since Systems and Prefabs are defined as mutations on the game, it's really easy to forget to import their modules, and then you have no systems.
 - Stores is a bad name - maybe Aspects? But it's not AOP...
 
 ## Entity Lifecycle
 
 There is no generic concept of "children."
-However, different Prefabs may construct specialized Stores which manage some particular concept of hierarchy.
-For example, the `Bricks` Prefab in Brick Breaker might have a Store which controls its brick pattern.
-It then renders child Entities using the `Entity` component.
+However, different Entities may construct specialized Stores which manage some particular concept of hierarchy.
+For example, the `Bricks` Entity in Brick Breaker might have a Store which controls its brick pattern.
+It then renders child Entities using their Entity components.
 
 ```tsx
-const Bricks = game.prefab({
-  name: 'Bricks',
-  stores: {
+const Bricks = entity(
+  'Bricks',
+  {
     config: game.stores.brickConfig({
       rows: 2,
       columns: 5,
     }),
     transform: game.stores.transform(),
   },
-  Component: ({
+  ({
     stores: {
       config: { rows, columns },
       transform: { x, y },
@@ -165,8 +143,7 @@ const Bricks = game.prefab({
       <>
         {new Array(columns).fill(null).map((_, h) =>
           new Array(rows).fill(null).map((_, v) => (
-            <Entity
-              prefab="Brick"
+            <Brick
               key={`${h}_${v}`}
               id={`${h}_${v}`}
               initial={{
@@ -177,18 +154,17 @@ const Bricks = game.prefab({
         )}
       </>
     );
-  },
-});
+  }
+);
 ```
 
 Entities can only control their children's initial configuration:
 
-- Prefab
 - Initial Stores
 - ID
 
 Otherwise the child is managed by Systems like the parent.
-When an Entity is mounted it is added to the scene with its initial Stores and Prefab.
+When an Entity is mounted it is added to the scene with its initial Stores.
 When an Entity is mounted it is assigned an ID if it was not given one.
 When an Entity is unmounted it is removed from the scene.
 If an Entity is mounted and it is already present in the World data, it connects to that data.
@@ -197,7 +173,6 @@ Orphaned Entities are cleaned up periodically. (TODO)
 To reparent an Entity just render it from a different parent (TODO)
 Somehow we enforce an Entity can't render twice (TODO)
 
-The Scene is the only built-in Prefab.
 The Scene has a special Store which is a generic children container.
 Other Entities can use this Store, too, if they just want generic children.
 It works like this:
@@ -233,7 +208,7 @@ const bricks = world.get('bricks');
 game.stores.brickPositions.get(bricks).push({ x: 10, y: 50 });
 ```
 
-Supposing that `brickPositions` was a list of locations to place `Brick` Prefabs.
+Supposing that `brickPositions` was a list of locations to place `Brick` Entities.
 
 ## The Flow
 
@@ -243,15 +218,15 @@ Then register Prefabs and Systems on Game.
 We expose `stores` on Game.
 
 ```ts
-const Player = game.prefab({
-  name: 'Player',
-  stores: {
+const Player = entity(
+  'Player',
+  {
     transform: game.store.transform({ x: 0, y: 10 }),
   },
-  Component: () => {
+  () => {
     /* ... */
   },
-});
+);
 ```
 
 Systems utilize `game.store` to reference an Entity's Stores by kind.
@@ -265,7 +240,7 @@ const body = game.system({
 });
 ```
 
-## TODO
+## Store APIs
 
 Stores can define higher-level APIs for users to streamline tasks.
 But all logic remains pure, because Store APIs are pure.

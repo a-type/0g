@@ -1,111 +1,74 @@
 import { observer } from 'mobx-react-lite';
+import { mergeDeepRight } from 'ramda';
 import * as React from 'react';
+import { initializeStores } from './internal/initializeStores';
 import { useInitial } from './internal/useInitial';
-import { System } from './system';
-import {
-  WorldContext,
-  FrameData,
-  EntityData,
-  StoreData,
-  Prefab,
-} from './types';
-import { useWorld } from './World';
+import { EntityData, StoreData } from './types';
+import { useGame } from './World';
 
-export type EntityProps = {
+export type EntityInstanceProps<
+  Stores extends Record<string, StoreData<string, any>>
+> = {
   id: string;
-  prefab: string;
-  initial: Record<string, StoreData>;
+  stores: Stores;
 };
 
-function useRunSystems(
-  world: WorldContext,
-  entity: EntityData | null,
-  prefab: Prefab<any>,
+type PartialStores<Stores extends Record<string, StoreData<string, any>>> = {
+  [K in keyof Stores]?: Partial<Stores[K]>;
+};
+
+export type EntityProps<
+  Stores extends Record<string, StoreData<string, any>>
+> = {
+  id: string;
+  initial: PartialStores<Stores>;
+};
+
+export function entity<Stores extends Record<string, StoreData<string, any>>>(
+  name: string,
+  stores: Stores,
+  Component: React.FC<EntityInstanceProps<Stores>>,
 ) {
-  const runnableSystems = React.useMemo(() => {
-    if (!prefab) return [];
-    return world.systems.filter((s) => s.runsOn(prefab));
-  }, [world.systems, prefab]);
+  const ObserverComponent = observer(Component);
 
-  React.useLayoutEffect(() => {
-    function runSystems(
-      runHandle: 'run' | 'preStep' | 'postStep',
-      frame: FrameData,
-    ) {
-      if (!entity) return;
+  const Entity = observer((props: EntityProps<Stores>) => {
+    // nothing can be changed when props change.
+    const initial = useInitial(props.initial);
+    const id = useInitial(props.id);
 
-      let system: System<any, any>;
-      const ctx = { world, entity, frame };
-      for (system of runnableSystems) {
-        system[runHandle]?.(ctx);
+    const game = useGame();
+
+    // type assertion/assumption: the entity which exists for this id matches its store shape
+    const entity = (game.state.entities[id] ??
+      null) as EntityData<Stores> | null;
+    const entityExists = !!entity;
+    // enforce presence in World
+    React.useEffect(() => {
+      if (!entityExists) {
+        const defaultStores = initializeStores(stores);
+        const initialStores = mergeDeepRight(defaultStores, initial);
+        game.add(initialStores, id);
       }
-    }
+    }, [entityExists, initial, id]);
+    // remove from World on unmount
+    React.useEffect(
+      () => () => {
+        game.destroy(id);
+      },
+      [id],
+    );
 
-    function runPreStep(frameData: FrameData) {
-      runSystems('preStep', frameData);
-    }
+    // still loading
+    if (!entity) return null;
 
-    function runStep(frameData: FrameData) {
-      runSystems('run', frameData);
-    }
+    return (
+      <React.Suspense fallback={null}>
+        <ObserverComponent stores={entity.storesData} id={id} />
+      </React.Suspense>
+    );
+  });
 
-    function runPostStep(frameData: FrameData) {
-      runSystems('postStep', frameData);
-    }
+  Entity.displayName = name;
 
-    world.events.on('preStep', runPreStep);
-    world.events.on('step', runStep);
-    world.events.on('postStep', runPostStep);
-
-    return () => {
-      world.events.off('preStep', runPreStep);
-      world.events.off('step', runStep);
-      world.events.off('postStep', runPostStep);
-    };
-  }, [world, entity, runnableSystems]);
+  return Entity;
 }
-
-export const Entity = observer((props: EntityProps) => {
-  // nothing can be changed when props change.
-  const prefabName = useInitial(props.prefab);
-  const initial = useInitial(props.initial);
-  const id = useInitial(props.id);
-
-  const world = useWorld();
-
-  const prefab = world.prefabs[prefabName];
-
-  if (!prefab) {
-    console.error(`Missing prefab ${prefabName}`);
-    return null;
-  }
-
-  const entity = world.store.entities[id] ?? null;
-  const entityExists = !!entity;
-  // enforce presence in World
-  React.useEffect(() => {
-    if (!entityExists) {
-      world.add(prefabName, initial, id);
-    }
-  }, [entityExists, prefabName, prefab, initial, id]);
-  // remove from World on unmount
-  React.useEffect(
-    () => () => {
-      world.remove(id);
-    },
-    [id],
-  );
-
-  useRunSystems(world, entity, prefab);
-
-  // still loading
-  if (!entity) return null;
-
-  return (
-    <React.Suspense fallback={null}>
-      <prefab.Component stores={entity.storesData} id={id} />
-    </React.Suspense>
-  );
-});
-
-Entity.displayName = 'Entity';
