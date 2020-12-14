@@ -1,13 +1,6 @@
 import React from 'react';
 import { entity } from '0g';
-import {
-  Paddle,
-  Ball,
-  Wall,
-  BlockSpawner,
-  Debris,
-  DebrisController,
-} from './entities';
+import { Paddle, Ball, Wall, BlockSpawner, DebrisController } from './entities';
 import { Physics } from '@0g/box2d';
 
 export const GameScene = entity('GameScene', {}, () => (
