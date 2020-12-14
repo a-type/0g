@@ -1,12 +1,21 @@
 import * as React from 'react';
-import { Flex, Text } from 'rebass';
 
 export function Header() {
   return (
-    <Flex as="header" px={2} alignItems="center">
-      <Text fontFamily="'Major Mono Display'" p={2}>
+    <header
+      css={(theme) => ({
+        padding: theme.space[2],
+        alignItems: 'center',
+      })}
+    >
+      <span
+        css={(theme) => ({
+          fontFamily: theme.fonts.heading,
+          padding: theme.space[2],
+        })}
+      >
         0G
-      </Text>
-    </Flex>
+      </span>
+    </header>
   );
 }

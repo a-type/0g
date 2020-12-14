@@ -1,5 +1,11 @@
 import { EventEmitter } from 'events';
-import { makeAutoObservable } from 'mobx';
+import {
+  action,
+  computed,
+  makeAutoObservable,
+  makeObservable,
+  observable,
+} from 'mobx';
 import shortid from 'shortid';
 import { logger } from './logger';
 import { System } from './system';
@@ -45,6 +51,29 @@ export declare interface Game {
   ): this;
 }
 
+export class GameGlobals {
+  _values: Record<string | symbol, any> = {};
+
+  set(key: symbol | string, value: any) {
+    // @ts-ignore
+    this._values[key] = value;
+  }
+
+  get<T>(key: symbol | string): T {
+    // @ts-ignore
+    return this._values[key];
+  }
+
+  remove(key: symbol | string) {
+    // @ts-ignore
+    delete this._values[key];
+  }
+
+  constructor() {
+    makeAutoObservable(this);
+  }
+}
+
 export class Game extends EventEmitter {
   private _state = new GameState();
   private _systems = new Array<System<any>>();
@@ -59,7 +88,7 @@ export class Game extends EventEmitter {
 
   private _destroyList = new Array<string>();
 
-  private _playState: GamePlayState;
+  _playState: GamePlayState;
 
   private _lastFrameTime: DOMHighResTimeStamp | null = null;
   private _delta = 0;
@@ -79,7 +108,7 @@ export class Game extends EventEmitter {
   } = { game: this, entity: null as any };
 
   /** use sparingly! */
-  private _globals = new Map<symbol | string, any>();
+  globals = new GameGlobals();
 
   constructor({
     systems,
@@ -112,6 +141,13 @@ export class Game extends EventEmitter {
     if (this._playState === 'running') {
       this.resume();
     }
+    makeObservable(this, {
+      _playState: observable,
+      playState: computed,
+      resume: action,
+      pause: action,
+      isPaused: computed,
+    });
   }
 
   get state() {
@@ -182,18 +218,6 @@ export class Game extends EventEmitter {
     // this._cancelRaf(this._frameHandle);
   };
 
-  setGlobal(key: symbol | string, value: any) {
-    this._globals.set(key, value);
-  }
-
-  getGlobal<T>(key: symbol | string): T {
-    return this._globals.get(key);
-  }
-
-  removeGlobal(key: symbol | string) {
-    this._globals.delete(key);
-  }
-
   input = input;
 
   private runFrame = (time: DOMHighResTimeStamp) => {
@@ -223,8 +247,7 @@ export class Game extends EventEmitter {
     const runSet = this._systemRunSets[sys.name];
     const runOnEntity = (entity: EntityData<any>) => {
       if (!runSet.has(entity)) return;
-      this._frameContext.entity = entity;
-      sys[step](this._frameContext);
+      sys[step](entity, this._frameContext);
     };
     this.state.entityList.forEach(runOnEntity);
   };
@@ -269,16 +292,11 @@ export class Game extends EventEmitter {
 
   private executeDestroy = (id: string) => {
     const entity = this.state.entities[id];
-    this._initContext.entity = entity;
-    this._systemsByEntity
-      .get(entity)
-      ?.forEach(this.disposeSystemWithInitContext);
+    this._systemsByEntity.get(entity)?.forEach((sys) => {
+      sys.dispose(entity, this._initContext);
+    });
     delete this.state.entities[id];
     this.emit(GameEvent.Destroy, entity);
-  };
-
-  private disposeSystemWithInitContext = (sys: System<any>) => {
-    sys.dispose(this._initContext);
   };
 
   private initSystemWithInitContext = (sys: System<any>) => {

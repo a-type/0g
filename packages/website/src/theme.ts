@@ -18,7 +18,7 @@ export const theme: Theme = {
     surface: 16,
   },
   focusRing: {
-    primary: `0 0 0 4px #fff, 0 0 0 2px #202020`,
+    primary: `0 0 0 2px #202020, 0 0 0 4px #fff`,
   },
 };
 

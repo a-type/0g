@@ -17,19 +17,23 @@ export const rigidBody = new g.System({
   requires: [stores.body, stores.transform],
   state: {
     body: (null as unknown) as b2Body,
-    newContactsCache: new Array<EntityContact>(),
-    endedContactsCache: new Array<EntityContact>(),
+    newContactsCache: new Set<EntityContact>(),
+    endedContactsCache: new Set<EntityContact>(),
     cleanupSubscriptions: () => {},
+    nonce: Math.random(),
   },
   init: (entity, state, { game }) => {
     const transform = stores.transform.get(entity)!;
     const bodyStore = stores.body.get(entity)!;
 
+    state.newContactsCache = new Set();
+    state.endedContactsCache = new Set();
+
     // create / recreate body when config changes
     state.cleanupSubscriptions = reaction(
       () => ({ ...bodyStore.config }),
       (config) => {
-        const world = game.getGlobal<b2World>(
+        const world = game.globals.get<b2World>(
           bodyStore.config.worldName ?? DEFAULT_WORLD_NAME
         );
 
@@ -98,14 +102,14 @@ export const rigidBody = new g.System({
 
     // subscribe to contacts
     const onBeginContact = (contact: EntityContact) => {
-      state.newContactsCache.push(contact);
+      state.newContactsCache.add(contact);
     };
     const onEndContact = (contact: EntityContact) => {
-      state.endedContactsCache.push(contact);
+      state.endedContactsCache.add(contact);
     };
 
     if (stores.contacts.get(entity)) {
-      const contactListener = game.getGlobal<ContactListener>(
+      const contactListener = game.globals.get<ContactListener>(
         `${bodyStore.config.worldName}Contacts`
       );
       contactListener.subscribe(entity.id, {
@@ -123,12 +127,12 @@ export const rigidBody = new g.System({
     const worldName = stores.body.get(entity)!.config.worldName;
 
     if (state.body) {
-      const world = game.getGlobal<b2World>(worldName ?? DEFAULT_WORLD_NAME);
+      const world = game.globals.get<b2World>(worldName ?? DEFAULT_WORLD_NAME);
       world.DestroyBody(state.body);
     }
 
-    game
-      .getGlobal<ContactListener>(`${worldName}Contacts`)
+    game.globals
+      .get<ContactListener>(`${worldName}Contacts`)
       .unsubscribe(entity.id);
   },
   preStep: (entity, state) => {
@@ -143,14 +147,14 @@ export const rigidBody = new g.System({
       for (contact of state.newContactsCache) {
         contacts.began.push(contact);
         contacts.current.push(contact);
+        state.newContactsCache.delete(contact);
       }
-      for (contact of state.endedContactsCache) {
-        contacts.current = contacts.current.filter((c) => c !== contact);
-        contacts.ended = contacts.ended.filter((c) => c !== contact);
-      }
+      state.endedContactsCache.forEach((contact) => {
+        contacts.current = contacts.current.filter((c) => c.id !== contact.id);
+        contacts.ended.push(contact);
+        state.endedContactsCache.delete(contact);
+      });
     }
-    state.newContactsCache = [];
-    state.endedContactsCache = [];
 
     body.angularVelocity = state.body.GetAngularVelocity();
     const { x, y } = state.body.GetLinearVelocity();
@@ -194,12 +198,13 @@ export const physicsWorld = new g.System({
   },
   init: (entity, state, { game }) => {
     const config = stores.worldConfig.get(entity)!;
+    const worldName = config.worldName || DEFAULT_WORLD_NAME;
     const world = new b2World(config.gravity);
     const contactListener = new ContactListener();
     world.SetContactListener(contactListener);
 
-    game.setGlobal(config.worldName ?? DEFAULT_WORLD_NAME, world);
-    game.setGlobal(`${config.worldName}Contacts`, contactListener);
+    game.globals.set(worldName, world);
+    game.globals.set(`${worldName}Contacts`, contactListener);
 
     console.debug(
       `Added Physics World: ${config.worldName ?? DEFAULT_WORLD_NAME}`
@@ -210,6 +215,12 @@ export const physicsWorld = new g.System({
     // debug
     (window as any).box2d = (window as any).box2d || {};
     (window as any).box2d[config.worldName ?? DEFAULT_WORLD_NAME] = world;
+  },
+  dispose: (entity, _, { game }) => {
+    const config = stores.worldConfig.get(entity)!;
+    const worldName = config.worldName || DEFAULT_WORLD_NAME;
+    game.globals.remove(worldName);
+    game.globals.remove(`${worldName}Contacts`);
   },
   run: (entity, state) => {
     const config = stores.worldConfig.get(entity)!;

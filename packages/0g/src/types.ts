@@ -103,7 +103,6 @@ export type DefaultedState<
 > = A extends undefined ? Empty : A;
 export type SystemContext = {
   game: Game;
-  entity: EntityData<any>;
 };
 export type SystemRunContext = SystemContext & {
   delta: number;

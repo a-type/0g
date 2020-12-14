@@ -8,10 +8,12 @@ export class Pointer {
   private _secondaryUp = false;
 
   constructor() {
-    window.addEventListener('pointerdown', this.handlePointerEvent);
+    window.addEventListener('pointerdown', this.handlePointerDownEvents);
+    window.addEventListener('pointerup', this.handlePointerDownEvents);
+    window.addEventListener('pointermove', this.handlePointerMoveEvent);
   }
 
-  private handlePointerEvent = (ev: PointerEvent) => {
+  private handlePointerDownEvents = (ev: PointerEvent) => {
     if (!this._position) {
       this._position = { x: ev.clientX, y: ev.clientY };
     } else {
@@ -36,6 +38,10 @@ export class Pointer {
         this._secondaryPressed = false;
       }
     }
+  };
+
+  private handlePointerMoveEvent = (ev: PointerEvent) => {
+    this._position = { x: ev.clientX, y: ev.clientY };
   };
 
   /** Position might be null - that means no pointer was detected */

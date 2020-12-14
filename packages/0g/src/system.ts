@@ -41,15 +41,14 @@ export class System<A extends Record<string, any> | undefined> {
     this._priority = cfg.priority || 0;
   }
 
-  private getState = (ctx: { game: Game; entity: EntityData<any> }) => {
+  private getState = (entity: EntityData<any>) => {
     let s: DefaultedState<A>;
-    const existing = this.stateCache.get(ctx.entity);
+    const existing = this.stateCache.get(entity);
     if (!existing) {
       s = this._initialState
         ? { ...this._initialState }
         : ({} as DefaultedState<A>);
-      this._init?.(ctx.entity, s, ctx);
-      this.stateCache.set(ctx.entity, s);
+      this.stateCache.set(entity, s);
     } else {
       s = existing;
     }
@@ -64,20 +63,20 @@ export class System<A extends Record<string, any> | undefined> {
     this.stateCache.set(ctx.entity, s);
   };
 
-  run = (ctx: { game: Game; delta: number; entity: EntityData<any> }) => {
-    this._run(ctx.entity, this.getState(ctx), ctx);
+  run = (entity: EntityData<any>, ctx: { game: Game; delta: number }) => {
+    this._run(entity, this.getState(entity), ctx);
   };
 
-  preStep = (ctx: { game: Game; delta: number; entity: EntityData<any> }) => {
-    this._preStep?.(ctx.entity, this.getState(ctx), ctx);
+  preStep = (entity: EntityData<any>, ctx: { game: Game; delta: number }) => {
+    this._preStep?.(entity, this.getState(entity), ctx);
   };
 
-  postStep = (ctx: { game: Game; delta: number; entity: EntityData<any> }) => {
-    this._postStep?.(ctx.entity, this.getState(ctx), ctx);
+  postStep = (entity: EntityData<any>, ctx: { game: Game; delta: number }) => {
+    this._postStep?.(entity, this.getState(entity), ctx);
   };
 
-  dispose = (ctx: { game: Game; entity: EntityData<any> }) => {
-    this._dispose?.(ctx.entity, this.getState(ctx), ctx);
+  dispose = (entity: EntityData<any>, ctx: { game: Game }) => {
+    this._dispose?.(entity, this.getState(entity), ctx);
   };
 
   runsOn = (stores: Record<string, StoreData<string, any>>) => {

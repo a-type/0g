@@ -81,8 +81,8 @@ export const BlockSpawner = entity(
       config.blockWidth;
     const totalHeight = config.blocks.length * config.blockHeight;
 
-    const hOffset = -totalWidth / 2;
-    const vOffset = -totalHeight / 2;
+    const hOffset = -totalWidth / 4;
+    const vOffset = -totalHeight / 4;
 
     return (
       <>
@@ -150,9 +150,10 @@ export const Paddle = entity(
         game.pause();
       }
     }, [game]);
+
     return (
       <Button onClick={handleClick} ref={useBodyRef(stores)}>
-        Start
+        {game.isPaused ? 'Start' : 'Pause'}
       </Button>
     );
   }
@@ -198,6 +199,37 @@ export const Wall = entity(
       />
     );
   }
+);
+
+export const DebrisController = entity(
+  'DebrisController',
+  {
+    config: stores.debrisControllerConfig(),
+  },
+  ({ stores }) => (
+    <>
+      {stores.config.items.map((d, i) => (
+        <Debris
+          id={`debris-${d.key}`}
+          key={d.key}
+          initial={{
+            transform: { x: d.x, y: d.y, angle: d.angle },
+            body: {
+              config: {
+                shape: 'rectangle',
+                width: d.size,
+                height: d.size,
+              },
+              forces: {
+                velocity: d.velocity,
+              } as any,
+            },
+            config: { text: d.text, index: i },
+          }}
+        />
+      ))}
+    </>
+  )
 );
 
 export const Debris = entity(

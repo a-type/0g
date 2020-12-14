@@ -7,7 +7,7 @@ export const { rigidBody, physicsWorld } = box2dSystems;
 
 export const ballMovement = new System({
   name: 'ballMovement',
-  requires: [stores.ballConfig],
+  requires: [stores.ballConfig, stores.transform, stores.contacts],
   state: {
     started: false,
   },
@@ -15,6 +15,7 @@ export const ballMovement = new System({
     const transform = stores.transform.get(entity)!;
     const body = stores.body.get(entity)!;
     const config = stores.ballConfig.get(entity)!;
+    const contacts = stores.contacts.get(entity)!;
 
     if (!state.started) {
       state.started = true;
@@ -28,8 +29,9 @@ export const ballMovement = new System({
           y: (config.speed - currentSpeed) * body.mass,
         });
       }
-    } else {
-      if (Math.abs(vecGetLength(body.velocity) - config.speed) > 0.001) {
+      // if we just exited a contact, maintain speed
+    } else if (!!contacts.ended.length && !contacts.current.length) {
+      if (Math.abs(vecGetLength(body.velocity) - config.speed) > 0.1) {
         body.forces.addImpulse(
           vecScale(
             vecNormalize(body.velocity),
@@ -39,7 +41,7 @@ export const ballMovement = new System({
       }
     }
 
-    if (transform.y > 75) {
+    if (Math.abs(transform.y) > 75 || Math.abs(transform.x) > 75) {
       state.started = false;
       body.velocity = { x: 0, y: 0 };
     }
@@ -99,5 +101,19 @@ export const paddleMovement = new System({
 
     body.forces.addVelocity(velocity);
     transform.y = state.initialY || transform.y;
+  },
+});
+
+export const debrisCleanup = new System({
+  name: 'debrisCleanup',
+  requires: [stores.debrisConfig],
+  run: (entity, _, { game }) => {
+    const transform = stores.transform.get(entity)!;
+    const config = stores.debrisConfig.get(entity)!;
+    if (Math.abs(transform.x) > 75 || Math.abs(transform.y) > 75) {
+      const controller = game.get('debrisController')!;
+      const controllerConfig = stores.debrisControllerConfig.get(controller);
+      controllerConfig?.remove(config.index);
+    }
   },
 });
