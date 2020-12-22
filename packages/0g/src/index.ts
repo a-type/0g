@@ -1,10 +1,10 @@
 export * from './World';
-export * from './useFrame';
 export * from './types';
 export * from './store';
 export * from './system';
-export * from './plugin';
-export * from './Entity';
+export * from './renderer';
 export * from './Game';
+export * from './entity';
+export * from './queries';
 
 import './internal/mobxConfiguration';

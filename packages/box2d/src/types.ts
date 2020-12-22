@@ -1,25 +1,12 @@
-export type BaseBodyConfig = {
-  friction?: number;
-  isStatic?: boolean;
-  angle?: number;
-  restitution?: number;
-  bullet?: boolean;
-  fixedRotation?: boolean;
-  density?: number;
-  angularDamping?: number;
-  linearDamping?: number;
-  worldName?: string;
-};
-
-export type RectangleBodyConfig = BaseBodyConfig & {
+export type RectangleBodyShape = {
   shape: 'rectangle';
   width: number;
   height: number;
 };
 
-export type CircleBodyConfig = BaseBodyConfig & {
+export type CircleBodyShape = {
   shape: 'circle';
   radius: number;
 };
 
-export type BodyConfigData = RectangleBodyConfig | CircleBodyConfig;
+export type BodyShape = RectangleBodyShape | CircleBodyShape;

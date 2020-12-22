@@ -1,119 +1,240 @@
-import { System } from '0g';
+import { system } from '0g';
 import { EntityContact, systems as box2dSystems } from '@0g/box2d';
-import { vecGetLength, vecNormalize, vecScale } from 'math2d';
+import { vecNormalize, vecScale } from 'math2d';
 import { stores } from './stores';
 
-export const { rigidBody, physicsWorld } = box2dSystems;
+export const { physicsWorld } = box2dSystems;
 
-export const ballMovement = new System({
-  name: 'ballMovement',
-  requires: [stores.ballConfig, stores.transform, stores.contacts],
-  state: {
-    started: false,
+export const ballMovement = system(
+  'ballMovement',
+  {
+    ball: {
+      all: [
+        stores.ballConfig,
+        stores.ballState,
+        stores.transform,
+        stores.contacts,
+        stores.body,
+      ],
+      none: [],
+    },
+    uninitialized: {
+      all: [stores.ballConfig],
+      none: [stores.ballState],
+    },
   },
-  run: (entity, state) => {
-    const transform = stores.transform.get(entity)!;
-    const body = stores.body.get(entity)!;
-    const config = stores.ballConfig.get(entity)!;
-    const contacts = stores.contacts.get(entity)!;
+  function () {
+    this.queries.uninitialized.entities.forEach((entity) => {
+      entity.add(stores.ballState, { needsLaunch: true });
+    });
 
-    if (!state.started) {
-      state.started = true;
-      // TODO: transform.position = setter
-      transform.x = 0;
-      transform.y = 0;
-      const currentSpeed = vecGetLength(body.velocity);
-      if (currentSpeed < config.speed) {
-        body.forces.addImpulse({
-          x: 0,
-          y: (config.speed - currentSpeed) * body.mass,
-        });
+    this.queries.ball.entities.forEach((entity) => {
+      const transform = entity.get(stores.transform);
+      const body = entity.get(stores.body);
+      const config = entity.get(stores.ballConfig);
+      const contacts = entity.get(stores.contacts);
+      const state = entity.get(stores.ballState);
+
+      if (Math.abs(transform.y) > 75 || Math.abs(transform.x) > 75) {
+        body.value.SetPositionXY(0, 0);
       }
-      // if we just exited a contact, maintain speed
-    } else if (!!contacts.ended.length && !contacts.current.length) {
-      if (Math.abs(vecGetLength(body.velocity) - config.speed) > 0.1) {
-        body.forces.addImpulse(
-          vecScale(
-            vecNormalize(body.velocity),
-            (config.speed - vecGetLength(body.velocity)) * body.mass
-          )
+
+      const currentSpeed = body.value.GetLinearVelocity().Length();
+
+      // just exited a collision?
+      if (state.needsLaunch) {
+        console.log(
+          `speed ${currentSpeed} target ${
+            config.speed
+          } mass ${body.value.GetMass()}`
         );
+        body.value.ApplyLinearImpulseToCenter({
+          x: 0,
+          y: config.speed * body.value.GetMass(),
+        });
+        state.needsLaunch = false;
+      } else if (!!contacts.ended.length && !contacts.current.length) {
+        // speed up to required speed
+        if (Math.abs(currentSpeed - config.speed) > 0.1) {
+          body.value.ApplyLinearImpulseToCenter(
+            vecScale(
+              vecNormalize(body.value.GetLinearVelocity()),
+              (config.speed - currentSpeed) * body.value.GetMass()
+            )
+          );
+        }
       }
-    }
+    });
+  }
+);
 
-    if (Math.abs(transform.y) > 75 || Math.abs(transform.x) > 75) {
-      state.started = false;
-      body.velocity = { x: 0, y: 0 };
-    }
+export const brickBreaker = system(
+  'brickBreaker',
+  {
+    ball: {
+      all: [stores.ballConfig, stores.contacts],
+      none: [],
+    },
   },
-});
-
-export const brickBreaker = new System({
-  name: 'brickBreaker',
-  requires: [stores.ballConfig],
-  run: (entity, _, ctx) => {
-    const contacts = stores.contacts.get(entity)!;
-    let contact: EntityContact;
-    for (contact of contacts.began) {
-      if (!contact.otherId) continue;
-      const other = ctx.game.get(contact.otherId);
-      if (!other) continue;
-      const info = stores.blockInfo.get(other);
-      if (!info) continue; // not a block
-      const spawnerId = info.spawnerId!;
-      const spawner = ctx.game.get(spawnerId)!;
-      stores.blocksConfig.get(spawner)?.removeBlock(info.key!);
-      // also make paddle a little smaller
-      const paddle = ctx.game.get('paddle')!;
-      const paddleBody = stores.body.get(paddle)!;
-      if (paddleBody.config.shape === 'rectangle') {
-        paddleBody.config.width *= 0.9;
+  function (game) {
+    this.queries.ball.entities.forEach((entity) => {
+      const contacts = entity.get(stores.contacts);
+      let contact: EntityContact;
+      for (contact of contacts.began) {
+        if (!contact.otherId) continue;
+        const other = game.get(contact.otherId);
+        if (!other) continue;
+        const info = other.maybeGet(stores.blockInfo);
+        if (!info) continue; // not a block
+        game.destroy(other.id);
+        // also make paddle a little smaller
+        const paddle = game.get('paddle')!;
+        const paddleBodyConfig = paddle.get(stores.bodyConfig);
+        if (paddleBodyConfig.shape.shape === 'rectangle') {
+          paddleBodyConfig.shape.width *= 0.9;
+        }
       }
-    }
+    });
+  }
+);
+
+export const paddleMovement = system(
+  'paddleMovement',
+  {
+    paddle: {
+      all: [stores.paddleConfig, stores.body, stores.transform],
+      none: [],
+    },
   },
-});
+  function (game) {
+    this.queries.paddle.entities.forEach((entity) => {
+      const body = entity.get(stores.body);
+      const config = entity.get(stores.paddleConfig);
 
-export const paddleMovement = new System({
-  name: 'paddleMovement',
-  requires: [stores.paddleConfig],
-  state: {
-    initialY: null as null | number,
+      const velocity = { x: 0, y: 0 };
+      if (
+        game.input.keyboard.getKeyPressed('a') ||
+        game.input.keyboard.getKeyPressed('ArrowLeft')
+      ) {
+        velocity.x -= config.speed;
+      } else if (
+        game.input.keyboard.getKeyPressed('d') ||
+        game.input.keyboard.getKeyPressed('ArrowRight')
+      ) {
+        velocity.x += config.speed;
+      }
+
+      body.value.SetLinearVelocity(velocity);
+    });
+  }
+);
+
+export const debrisCleanup = system(
+  'debrisCleanup',
+  {
+    debris: {
+      all: [stores.debrisConfig, stores.transform],
+      none: [],
+    },
   },
-  run: (entity, state, ctx) => {
-    const transform = stores.transform.get(entity)!;
-    const body = stores.body.get(entity)!;
-    const config = stores.paddleConfig.get(entity)!;
+  function (game) {
+    this.queries.debris.entities.forEach((entity) => {
+      const transform = entity.get(stores.transform);
+      if (Math.abs(transform.x) > 75 || Math.abs(transform.y) > 75) {
+        console.debug(`Removing debris ${entity.id}`);
+        game.destroy(entity.id);
+      }
+    });
+  }
+);
 
-    if (state.initialY === null) state.initialY = transform.y;
-
-    const velocity = { x: 0, y: 0 };
-    if (
-      ctx.game.input.keyboard.getKeyPressed('a') ||
-      ctx.game.input.keyboard.getKeyPressed('ArrowLeft')
-    ) {
-      velocity.x -= config.speed;
-    } else if (
-      ctx.game.input.keyboard.getKeyPressed('d') ||
-      ctx.game.input.keyboard.getKeyPressed('ArrowRight')
-    ) {
-      velocity.x += config.speed;
-    }
-
-    body.forces.addVelocity(velocity);
-    transform.y = state.initialY || transform.y;
+export const blockSpawner = system(
+  'blockSpawner',
+  {
+    spawner: {
+      all: [stores.blocksConfig, stores.transform],
+      none: [],
+    },
   },
-});
+  function (game) {
+    this.queries.spawner.entities.forEach((entity) => {
+      const config = entity.get(stores.blocksConfig);
+      if (config.alreadySpawned) return;
+      config.alreadySpawned = true;
 
-export const debrisCleanup = new System({
-  name: 'debrisCleanup',
-  requires: [stores.debrisConfig],
-  run: (entity, _, { game }) => {
-    const transform = stores.transform.get(entity)!;
-    const config = stores.debrisConfig.get(entity)!;
-    if (Math.abs(transform.x) > 75 || Math.abs(transform.y) > 75) {
-      const controller = game.get('debrisController')!;
-      const controllerConfig = stores.debrisControllerConfig.get(controller);
-      controllerConfig?.remove(config.index);
-    }
+      const { x, y } = entity.get(stores.transform);
+
+      const totalWidth =
+        config.blocks.reduce((max, row) => Math.max(max, row.length), 0) *
+        config.blockWidth;
+      const totalHeight = config.blocks.length * config.blockHeight;
+
+      const hOffset = -totalWidth / 4;
+      const vOffset = -totalHeight / 4;
+
+      config.blocks.forEach((row, h) => {
+        row.forEach((info, v) => {
+          if (info) {
+            game
+              .create(info.key)
+              .add(stores.transform, {
+                x: x + v * config.blockWidth + hOffset,
+                y: y + h * config.blockHeight + vOffset,
+              })
+              .add(stores.bodyConfig, {
+                shape: {
+                  shape: 'rectangle',
+                  width: config.blockWidth,
+                  height: config.blockHeight,
+                },
+              })
+              .add(stores.blockInfo, {
+                spawnerId: entity.id,
+                key: info.key,
+                fontSize: config.fontSize,
+                text: info.text,
+              });
+          }
+        });
+      });
+    });
+  }
+);
+
+export const debrisSpawner = system(
+  'debrisSpawner',
+  {
+    spawner: {
+      all: [stores.debrisControllerConfig],
+      none: [],
+    },
   },
-});
+  function (game) {
+    this.queries.spawner.entities.forEach((entity) => {
+      const config = entity.get(stores.debrisControllerConfig);
+      if (config.alreadySpawned) return;
+      config.alreadySpawned = true;
+
+      config.items.forEach((d, i) => {
+        game
+          .create(`debris-${d.key}`)
+          .add(stores.transform, {
+            x: d.x,
+            y: d.y,
+            angle: d.angle,
+          })
+          .add(stores.bodyConfig, {
+            shape: {
+              shape: 'rectangle',
+              width: d.size,
+              height: d.size,
+            },
+          })
+          .add(stores.debrisConfig, {
+            text: d.text,
+            index: i,
+          });
+      });
+    });
+  }
+);

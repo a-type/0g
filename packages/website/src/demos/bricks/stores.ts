@@ -17,53 +17,83 @@ const randomUnit = () => {
 
 export const stores = {
   ...box2dStores,
-  ballConfig: store('ballConfig', { speed: 12 }),
-  blockInfo: store('blockInfo', {
-    spawnerId: null as string | null,
-    key: null as string | null,
-    text: 'TODO',
-    fontSize: 80,
-  }),
-  blocksConfig: store('blocksConfig', {
-    blockWidth: 6,
-    blockHeight: 8,
-    fontSize: 80,
-    blocks: [
-      [
-        {
-          key: 'title0',
-          text: '0',
-        },
-        {
-          key: 'titleG',
-          text: 'G',
-        },
-      ],
-    ] as Array<Array<BlockData | null>>,
-    removeBlock(key: string) {
-      this.blocks = this.blocks.map((row) =>
-        row.map((item) => (item?.key === key ? null : item))
-      );
+  ballConfig: store(
+    class BallConfig {
+      speed = 12;
     },
-  }),
-  paddleConfig: store('paddleConfig', { speed: 16 }),
-  debrisConfig: store('debrisConfig', {
-    text: '%',
-    index: 0,
-  }),
-  debrisControllerConfig: store('debrisControllerConfig', {
-    items: new Array(20).fill(null).map((_, i) => ({
-      text: '%',
-      size: Math.random() * 2 + 1,
-      x: Math.random() * 40 - 20,
-      y: Math.random() * 40 - 20,
-      angle: Math.random() * Math.PI * 2,
-      key: i,
-      velocity: vecScale(randomUnit(), Math.random() * 0.1),
-      angularVelocity: Math.random() * 0.05 - 0.025,
-    })),
-    remove(index: number) {
-      this.items = this.items.filter((i) => i.key !== index);
+    'persistent',
+    'ballConfig'
+  ),
+  ballState: store(
+    class BallState {
+      needsLaunch = true;
     },
-  }),
+    'state',
+    'ballState'
+  ),
+  blockInfo: store(
+    class BlockInfo {
+      spawnerId: string | null = null;
+      key: string | null = null;
+      text = 'TODO';
+      fontSize = 80;
+    },
+    'persistent',
+    'blockInfo'
+  ),
+  blocksConfig: store(
+    class BlocksConfig {
+      blockWidth = 6;
+      blockHeight = 8;
+      fontSize = 80;
+      blocks = [
+        [
+          {
+            key: 'title0',
+            text: '0',
+          },
+          {
+            key: 'titleG',
+            text: 'G',
+          },
+        ],
+      ] as Array<Array<BlockData>>;
+      alreadySpawned = false;
+    },
+    'persistent',
+    'blocksConfig'
+  ),
+  paddleConfig: store(
+    class PaddleConfig {
+      speed = 16;
+    },
+    'persistent',
+    'paddleConfig'
+  ),
+  debrisConfig: store(
+    class DebrisConfig {
+      text = '%';
+      index = 0;
+    },
+    'persistent',
+    'debrisConfig'
+  ),
+  debrisControllerConfig: store(
+    class DebrisControllerConfig {
+      items = new Array(20).fill(null).map((_, i) => ({
+        text: '%',
+        size: Math.random() * 2 + 1,
+        x: Math.random() * 40 - 20,
+        y: Math.random() * 40 - 20,
+        angle: Math.random() * Math.PI * 2,
+        key: i,
+        velocity: vecScale(randomUnit(), Math.random() * 0.1),
+        angularVelocity: Math.random() * 0.05 - 0.025,
+      }));
+      alreadySpawned = false;
+    },
+    'persistent',
+    'debrisControllerConfig'
+  ),
+  wallTag: store(class WallTag {}, 'persistent', 'wallTag'),
 };

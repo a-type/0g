@@ -1,12 +1,10 @@
 import { useLayoutEffect, useRef } from 'react';
-import * as box2dStores from '../stores';
 import { autorun } from 'mobx';
+import { Entity } from '0g/dist-esm/entity';
+import { stores } from '..';
 
 export function useBodyRef<T extends HTMLElement>(
-  stores: {
-    transform: ReturnType<typeof box2dStores['transform']>;
-    body: ReturnType<typeof box2dStores['body']>;
-  },
+  entity: Entity,
   {
     pixelScale = 10,
     cssPosition = 'absolute',
@@ -18,16 +16,20 @@ export function useBodyRef<T extends HTMLElement>(
   const ref = useRef<T>(null);
 
   useLayoutEffect(() => {
+    console.debug(`body ref => ${entity.id}`);
     return autorun(() => {
+      const bodyConfig = entity.get(stores.bodyConfig);
+      const transform = entity.get(stores.transform);
+
       const width =
-        stores.body.config.shape === 'circle'
-          ? stores.body.config.radius * 2 * pixelScale
-          : stores.body.config.width * pixelScale;
+        bodyConfig.shape.shape === 'circle'
+          ? bodyConfig.shape.radius * 2 * pixelScale
+          : bodyConfig.shape.width * pixelScale;
       const height =
-        stores.body.config.shape === 'circle'
-          ? stores.body.config.radius * 2 * pixelScale
-          : stores.body.config.height * pixelScale;
-      const { x, y, angle } = stores.transform;
+        bodyConfig.shape.shape === 'circle'
+          ? bodyConfig.shape.radius * 2 * pixelScale
+          : bodyConfig.shape.height * pixelScale;
+      const { x, y, angle } = transform;
 
       if (ref.current) {
         ref.current.style.position = cssPosition;
@@ -38,7 +40,7 @@ export function useBodyRef<T extends HTMLElement>(
         }px) translate(-50%, -50%) rotate(${angle ?? 0}rad)`;
       }
     });
-  }, [stores.transform, stores.body.config, ref]);
+  }, [entity, ref]);
 
   return ref;
 }
