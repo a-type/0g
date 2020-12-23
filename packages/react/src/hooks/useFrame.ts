@@ -1,6 +1,5 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
-import { Entity } from '../entity';
-import { Query, QueryDef } from '../queries';
+import { Entity, Query, QueryDef } from '0g';
 import { useGame } from './useGame';
 
 /**
@@ -31,7 +30,7 @@ export function useFrame(callback: () => void) {
  */
 export function useQueryFrame(
   input: Query<QueryDef>,
-  callback: (entity: Entity) => void,
+  callback: (entity: Entity) => void
 ) {
   useFrame(() => {
     input.entities.forEach(callback);

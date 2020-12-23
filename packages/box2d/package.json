@@ -18,14 +18,14 @@
     "build:cjs": "tsc",
     "build:esm": "tsc -m es6 --outDir dist-esm",
     "build": "concurrently \"npm run build:cjs\" \"npm run build:esm\"",
-    "watch:cjs": "tsc --watch",
-    "watch:esm": "tsc -m es6 --outDir dist-esm --watch",
-    "watch": "concurrently \"npm run watch:cjs\" \"npm run watch:esm\"",
+    "dev:cjs": "tsc --watch",
+    "dev:esm": "tsc -m es6 --outDir dist-esm --watch",
+    "dev": "concurrently \"npm run dev:cjs\" \"npm run dev:esm\"",
     "prepublishOnly": "npm run build:cjs && npm run build:esm",
     "release": "npm publish --access public"
   },
   "peerDependencies": {
-    "0g": "link:../0g",
+    "0g": "^0.0.1",
     "@flyover/box2d": "^1.0.1"
   },
   "dependencies": {
@@ -35,7 +35,7 @@
   "devDependencies": {
     "@flyover/box2d": "^1.0.1",
     "@types/react": "^17.0.0",
-    "concurrently": "^5.3.0",
-    "mobx": "^6.0.4"
+    "0g": "link:../0g",
+    "concurrently": "^5.3.0"
   }
 }

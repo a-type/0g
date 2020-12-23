@@ -1,4 +1,4 @@
-import { useQuery, useQueryFrame, useWatch } from '0g';
+import { System } from '0g';
 import {
   b2Body,
   b2BodyType,
@@ -58,34 +58,41 @@ function applyFixtures(body: b2Body, fix: b2FixtureDef) {
   body.CreateFixture(fix);
 }
 
-export const PhysicsWorld = () => {
-  const newWorlds = useQuery({
+export class PhysicsWorld extends System {
+  newWorlds = this.query({
     all: [stores.WorldConfig],
     none: [stores.World],
   });
-  const worlds = useQuery({
+  worlds = this.query({
     all: [stores.World],
     none: [],
   });
-  const bodies = useQuery({
+  bodies = this.query({
     all: [stores.Body, stores.Transform],
     none: [],
   });
-  const bodiesWithContacts = useQuery({
+  bodiesWithContacts = this.query({
     all: [stores.Contacts, stores.ContactsCache],
     none: [],
   });
-  const newBodies = useQuery({
+  newBodies = this.query({
     all: [stores.BodyConfig, stores.Transform],
     none: [stores.Body],
   });
-  const oldBodies = useQuery({
+  oldBodies = this.query({
     all: [stores.Body],
     none: [stores.BodyConfig],
   });
 
-  // set up new worlds
-  useQueryFrame(newWorlds, (worldEntity) => {
+  // TODO: multi world support? right now all bodies are added to first world.
+  private get defaultWorldEntity() {
+    return this.worlds.entities[0];
+  }
+  private get defaultWorld() {
+    return this.defaultWorldEntity?.get(stores.World);
+  }
+
+  initWorlds = this.frame(this.newWorlds, (worldEntity) => {
     const worldConfig = worldEntity.get(stores.WorldConfig);
     const w = new b2World(worldConfig.gravity);
     const c = new ContactListener();
@@ -96,20 +103,15 @@ export const PhysicsWorld = () => {
     });
   });
 
-  // TODO: multi world support? right now all bodies are added to first world.
-  const defaultWorldEntity = worlds.entities[0];
-  const defaultWorld = defaultWorldEntity?.get(stores.World);
-
-  // set up new bodies
-  useQueryFrame(newBodies, (bodyEntity) => {
-    if (!defaultWorld) {
+  initBodies = this.frame(this.newBodies, (bodyEntity) => {
+    if (!this.defaultWorld) {
       return;
     }
 
     const bodyConfig = bodyEntity.get(stores.BodyConfig);
     const transform = bodyEntity.get(stores.Transform);
 
-    const b = defaultWorld.value.CreateBody();
+    const b = this.defaultWorld.value.CreateBody();
     const { x, y, angle } = transform;
     b.SetAngle(angle);
     b.SetPositionXY(x, y);
@@ -126,12 +128,11 @@ export const PhysicsWorld = () => {
     if (contacts) {
       bodyEntity.add(stores.ContactsCache);
       const contactsCache = bodyEntity.get(stores.ContactsCache);
-      defaultWorld.contacts.subscribe(bodyEntity.id, contactsCache);
+      this.defaultWorld.contacts.subscribe(bodyEntity.id, contactsCache);
     }
   });
 
-  // keep bodies up to date with their configs
-  useWatch(bodies, [stores.BodyConfig], (entity) => {
+  updateBodies = this.watch(this.bodies, [stores.BodyConfig], (entity) => {
     const bodyConfig = entity.get(stores.BodyConfig);
     const body = entity.get(stores.Body);
 
@@ -139,24 +140,23 @@ export const PhysicsWorld = () => {
     applyFixtures(body.value, createFixtureDef(bodyConfig, entity.id));
   });
 
-  // tear down old bodies
-  useQueryFrame(oldBodies, (bodyEntity) => {
-    if (!defaultWorld) return;
+  teardownBodies = this.frame(this.oldBodies, (bodyEntity) => {
+    if (!this.defaultWorld) return;
     const body = bodyEntity.get(stores.Body);
-    defaultWorld.value.DestroyBody(body.value);
-    defaultWorld.contacts.unsubscribe(bodyEntity.id);
+    this.defaultWorld.value.DestroyBody(body.value);
+    this.defaultWorld.contacts.unsubscribe(bodyEntity.id);
   });
 
-  // reset contacts
-  useQueryFrame(bodiesWithContacts, (bodyEntity) => {
+  resetContacts = this.frame(this.bodiesWithContacts, (bodyEntity) => {
     const contacts = bodyEntity.get(stores.Contacts);
 
-    contacts.began = [];
-    contacts.ended = [];
+    contacts.set({
+      began: [],
+      ended: [],
+    });
   });
 
-  // run worlds
-  useQueryFrame(worlds, (worldEntity) => {
+  stepWorlds = this.frame(this.worlds, (worldEntity) => {
     const world = worldEntity.get(stores.World);
     const worldConfig = worldEntity.get(stores.WorldConfig);
     world.value.Step(
@@ -166,8 +166,7 @@ export const PhysicsWorld = () => {
     );
   });
 
-  // update transforms
-  useQueryFrame(bodies, (bodyEntity) => {
+  updateTransforms = this.frame(this.bodies, (bodyEntity) => {
     const transform = bodyEntity.get(stores.Transform);
     const body = bodyEntity.get(stores.Body);
 
@@ -181,9 +180,9 @@ export const PhysicsWorld = () => {
   });
 
   // update contacts
-  useQueryFrame(bodiesWithContacts, (bodyEntity) => {
-    const cached = bodyEntity.get(stores.ContactsCache);
-    const contacts = bodyEntity.get(stores.Contacts);
+  updateContacts = this.frame(this.bodiesWithContacts, (bodyEntity) => {
+    const cached = bodyEntity.getWritable(stores.ContactsCache);
+    const contacts = bodyEntity.getWritable(stores.Contacts);
 
     let c: EntityContact;
     for (c of cached.began.values()) {
@@ -197,10 +196,5 @@ export const PhysicsWorld = () => {
       contacts.ended.push(c);
       cached.ended.delete(c);
     }
-
-    contacts.mark();
-    cached.mark();
   });
-
-  return null;
-};
+}

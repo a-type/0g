@@ -2,7 +2,6 @@ import { Entity } from './entity';
 import { EventEmitter } from 'events';
 import { logger } from './logger';
 import { Store } from './stores';
-import { Game } from './Game';
 
 export declare interface QueryEvents {
   on(event: 'entityAdded', callback: (entity: Entity) => void): this;
@@ -17,7 +16,7 @@ export type QueryDef = {
   none?: Store[];
 };
 
-export class Query<Def extends QueryDef> {
+export class Query<Def extends QueryDef = QueryDef> {
   entities = new Array<Entity>();
   events = new QueryEvents();
 

@@ -1,21 +1,23 @@
 import { EventEmitter } from 'events';
-import { action, computed, makeObservable, observable } from 'mobx';
 import * as input from './input';
 import { EntityManager } from './entityManager';
 import { QueryManager } from './queryManager';
 import { Store } from './stores';
 import { StoreManager } from './storeManager';
+import { System, SystemSpec } from './systems';
 
 export type GamePlayState = 'paused' | 'running';
 
 export declare interface Game {
   on(event: 'step', callback: () => void): this;
+  on(event: 'playStateChanged', callback: (state: GamePlayState) => void): this;
 }
 
 export class Game extends EventEmitter {
   private _entityManager = new EntityManager();
   private _stores: Record<string, Store>;
-  // TODO: create it here, not global
+  private _systems: SystemSpec[];
+  private _systemInstances: System[];
   private _queryManager = new QueryManager();
   private _storeManager = new StoreManager();
 
@@ -34,37 +36,33 @@ export class Game extends EventEmitter {
     requestFrame = requestAnimationFrame.bind(window),
     cancelFrame = cancelAnimationFrame.bind(window),
     initialPlayState: initialState = 'running',
+    systems = [],
   }: {
     stores: Record<string, Store>;
     requestFrame?: (callback: FrameRequestCallback) => number;
     cancelFrame?: (frameHandle: number) => void;
     initialPlayState?: GamePlayState;
+    systems?: SystemSpec[];
   }) {
     super();
     this._entityManager.__game = this;
     this._queryManager.__game = this;
     this.setMaxListeners(Infinity);
     this._stores = stores;
+    this._systems = systems;
+    this._systemInstances = systems.map((Sys) => new Sys(this));
     this._raf = requestFrame;
     this._cancelRaf = cancelFrame;
     this._playState = initialState;
     if (this._playState === 'running') {
       this.resume();
     }
-
-    makeObservable(this, {
-      _playState: observable,
-      playState: computed,
-      resume: action,
-      pause: action,
-      isPaused: computed,
-    });
   }
 
-  get state() {
+  get entities() {
     return this._entityManager;
   }
-  get stores() {
+  get storeSpecs() {
     return this._stores;
   }
   get playState() {
@@ -79,15 +77,15 @@ export class Game extends EventEmitter {
   get time() {
     return this._time;
   }
-  get queryManager() {
+  get queries() {
     return this._queryManager;
   }
-  get storeManager() {
+  get stores() {
     return this._storeManager;
   }
 
   get = (id: string) => {
-    return this.state.entities[id] ?? null;
+    return this.entities.entities[id] ?? null;
   };
   create = (ownId: string | null = null) => {
     return this._entityManager.create(ownId);
@@ -100,12 +98,14 @@ export class Game extends EventEmitter {
     this._playState = 'running';
     this._lastFrameTime = null;
     this.runFrame(performance.now());
+    this.emit('playStateChanged', this._playState);
   };
 
   pause = () => {
     this._playState = 'paused';
     // TODO: does this make sense?
     // this._cancelRaf(this._frameHandle);
+    this.emit('playStateChanged', this._playState);
   };
 
   loadScene = (serialized: { id: string; data: Record<string, any> }[]) => {

@@ -1,7 +1,8 @@
 import React, { memo, useCallback, useEffect, useState } from 'react';
-import { Entity, useGame, useQuery } from '0g';
+import { Entity } from '0g';
+import { useGame, usePlayState, useQuery } from '@0g/react';
 import { RectangleBodyShape } from '@0g/box2d';
-import { useBodyRef } from '@0g/box2d/web';
+import { useBodyRef } from '../../hooks/useBodyRef';
 import { Button } from '../../components/Button';
 import { stores } from './stores';
 
@@ -66,19 +67,11 @@ export const BlockRenderer = () => {
 };
 
 const Paddle = memo(({ entity }: { entity: Entity }) => {
-  const game = useGame();
-
-  const handleClick = useCallback(() => {
-    if (game.isPaused) {
-      game.resume();
-    } else {
-      game.pause();
-    }
-  }, [game]);
+  const [isPlaying, toggle] = usePlayState();
 
   return (
-    <Button key={entity.id} onClick={handleClick} ref={useBodyRef(entity)}>
-      {game.isPaused ? 'Start' : 'Pause'}
+    <Button key={entity.id} onClick={() => toggle()} ref={useBodyRef(entity)}>
+      {isPlaying ? 'Pause' : 'Start'}
     </Button>
   );
 });

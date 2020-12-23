@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Game } from './Game';
+import { Game } from '0g';
 
 export const worldContext = React.createContext<Game | null>(null);
 

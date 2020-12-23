@@ -1,12 +1,22 @@
 import * as React from 'react';
-import { World, Game } from '0g';
+import { Game } from '0g';
+import { World } from '@0g/react';
 import { stores } from './stores';
 import * as renderers from './renderers';
 import * as systems from './systems';
 
 const game = new Game({
   stores: stores,
-  // initialPlayState: 'paused',
+  systems: [
+    systems.PhysicsWorld,
+    systems.BlockSpawner,
+    systems.DebrisSpawner,
+    systems.DebrisCleanup,
+    systems.PaddleMovement,
+    systems.BallMovement,
+    systems.BrickBreaker,
+  ],
+  initialPlayState: 'paused',
 });
 
 (window as any).game = game;
@@ -144,14 +154,6 @@ export function BricksGame() {
           <renderers.PaddleRenderer />
           <renderers.WallRenderer />
           <renderers.DebrisRenderer />
-
-          <systems.PhysicsWorld />
-          <systems.BallMovement />
-          <systems.BlockSpawner />
-          <systems.BrickBreaker />
-          <systems.DebrisCleanup />
-          <systems.DebrisSpawner />
-          <systems.PaddleMovement />
         </World>
       </div>
     </div>

@@ -51,7 +51,7 @@ export class EntityManager {
     const registered = this.entities[id];
 
     this.events.emit('entityAdded', registered);
-    this.__game.queryManager.onEntityCreated(registered);
+    this.__game.queries.onEntityCreated(registered);
     logger.debug(`Added ${id}`);
     return registered;
   }
@@ -67,13 +67,13 @@ export class EntityManager {
     initial?: Partial<StoreInstanceFor<Spec>>,
   ) {
     logger.debug(`Adding ${spec.name} to ${entity.id}`);
-    const data = this.__game.storeManager.acquire(spec);
+    const data = this.__game.stores.acquire(spec);
     if (initial) {
       Object.assign(data, initial);
     }
     entity.__data.set(spec, data);
     this.events.emit('entityStoreAdded', entity);
-    this.__game.queryManager.onEntityStoresChanged(entity);
+    this.__game.queries.onEntityStoresChanged(entity);
     return data;
   }
 
@@ -81,7 +81,7 @@ export class EntityManager {
     if (!entity.__data.has(spec)) return entity;
     entity.__data.delete(spec);
     this.events.emit('entityStoreRemoved', entity);
-    this.__game.queryManager.onEntityStoresChanged(entity);
+    this.__game.queries.onEntityStoresChanged(entity);
     return entity;
   }
 
@@ -95,7 +95,7 @@ export class EntityManager {
     delete this.entities[id];
     this.pool.release(entity);
     this.events.emit('entityRemoved', entity);
-    this.__game.queryManager.onEntityDestroyed(entity);
+    this.__game.queries.onEntityDestroyed(entity);
     logger.debug(`Destroyed ${id}`);
   };
 

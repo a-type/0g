@@ -19,6 +19,7 @@ class BaseStore implements Poolable {
 
   reset = () => {
     this.set(Object.getPrototypeOf(this).constructor.defaultValues);
+    this.__version = 0;
   };
 }
 

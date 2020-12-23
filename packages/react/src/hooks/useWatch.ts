@@ -1,18 +1,16 @@
 import { useCallback, useRef, useState } from 'react';
-import { Entity } from '../entity';
-import { Query, QueryDef } from '../queries';
-import { Store } from '../stores';
+import { Store, Query, QueryDef, Entity } from '0g';
 import { useFrame, useQueryFrame } from './useFrame';
 
 export function useWatch(
   input: Query<QueryDef>,
   stores: Store[],
-  callback: (entity: Entity) => void,
+  callback: (entity: Entity) => void
 ): void;
 export function useWatch(
   input: Entity,
   stores: Store[],
-  callback: () => void,
+  callback: () => void
 ): void;
 export function useWatch(input: any, stores: any, callback: any): void {
   if (input instanceof Query) {
@@ -29,7 +27,7 @@ function getStoreVersions(entity: Entity, stores: Store[]) {
 function useWatchQuery(
   query: Query<QueryDef>,
   stores: Store[],
-  callback: (entity: Entity) => void,
+  callback: (entity: Entity) => void
 ) {
   const [versionCache] = useState(() => {
     return new WeakMap<Entity, string>();
@@ -45,8 +43,8 @@ function useWatchQuery(
           callback(entity);
         }
       },
-      [versionCache, stores],
-    ),
+      [versionCache, stores]
+    )
   );
 }
 
@@ -60,6 +58,6 @@ function useWatchEntity(entity: Entity, stores: Store[], callback: () => void) {
         versionsRef.current = currentVersions;
         callback();
       }
-    }, [versionsRef, entity, stores]),
+    }, [versionsRef, entity, stores])
   );
 }

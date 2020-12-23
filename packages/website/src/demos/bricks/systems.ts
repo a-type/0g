@@ -1,12 +1,12 @@
-import { useGame, useQuery, useQueryFrame } from '0g';
+import { System } from '0g';
 import { EntityContact, systems as box2dSystems } from '@0g/box2d';
 import { vecNormalize, vecScale } from 'math2d';
 import { stores } from './stores';
 
 export const { PhysicsWorld } = box2dSystems;
 
-export const BallMovement = () => {
-  const balls = useQuery({
+export class BallMovement extends System {
+  balls = this.query({
     all: [
       stores.BallConfig,
       stores.BallState,
@@ -16,16 +16,16 @@ export const BallMovement = () => {
     ],
     none: [],
   });
-  const uninitialized = useQuery({
+  uninitialized = this.query({
     all: [stores.BallConfig],
     none: [stores.BallState],
   });
 
-  useQueryFrame(uninitialized, (entity) => {
+  initBalls = this.frame(this.uninitialized, (entity) => {
     entity.add(stores.BallState, { needsLaunch: true });
   });
 
-  useQueryFrame(balls, (entity) => {
+  run = this.frame(this.balls, (entity) => {
     const transform = entity.get(stores.Transform);
     const body = entity.get(stores.Body);
     const config = entity.get(stores.BallConfig);
@@ -60,30 +60,26 @@ export const BallMovement = () => {
       }
     }
   });
+}
 
-  return null;
-};
-
-export const BrickBreaker = () => {
-  const game = useGame();
-
-  const balls = useQuery({
+export class BrickBreaker extends System {
+  balls = this.query({
     all: [stores.BallConfig, stores.Contacts],
     none: [],
   });
 
-  useQueryFrame(balls, (entity) => {
+  run = this.frame(this.balls, (entity) => {
     const contacts = entity.get(stores.Contacts);
     let contact: EntityContact;
     for (contact of contacts.began) {
       if (!contact.otherId) continue;
-      const other = game.get(contact.otherId);
+      const other = this.game.get(contact.otherId);
       if (!other) continue;
       const info = other.maybeGet(stores.BlockInfo);
       if (!info) continue; // not a block
-      game.destroy(other.id);
+      this.game.destroy(other.id);
       // also make paddle a little smaller
-      const paddle = game.get('paddle')!;
+      const paddle = this.game.get('paddle')!;
       const paddleBodyConfig = paddle.get(stores.BodyConfig);
       if (paddleBodyConfig.shape.shape === 'rectangle') {
         paddleBodyConfig.shape.width *= 0.9;
@@ -91,31 +87,27 @@ export const BrickBreaker = () => {
       }
     }
   });
+}
 
-  return null;
-};
-
-export const PaddleMovement = () => {
-  const game = useGame();
-
-  const paddles = useQuery({
+export class PaddleMovement extends System {
+  paddles = this.query({
     all: [stores.PaddleConfig, stores.Body, stores.Transform],
     none: [],
   });
 
-  useQueryFrame(paddles, (entity) => {
+  run = this.frame(this.paddles, (entity) => {
     const body = entity.get(stores.Body);
     const config = entity.get(stores.PaddleConfig);
 
     const velocity = { x: 0, y: 0 };
     if (
-      game.input.keyboard.getKeyPressed('a') ||
-      game.input.keyboard.getKeyPressed('ArrowLeft')
+      this.game.input.keyboard.getKeyPressed('a') ||
+      this.game.input.keyboard.getKeyPressed('ArrowLeft')
     ) {
       velocity.x -= config.speed;
     } else if (
-      game.input.keyboard.getKeyPressed('d') ||
-      game.input.keyboard.getKeyPressed('ArrowRight')
+      this.game.input.keyboard.getKeyPressed('d') ||
+      this.game.input.keyboard.getKeyPressed('ArrowRight')
     ) {
       velocity.x += config.speed;
     }
@@ -123,37 +115,29 @@ export const PaddleMovement = () => {
     body.value.SetLinearVelocity(velocity);
     body.mark();
   });
+}
 
-  return null;
-};
-
-export const DebrisCleanup = () => {
-  const game = useGame();
-
-  const debris = useQuery({
+export class DebrisCleanup extends System {
+  debris = this.query({
     all: [stores.DebrisConfig, stores.Transform],
     none: [],
   });
 
-  useQueryFrame(debris, (entity) => {
+  run = this.frame(this.debris, (entity) => {
     const transform = entity.get(stores.Transform);
     if (Math.abs(transform.x) > 75 || Math.abs(transform.y) > 75) {
-      game.destroy(entity.id);
+      this.game.destroy(entity.id);
     }
   });
+}
 
-  return null;
-};
-
-export const BlockSpawner = () => {
-  const game = useGame();
-
-  const spawner = useQuery({
+export class BlockSpawner extends System {
+  spawner = this.query({
     all: [stores.BlocksConfig, stores.Transform],
     none: [],
   });
 
-  useQueryFrame(spawner, (entity) => {
+  run = this.frame(this.spawner, (entity) => {
     const config = entity.get(stores.BlocksConfig);
     if (config.alreadySpawned) return;
     config.set({ alreadySpawned: true });
@@ -171,7 +155,7 @@ export const BlockSpawner = () => {
     config.blocks.forEach((row, h) => {
       row.forEach((info, v) => {
         if (info) {
-          game
+          this.game
             .create(info.key)
             .add(stores.Transform, {
               x: x + v * config.blockWidth + hOffset,
@@ -194,25 +178,21 @@ export const BlockSpawner = () => {
       });
     });
   });
+}
 
-  return null;
-};
-
-export const DebrisSpawner = () => {
-  const game = useGame();
-
-  const spawner = useQuery({
+export class DebrisSpawner extends System {
+  spawner = this.query({
     all: [stores.DebrisControllerConfig],
     none: [],
   });
 
-  useQueryFrame(spawner, (entity) => {
+  run = this.frame(this.spawner, (entity) => {
     const config = entity.get(stores.DebrisControllerConfig);
     if (config.alreadySpawned) return;
-    config.alreadySpawned = true;
+    config.set({ alreadySpawned: true });
 
     config.items.forEach((d, i) => {
-      game
+      this.game
         .create(`debris-${d.key}`)
         .add(stores.Transform, {
           x: d.x,
@@ -232,6 +212,4 @@ export const DebrisSpawner = () => {
         });
     });
   });
-
-  return null;
-};
+}
