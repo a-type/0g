@@ -2,6 +2,7 @@ import { logger } from '../logger';
 
 export interface Poolable {
   reset?(): void;
+  __alive: boolean;
 }
 
 export class ObjectPool<T extends Poolable> {
@@ -18,9 +19,10 @@ export class ObjectPool<T extends Poolable> {
       this.expand(Math.round(this.count * 0.2) + 1);
     }
 
-    var item = this.free.pop();
+    var item = this.free.pop()!;
+    item.__alive = true;
 
-    return item!;
+    return item;
   }
 
   release(item: T) {
@@ -29,6 +31,7 @@ export class ObjectPool<T extends Poolable> {
       return;
     }
     item.reset?.();
+    item.__alive = false;
     this.free.push(item);
   }
 

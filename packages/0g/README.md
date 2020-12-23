@@ -1,6 +1,7 @@
 # `0G`
 
 ## Entities, Systems, and Stores
+
 ### Entities
 
 Entities describe what it takes to create a type of Entity.
@@ -154,7 +155,7 @@ const Bricks = entity(
         )}
       </>
     );
-  }
+  },
 );
 ```
 
@@ -250,3 +251,109 @@ game.stores.forces.applyImpulse(entity, { x: 5, y: 0 });
 ```
 
 A high-level Store method like this can only modify its own Store instance on the Entity.
+
+# New Ideas - ECS + React
+
+Now that ECS is working, how about a React-focused ECS implementation?
+
+```tsx
+class PlayerHealth extends PersistentStore {
+  // required? or constructor.name suffices?
+  static key = 'PlayerHealth';
+
+  // assign main data properties
+  health = 100;
+
+  // getters are allowed
+  get isDead() {
+    return this.health === 0;
+  }
+
+  // a static `set` method is available and can be composed
+  // into new operations
+  static takeDamage(p: Player, dmg: number) {
+    Player.set(p, {
+      health: Math.max(0, p.health - dmg),
+    });
+  }
+}
+// not shown: StateStore (not saved in savefile),
+// TagStore (no values), and ValueStore (single value)
+
+const stores = { ...box2d.stores, Player };
+
+// game is analogous to, say, a Redux/Zustand store or a
+// gql client. It allows external interaction to the main
+// state and plugs seamlessly into React via provider
+const game = new Game({ stores });
+
+// systems are React components. They can optionally render
+// JSX to control the visuals of the game.
+const PlayerMovement = () => {
+  // useQuery returns a static reference to a Query object
+  // managed by the game which caches entities that match
+  // the requirements.
+  const players = useQuery({
+    all: [stores.PlayerHealth, stores.Transform],
+  });
+
+  const game = useGame();
+
+  // runs every frame and iterates over query items
+  useFrame(players, (entity) => {
+    const playerHealth = stores.PlayerHealth.get(entity);
+    const transform = stores.Transform.get(entity);
+
+    // dead folks don't move
+    if (playerHealth.isDead) return;
+
+    if (game.input.keyboard.getKey('ArrowLeft')) {
+      stores.Transform.set(transform, {
+        x: transform.x - 5,
+      });
+    } else if (game.input.keyboard.getKey('ArrowRight')) {
+      stores.Transform.set(transform, {
+        x: transform.x + 5,
+      });
+    }
+  });
+
+  // runs only when a watched store changes
+  useWatch(players, [stores.Transform], (entity) => {
+    // this is totally contrived, idk what you'd do here.
+  });
+
+  return null;
+};
+
+const PlayerSprite = React.memo(({ entity }) => {
+  const ref = useRef();
+
+  useWatch(entity, [stores.Transform], () => {
+    if (!ref.current) return;
+
+    const transform = stores.Transform.get(entity);
+
+    ref.current.x = transform.x;
+    ref.current.y = transform.y;
+  });
+
+  return <Sprite ref={ref} />;
+});
+
+const PlayerSprites = () => {
+  const players = useQuery({
+    all: [stores.PlayerHealth, stores.Transform],
+  });
+
+  return players.entities.map((entity) => <PlayerSprite entity={entity} />);
+};
+
+const Game = () => {
+  return (
+    <World game={game}>
+      <PlayerMovement />
+    </World>
+  );
+};
+```

@@ -1,22 +1,18 @@
-import { StoreSpec, StoreShape } from './store';
 import { Poolable } from './internal/objectPool';
 import { Query } from './queries';
-import { EntityManager } from './entityManager';
-import { makeAutoObservable } from 'mobx';
+import { Store, StoreInstance, StoreInstanceFor } from './stores';
+import { Game } from './Game';
 
 export class Entity implements Poolable {
-  __data = new Map<StoreSpec<any>, StoreShape<StoreSpec<any>>>();
+  __data = new Map<Store, StoreInstance>();
   __queries = new Set<Query<any>>();
-  __manager: EntityManager = null as any;
-  __stores: StoreSpec[] = [];
+  __game: Game = null as any;
+  __stores: Store[] = [];
+  __alive = true;
 
   id: string = 'unallocated';
 
-  // constructor() {
-  //   makeAutoObservable(this);
-  // }
-
-  init(id: string, specs: StoreSpec[]) {
+  init(id: string, specs: Store[]) {
     this.__stores = specs;
     this.id = id;
     specs.forEach((spec) => {
@@ -24,36 +20,36 @@ export class Entity implements Poolable {
     });
   }
 
-  get<Spec extends StoreSpec<any>>(spec: Spec) {
+  get<Spec extends Store>(spec: Spec) {
     const val = this.maybeGet(spec);
     if (!val) {
-      throw new Error(`${spec.key} not present on entity ${this.id}`);
+      throw new Error(`${spec.name} not present on entity ${this.id}`);
     }
     return val;
   }
 
-  maybeGet<Spec extends StoreSpec<any>>(spec: Spec): StoreShape<Spec> | null {
-    const val = this.__data.get(spec);
+  maybeGet<Spec extends Store>(spec: Spec): StoreInstanceFor<Spec> | null {
+    const val = this.__data.get(spec) as StoreInstanceFor<Spec>;
     return val || null;
   }
 
-  add<Spec extends StoreSpec<any>>(
+  add<Spec extends Store>(
     spec: Spec,
-    initial?: Partial<StoreShape<Spec>>,
+    initial?: Partial<StoreInstanceFor<Spec>>,
   ) {
-    this.__manager.addStoreToEntity(this, spec, initial);
+    this.__game.state.addStoreToEntity(this, spec, initial);
     this.__stores.push(spec);
     return this;
   }
 
-  remove(spec: StoreSpec) {
-    this.__manager.removeStoreFromEntity(this, spec);
+  remove(spec: Store) {
+    this.__game.state.removeStoreFromEntity(this, spec);
     return this;
   }
 
   reset() {
     this.__data.forEach((data, spec) => {
-      spec.release(data);
+      this.__game.storeManager.release(data);
     });
     this.__data.clear();
     this.__stores = [];
@@ -63,7 +59,7 @@ export class Entity implements Poolable {
   get specs() {
     return {
       queries: Array.from(this.__queries.values()).map((q) => q.key),
-      stores: this.__stores.map((spec) => spec.key),
+      stores: this.__stores.map((spec) => spec.name),
     };
   }
 }

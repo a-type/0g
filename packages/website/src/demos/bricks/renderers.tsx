@@ -1,80 +1,107 @@
-import { renderer, Entity } from '0g';
+import React, { memo, useCallback, useEffect, useState } from 'react';
+import { Entity, useGame, useQuery } from '0g';
 import { RectangleBodyShape } from '@0g/box2d';
 import { useBodyRef } from '@0g/box2d/web';
-import { useCallback, useEffect, useState } from 'react';
 import { Button } from '../../components/Button';
 import { stores } from './stores';
 
-export const BallRenderer = renderer(
-  'Ball',
-  {
-    all: [stores.ballConfig, stores.transform, stores.bodyConfig],
-    none: [],
-  },
-  ({ entity }) => {
-    return (
-      <div
-        key={entity.id}
-        css={{
-          borderRadius: '100%',
-          backgroundColor: 'white',
-        }}
-        ref={useBodyRef(entity)}
-      />
-    );
-  }
-);
+const Ball = memo(({ entity }: { entity: Entity }) => {
+  return (
+    <div
+      key={entity.id}
+      css={{
+        borderRadius: '100%',
+        backgroundColor: 'white',
+      }}
+      ref={useBodyRef(entity)}
+    />
+  );
+});
 
-export const BlockRenderer = renderer(
-  'Block',
-  {
-    all: [stores.blockInfo, stores.transform, stores.bodyConfig],
+export const BallRenderer = () => {
+  const balls = useQuery({
+    all: [stores.BallConfig, stores.Transform, stores.BodyConfig],
     none: [],
-  },
-  ({ entity }) => {
-    const info = entity.get(stores.blockInfo);
-    return (
-      <div
-        key={entity.id}
-        css={{
-          fontFamily: '"Major Mono Display", monospace',
-          fontSize: info.fontSize,
-        }}
-        ref={useBodyRef(entity)}
-      >
-        {info.text}
-      </div>
-    );
-  }
-);
+  });
 
-export const PaddleRenderer = renderer(
-  'Paddle',
-  {
-    all: [stores.paddleConfig, stores.transform, stores.bodyConfig],
+  return (
+    <>
+      {balls.entities.map((entity) => (
+        <Ball key={entity.id} entity={entity} />
+      ))}
+    </>
+  );
+};
+
+const Block = memo(({ entity }: { entity: Entity }) => {
+  const info = entity.get(stores.BlockInfo);
+
+  return (
+    <div
+      key={entity.id}
+      css={{
+        fontFamily: '"Major Mono Display", monospace',
+        fontSize: info.fontSize,
+      }}
+      ref={useBodyRef(entity)}
+    >
+      {info.text}
+    </div>
+  );
+});
+
+export const BlockRenderer = () => {
+  const blocks = useQuery({
+    all: [stores.BlockInfo, stores.Transform, stores.BodyConfig],
     none: [],
-  },
-  ({ entity, game }) => {
-    const handleClick = useCallback(() => {
-      if (game.isPaused) {
-        game.resume();
-      } else {
-        game.pause();
-      }
-    }, [game]);
+  });
 
-    return (
-      <Button key={entity.id} onClick={handleClick} ref={useBodyRef(entity)}>
-        {game.isPaused ? 'Start' : 'Pause'}
-      </Button>
-    );
-  }
-);
+  return (
+    <>
+      {blocks.entities.map((entity) => (
+        <Block key={entity.id} entity={entity} />
+      ))}
+    </>
+  );
+};
+
+const Paddle = memo(({ entity }: { entity: Entity }) => {
+  const game = useGame();
+
+  const handleClick = useCallback(() => {
+    if (game.isPaused) {
+      game.resume();
+    } else {
+      game.pause();
+    }
+  }, [game]);
+
+  return (
+    <Button key={entity.id} onClick={handleClick} ref={useBodyRef(entity)}>
+      {game.isPaused ? 'Start' : 'Pause'}
+    </Button>
+  );
+});
+
+export const PaddleRenderer = () => {
+  const paddles = useQuery({
+    all: [stores.PaddleConfig, stores.Transform, stores.BodyConfig],
+    none: [],
+  });
+
+  return (
+    <>
+      {paddles.entities.map((entity) => (
+        <Paddle key={entity.id} entity={entity} />
+      ))}
+    </>
+  );
+};
 
 const Wall = ({ entity }: { entity: Entity }) => {
   const [showHit, setShowHit] = useState(false);
 
-  const contacts = entity.get(stores.contacts);
+  const contacts = entity.get(stores.Contacts);
 
   const hasContact = !!contacts.began.length;
 
@@ -98,35 +125,43 @@ const Wall = ({ entity }: { entity: Entity }) => {
   );
 };
 
-export const WallRenderer = renderer(
-  'Wall',
-  {
-    all: [stores.wallTag, stores.transform, stores.bodyConfig, stores.contacts],
+export const WallRenderer = () => {
+  const walls = useQuery({
+    all: [stores.WallTag, stores.Transform, stores.BodyConfig, stores.Contacts],
     none: [],
-  },
-  ({ entity }) => {
-    return <Wall key={entity.id} entity={entity} />;
-  }
-);
+  });
 
-export const DebrisRenderer = renderer(
-  'Debris',
-  {
-    all: [stores.debrisConfig, stores.bodyConfig, stores.transform],
+  return (
+    <>
+      {walls.entities.map((entity) => (
+        <Wall key={entity.id} entity={entity} />
+      ))}
+    </>
+  );
+};
+
+const Debris = memo(({ entity }: { entity: Entity }) => {
+  const bodyConfig = entity.get(stores.BodyConfig);
+  const config = entity.get(stores.DebrisConfig);
+  const size = (bodyConfig.shape as RectangleBodyShape).width;
+  return (
+    <div key={entity.id} ref={useBodyRef(entity)} css={{ fontSize: size * 10 }}>
+      {config.text}
+    </div>
+  );
+});
+
+export const DebrisRenderer = () => {
+  const debris = useQuery({
+    all: [stores.DebrisConfig, stores.BodyConfig, stores.Transform],
     none: [],
-  },
-  ({ entity }) => {
-    const bodyConfig = entity.get(stores.bodyConfig);
-    const config = entity.get(stores.debrisConfig);
-    const size = (bodyConfig.shape as RectangleBodyShape).width;
-    return (
-      <div
-        key={entity.id}
-        ref={useBodyRef(entity)}
-        css={{ fontSize: size * 10 }}
-      >
-        {config.text}
-      </div>
-    );
-  }
-);
+  });
+
+  return (
+    <>
+      {debris.entities.map((entity) => (
+        <Debris key={entity.id} entity={entity} />
+      ))}
+    </>
+  );
+};

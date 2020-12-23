@@ -1,31 +1,23 @@
 import { EventEmitter } from 'events';
 import { action, computed, makeObservable, observable } from 'mobx';
-import { logger } from './logger';
-import { System } from './system';
-import { Entity } from './entity';
 import * as input from './input';
-import { StoreSpec } from './store';
 import { EntityManager } from './entityManager';
-import { queryManager } from './queries';
+import { QueryManager } from './queryManager';
+import { Store } from './stores';
+import { StoreManager } from './storeManager';
 
 export type GamePlayState = 'paused' | 'running';
 
-export enum GameEvent {
-  Step = 'step',
-  Add = 'add',
-  Destroy = 'destroy',
-}
-
 export declare interface Game {
-  on(event: GameEvent.Step, callback: () => void): this;
-  on(event: GameEvent.Add, callback: (entity: Entity) => void): this;
-  on(event: GameEvent.Destroy, callback: (entity: Entity) => void): this;
+  on(event: 'step', callback: () => void): this;
 }
 
 export class Game extends EventEmitter {
   private _entityManager = new EntityManager();
-  private _systems = new Array<System<any>>();
-  private _stores: Record<string, StoreSpec<any>>;
+  private _stores: Record<string, Store>;
+  // TODO: create it here, not global
+  private _queryManager = new QueryManager();
+  private _storeManager = new StoreManager();
 
   private _raf: (cb: FrameRequestCallback) => number;
   private _cancelRaf: (handle: number) => void;
@@ -38,27 +30,21 @@ export class Game extends EventEmitter {
   private _frameHandle = 0;
 
   constructor({
-    systems,
     stores,
     requestFrame = requestAnimationFrame.bind(window),
     cancelFrame = cancelAnimationFrame.bind(window),
     initialPlayState: initialState = 'running',
   }: {
-    systems: Array<System<any>>;
-    stores: Record<string, StoreSpec<any>>;
+    stores: Record<string, Store>;
     requestFrame?: (callback: FrameRequestCallback) => number;
     cancelFrame?: (frameHandle: number) => void;
     initialPlayState?: GamePlayState;
   }) {
     super();
+    this._entityManager.__game = this;
+    this._queryManager.__game = this;
     this.setMaxListeners(Infinity);
-    this._systems = systems;
     this._stores = stores;
-
-    logger.debug(
-      `System run order: ${this._systems.map((s) => s.name).join(', ')}`,
-    );
-
     this._raf = requestFrame;
     this._cancelRaf = cancelFrame;
     this._playState = initialState;
@@ -78,9 +64,6 @@ export class Game extends EventEmitter {
   get state() {
     return this._entityManager;
   }
-  get systems() {
-    return this._systems;
-  }
   get stores() {
     return this._stores;
   }
@@ -95,6 +78,12 @@ export class Game extends EventEmitter {
   }
   get time() {
     return this._time;
+  }
+  get queryManager() {
+    return this._queryManager;
+  }
+  get storeManager() {
+    return this._storeManager;
   }
 
   get = (id: string) => {
@@ -126,7 +115,7 @@ export class Game extends EventEmitter {
       );
       const entity = this.create(entry.id);
       for (const store of spec) {
-        entity.add(store, entry.data[store.key]);
+        entity.add(store, entry.data[store.name]);
       }
     }
   };
@@ -145,14 +134,9 @@ export class Game extends EventEmitter {
     this._delta =
       this._lastFrameTime != null ? time - this._lastFrameTime : 16 + 2 / 3;
 
-    this.emit(GameEvent.Step);
-    this.systems.forEach(this.runSystem);
+    this.emit('step');
 
     // cleanup destroyed
     this._entityManager.executeDestroys();
-  };
-
-  private runSystem = (system: System<any>) => {
-    system.run(this);
   };
 }

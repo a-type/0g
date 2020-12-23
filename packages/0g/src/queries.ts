@@ -1,7 +1,8 @@
-import { StoreSpec } from './store';
 import { Entity } from './entity';
 import { EventEmitter } from 'events';
 import { logger } from './logger';
+import { Store } from './stores';
+import { Game } from './Game';
 
 export declare interface QueryEvents {
   on(event: 'entityAdded', callback: (entity: Entity) => void): this;
@@ -12,19 +13,9 @@ export declare interface QueryEvents {
 export class QueryEvents extends EventEmitter {}
 
 export type QueryDef = {
-  all?: StoreSpec[];
-  none?: StoreSpec[];
+  all?: Store[];
+  none?: Store[];
 };
-
-function toKey(def: QueryDef): string {
-  return `a:${(def.all ?? [])
-    .map((s) => s.key)
-    .sort()
-    .toString()},n:${(def.none ?? [])
-    .map((s) => s.key)
-    .sort()
-    .toString()}`;
-}
 
 export class Query<Def extends QueryDef> {
   entities = new Array<Entity>();
@@ -47,6 +38,7 @@ export class Query<Def extends QueryDef> {
       this.remove(entity);
     }
   }
+
   add(entity: Entity) {
     if (this.entities.includes(entity)) return;
 
@@ -55,6 +47,7 @@ export class Query<Def extends QueryDef> {
     logger.debug(`Added ${entity.id} to ${this.key}`);
     this.events.emit('entityAdded', entity);
   }
+
   remove(entity: Entity) {
     const index = this.entities.indexOf(entity);
     if (index !== -1) {
@@ -71,55 +64,17 @@ export class Query<Def extends QueryDef> {
     };
   }
 
+  static defToKey(def: QueryDef): string {
+    return `a:${(def.all ?? [])
+      .map((s) => s.name)
+      .sort()
+      .toString()},n:${(def.none ?? [])
+      .map((s) => s.name)
+      .sort()
+      .toString()}`;
+  }
+
   get key(): string {
-    return toKey(this.def);
+    return Query.defToKey(this.def);
   }
 }
-
-export class QueryManager {
-  private queryCache: Record<string, Query<any>> = {};
-
-  create<Def extends QueryDef>(userDef: Partial<Def>) {
-    const def = {
-      all: [],
-      none: [],
-      ...userDef,
-    };
-    const key = toKey(def);
-    if (!this.queryCache[key]) {
-      this.queryCache[key] = new Query(def);
-    }
-    return this.queryCache[key]!;
-  }
-
-  onEntityCreated = (entity: Entity) => {
-    // FIXME: perf?
-    for (const query of Object.values(this.queryCache)) {
-      query.evaluate(entity);
-    }
-  };
-
-  onEntityDestroyed = (entity: Entity) => {
-    // FIXME: perf?
-    for (const query of Object.values(this.queryCache)) {
-      // FIXME: not working
-      // if (entity.__queries.has(query)) {
-      query.remove(entity);
-      // }
-    }
-  };
-
-  onEntityStoresChanged = (entity: Entity) => {
-    logger.debug(`Entity stores changed: ${entity.id}`);
-    // FIXME: perf?
-    for (const query of Object.values(this.queryCache)) {
-      query.evaluate(entity);
-    }
-  };
-}
-
-export const queryManager = new QueryManager();
-
-export type MapDefsToQueries<Defs extends Record<string, QueryDef>> = {
-  [K in keyof Defs]: Query<Defs[K]>;
-};
