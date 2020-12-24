@@ -1,359 +1,199 @@
 # `0G`
 
-## Entities, Systems, and Stores
+The weightless game framework for TypeScript.
 
-### Entities
+### TypeScript Focused
 
-Entities describe what it takes to create a type of Entity.
-Entities declare a name, which is globally unique and used elsewhere to refer to it.
-Entities declare Stores, which determine what kind of Entity it shall be.
-Entities declare a Component, which defines how it shows up in the scene.
-Entities have an ID which identifies them.
+`0G` strikes a balance between flexibility and confidence, supporting seamless TypeScript typing for important data boundaries like Stores and core engine features.
 
-### Systems
+### ECS inspired
 
-Systems process logic on Entities each tick.
-Systems can define local state by defining `state`.
+`0G` tries to take the core ides of Entity-Component-System game frameworks and extend them with greater flexibility and concrete use cases.
 
-```tsx
-// TODO: update code example
-```
+### React Compatible
 
-Multiple systems can modify the same Stores on the same Entity and thereby interact.
-Systems may only interact via data.
-The data is the boundary.
+`0G` has some goodies for React developers like me to integrate familiar patterns into game development use cases. You can utilize React to power your game's UI, or you can hook up [`react-three-fiber`](https://github.com/pmndrs/react-three-fiber) or [`react-pixi`](https://github.com/inlet/react-pixi) to power your whole game.
+
+Of course, React adds additional overhead and can require a lot of imperative bailouts (i.e. `ref`s) to render realtime visualizations - but you get to decide where to draw the line for your game.
+
+For more details, take a look at the [`@0g/react`](https://github.com/a-type/0g/tree/master/packages/react) package after you've read up on the basics of `0G`.
+
+## Show me a Game
 
 ```tsx
-// TODO: update code example
-```
-
-### Stores
-
-Stores are just shapes of data.
-
-```tsx
-export const transformStore = 0g.store('transform', {
-  x: 0,
-  y: 0,
-  angle: 0,
-});
-```
-
-When an Entity is rendered, its Store data is added to the World.
-When an Entity is unmounted, it is removed from the World.
-
-## Saving and Loading
-
-Stores of rendered Entities are persisted as part of the save state.
-Entities are restored from this snapshot on load.
-
-Save files store entities and stores.
-
-```js
-// TODO: finalize snapshot shape
-```
-
-## Finding, Creating, Destroying
-
-Each System has access to the World.
-The World has a list of all Entities being rendered.
-Get any other Entity by ID from the World.
-
-```tsx
-type World = {
-  get(id: string): EntityData;
-  // more things come from plugins ?
-};
-```
-
-To "destroy" an Entity, its parent must stop rendering it.
-Usually this involves interacting with that parent's Stores via a System.
-For example, a Beehive Entity may have a list of bees it manages.
-Use a System to remove one of the bees from the Beehive's bee list Store.
-Then the bee will be unmounted and subsequently removed from the World.
-
-## Entities
-
-Entities can reference one another (via Systems).
-Entities expose only certain things publicly.
-
-```tsx
-type EntityData = {
-  id: string;
-  storesData: {
-    [alias: string]: any;
-  };
-};
-```
-
-## Editor (TODO)
-
-Scenes are really defined entirely by saved Entities and their Stores.
-So to construct a scene we start with making our Entities.
-Each Scene begins with a single Scene entity, which has children.
-Once we have a Scene, we can open the editor.
-The Editor can create Entities and define their Store data by adding them to Scene or others.
-The Editor renders the initial state of all Entities.
-But the Editor isn't only for initial states.
-We can bring up the Editor any time during gameplay to tweak.
-
-## Plugins
-
-Plugins can add behavior to the World.
-Physics is a good plugin example.
-Plugins have several things:
-
-1. _API_: plugins can provide some arbitrary API in the World Context.
-2. _Wrappers_: plugins can wrap the World tree in Providers or other things.
-3. _Stores_: plugins can add Stores to the game's Stores list.
-4. _Systems_: plugins can add their own Systems to manage game behaviors.
-5. _Anything else_: a plugin user can import other useful stuff like Components or Hooks directly from the plugin.
-
-### Packaging Stores & Systems as Plugins
-
-TODO
-
-## Known issues
-
-- Stores is a bad name - maybe Aspects? But it's not AOP...
-
-## Entity Lifecycle
-
-There is no generic concept of "children."
-However, different Entities may construct specialized Stores which manage some particular concept of hierarchy.
-For example, the `Bricks` Entity in Brick Breaker might have a Store which controls its brick pattern.
-It then renders child Entities using their Entity components.
-
-```tsx
-const Bricks = entity(
-  'Bricks',
-  {
-    config: game.stores.brickConfig({
-      rows: 2,
-      columns: 5,
-    }),
-    transform: game.stores.transform(),
-  },
-  ({
-    stores: {
-      config: { rows, columns },
-      transform: { x, y },
-    },
-  }) => {
-    return (
-      <>
-        {new Array(columns).fill(null).map((_, h) =>
-          new Array(rows).fill(null).map((_, v) => (
-            <Brick
-              key={`${h}_${v}`}
-              id={`${h}_${v}`}
-              initial={{
-                transform: { x: x + h * 10, y: y + v * 10 },
-              }}
-            />
-          )),
-        )}
-      </>
-    );
-  },
-);
-```
-
-Entities can only control their children's initial configuration:
-
-- Initial Stores
-- ID
-
-Otherwise the child is managed by Systems like the parent.
-When an Entity is mounted it is added to the scene with its initial Stores.
-When an Entity is mounted it is assigned an ID if it was not given one.
-When an Entity is unmounted it is removed from the scene.
-If an Entity is mounted and it is already present in the World data, it connects to that data.
-Therefore, when a saved scene is loaded and Entities begin rendering their children, those children seamlessly recover their prior state.
-Orphaned Entities are cleaned up periodically. (TODO)
-To reparent an Entity just render it from a different parent (TODO)
-Somehow we enforce an Entity can't render twice (TODO)
-
-The Scene has a special Store which is a generic children container.
-Other Entities can use this Store, too, if they just want generic children.
-It works like this:
-
-```tsx
-const newEntity = {
-  id: 'player',
-  prefab: 'Player',
-  initial: {
-    transform: { x: 0, y: 0 },
-  },
-};
-const scene = world.get('scene');
-// TODO: high-level store API for this
-game.stores.children.get(scene)[newEntity.id] = newEntity;
-```
-
-Then the Scene will render the new Entity.
-When rendered the Entity will be stored in World data.
-To remove an Entity from Scene you do:
-
-```ts
-// TODO: high-level store API for this
-delete game.stores.children.get(world.get('scene'))[id];
-```
-
-This generic `children` Store is the least specialized concept of children.
-It is therefore the most verbose.
-For example, if an Entity only renders one kind of child, you could do:
-
-```ts
-const bricks = world.get('bricks');
-game.stores.brickPositions.get(bricks).push({ x: 10, y: 50 });
-```
-
-Supposing that `brickPositions` was a list of locations to place `Brick` Entities.
-
-## The Flow
-
-We start with Stores.
-Define all the Stores, pass them to `create`, get a Game.
-Then register Prefabs and Systems on Game.
-We expose `stores` on Game.
-
-```ts
-const Player = entity(
-  'Player',
-  {
-    transform: game.store.transform({ x: 0, y: 10 }),
-  },
-  () => {
-    /* ... */
-  },
-);
-```
-
-Systems utilize `game.store` to reference an Entity's Stores by kind.
-
-```ts
-const body = game.system({
-  name: 'body',
-  run: (e) => {
-    const transform = game.store.transform.get(e);
-  },
-});
-```
-
-## Store APIs
-
-Stores can define higher-level APIs for users to streamline tasks.
-But all logic remains pure, because Store APIs are pure.
-
-```ts
-game.stores.forces.applyImpulse(entity, { x: 5, y: 0 });
-```
-
-A high-level Store method like this can only modify its own Store instance on the Entity.
-
-# New Ideas - ECS + React
-
-Now that ECS is working, how about a React-focused ECS implementation?
-
-```tsx
-class PlayerHealth extends PersistentStore {
-  // required? or constructor.name suffices?
-  static key = 'PlayerHealth';
-
-  // assign main data properties
-  health = 100;
-
-  // getters are allowed
-  get isDead() {
-    return this.health === 0;
-  }
-
-  // a static `set` method is available and can be composed
-  // into new operations
-  static takeDamage(p: Player, dmg: number) {
-    Player.set(p, {
-      health: Math.max(0, p.health - dmg),
+class Transform extends PersistentStore {
+  x = 0;
+  y = 0;
+  randomJump() {
+    this.set({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
     });
   }
 }
-// not shown: StateStore (not saved in savefile),
-// TagStore (no values), and ValueStore (single value)
 
-const stores = { ...box2d.stores, Player };
+class ButtonTag extends PersistentStore {}
 
-// game is analogous to, say, a Redux/Zustand store or a
-// gql client. It allows external interaction to the main
-// state and plugs seamlessly into React via provider
-const game = new Game({ stores });
+class Button extends StateStore {
+  element: HTMLButtonElement | null = null;
+  lastJump: number;
+}
 
-// systems are React components. They can optionally render
-// JSX to control the visuals of the game.
-const PlayerMovement = () => {
-  // useQuery returns a static reference to a Query object
-  // managed by the game which caches entities that match
-  // the requirements.
-  const players = useQuery({
-    all: [stores.PlayerHealth, stores.Transform],
+class Score extends PersistentStore {
+  points = 0;
+  increment() {
+    this.set({ points: this.points + 1 });
+  }
+}
+
+class ButtonMover extends System {
+  // new buttons that don't have a Button store connected yet
+  newButtons = this.query({
+    all: [ButtonTag, Transform],
+    none: [Button],
+  });
+  // buttons that have been initialized
+  buttons = this.query({
+    all: [ButtonTag, Button, Transform],
+  });
+  // reference the player to increment store
+  players = this.query({
+    all: [Score],
   });
 
-  const game = useGame();
-
-  // runs every frame and iterates over query items
-  useFrame(players, (entity) => {
-    const playerHealth = stores.PlayerHealth.get(entity);
-    const transform = stores.Transform.get(entity);
-
-    // dead folks don't move
-    if (playerHealth.isDead) return;
-
-    if (game.input.keyboard.getKey('ArrowLeft')) {
-      stores.Transform.set(transform, {
-        x: transform.x - 5,
+  setup = this.frame(this.newButtons, (entity) => {
+    const element = document.createElement('button');
+    element.innerText = 'Click!';
+    element.style.position = 'absolute';
+    element.addEventListener('click', () => {
+      this.players.forEach((playerEntity) => {
+        playerEntity.get(Score).increment();
       });
-    } else if (game.input.keyboard.getKey('ArrowRight')) {
-      stores.Transform.set(transform, {
-        x: transform.x + 5,
-      });
+      entity.get(Transform).randomJump();
+      entity.get(Button).set({ lastJump: Date.now() });
+    });
+    document.bodyElement.appendChild(element);
+    entity.add(Button, {
+      element,
+    });
+  });
+
+  run = this.frame(this.buttons, (entity) => {
+    const buttonStore = entity.get(Button);
+    if (Date.now() - buttonStore.lastJump > 3000) {
+      buttonStore.lastJump = Date.now();
+      entity.get(Transform).randomJump();
     }
+    // update button positions
+    const transform = entity.get(Transform);
+    buttonStore.element.style.left = transform.x;
+    buttonStore.element.style.top = transform.y;
+  });
+}
+
+class ScoreRenderer extends System {
+  players = this.query({
+    all: [Score],
   });
 
-  // runs only when a watched store changes
-  useWatch(players, [stores.Transform], (entity) => {
-    // this is totally contrived, idk what you'd do here.
+  scoreElement = document.getElementById('scoreDisplay');
+
+  update = this.watch(this.players, [Score], (entity) => {
+    this.scoreElement.innerText = entity.get(Score).points;
   });
+}
 
-  return null;
-};
-
-const PlayerSprite = React.memo(({ entity }) => {
-  const ref = useRef();
-
-  useWatch(entity, [stores.Transform], () => {
-    if (!ref.current) return;
-
-    const transform = stores.Transform.get(entity);
-
-    ref.current.x = transform.x;
-    ref.current.y = transform.y;
-  });
-
-  return <Sprite ref={ref} />;
+const game = new Game({
+  stores: { Transform, ButtonTag, Button, Score },
+  systems: [ButtonMover],
 });
 
-const PlayerSprites = () => {
-  const players = useQuery({
-    all: [stores.PlayerHealth, stores.Transform],
+game.create('player').add(Score);
+
+game.create('button').add(Transform).add(ButtonTag);
+```
+
+## Docs
+
+### ECS-based Architecture
+
+#### Stores
+
+```tsx
+class Transform extends PersistentStore {
+  x = 0;
+  y = 0;
+  angle = 0;
+
+  get position() {
+    return {
+      x: this.x,
+      y: this.y,
+    };
+  }
+}
+```
+
+To start modeling your game behavior, you'll probably first begin defining Stores.
+
+"Stores" replace ECS "Components" naming (disambiguating the term from React Components). Stores are where your game state lives. The purpose of the rest of your code is either to group, change, or render Stores.
+
+Stores come in two flavors:
+
+- _Persistent_ : Serializeable and runtime-editable<sup>1</sup>, this data forms the loadable "scene."
+  - Example: Store the configuration of a physics rigidbody for each character
+- _State_: Store any data you want. Usually these stores are derived from persistent stores at initialization time.
+  - Example: Store the runtime rigidbody created by the physics system at runtime
+
+<sup><sup>1</sup> Runtime editing is not yet supported... except in the devtools console.</sup>
+
+#### Entities
+
+```tsx
+const transform = entity.get(stores.Transform);
+transform.x = 100;
+```
+
+As in classic ECS, Entities are identifiers for groupings of Stores. Each Entity has an ID. In `0G`, an Entity object provides some convenience tools for retrieving, updating, and adding Stores to itself.
+
+#### Queries
+
+```tsx
+bodies = this.query({
+  all: [stores.Body, stores.Transform],
+  none: [stores.OmitPhysics],
+});
+```
+
+It's important, as a game developer, to find Entities in the game and iterate over them. Generally you want to find Entities by certain criteria. In `0G` the primary criteria is which Stores they have associated.
+
+Queries are managed by the game, and they monitor changes to Entities and select which Entities match your criteria. For example, you could have a Query which selects all Entities that have a `Transform` and `Body` store to do physics calculations.
+
+#### Systems
+
+```tsx
+class DemoMove extends System {
+  movable = this.query({
+    all: [stores.Transform],
   });
 
-  return players.entities.map((entity) => <PlayerSprite entity={entity} />);
-};
-
-const Game = () => {
-  return (
-    <World game={game}>
-      <PlayerMovement />
-    </World>
-  );
-};
+  run = this.frame(this.movable, (entity) => {
+    const transform = entity.getWritable(stores.Transform);
+    if (this.game.input.keyboard.getKeyPressed('ArrowLeft')) {
+      transform.x -= 5;
+    } else if (this.game.input.keyboard.getKeyPressed('ArrowRight')) {
+      transform.x += 5;
+    }
+  });
+}
 ```
+
+Systems are where your game logic lives. They utilize Queries to access Entities in the game which meet certain constraints. Using those Queries, they can iterate over matching entities each frame, or monitor specific Stores for changes.
+
+##### Using Systems to Render
+
+Systems are also how you render your game. `0G` supports flexible approaches to rendering.
+
+For Vanilla JS, you might want to use State Stores (non-persistent) to initialize and store a renderable object, like a Pixi `Sprite` or a ThreeJS `Mesh`. The System can update the renderable each frame like any other data.
+
+If you want to use React to render a game, you can utilize the [`@0g/react`](https://github.com/a-type/0g/tree/master/packages/react) package to actually write Systems as React Components. The package provides the hooks you'll need to accomplish the same behavior as class-based Systems.
