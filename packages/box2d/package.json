@@ -1,5 +1,5 @@
 {
-  "name": "@0g/box2d",
+  "name": "0g-box2d",
   "version": "0.0.2",
   "description": "box2d plugin for 0g",
   "files": [

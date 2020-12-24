@@ -1,3 +1,3 @@
-# `@0g/react`
+# `0g-react`
 
 Documentation TODO

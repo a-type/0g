@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Game } from '0g';
-import { World } from '@0g/react';
+import { World } from '0g-react';
 import { stores } from './stores';
 import * as renderers from './renderers';
 import * as systems from './systems';

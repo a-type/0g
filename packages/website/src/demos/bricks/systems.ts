@@ -1,5 +1,5 @@
 import { System } from '0g';
-import { EntityContact, systems as box2dSystems } from '@0g/box2d';
+import { EntityContact, systems as box2dSystems } from '0g-box2d';
 import { vecNormalize, vecScale } from 'math2d';
 import { stores } from './stores';
 

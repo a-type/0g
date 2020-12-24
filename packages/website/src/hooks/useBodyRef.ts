@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { Entity } from '0g';
-import { stores } from '@0g/box2d';
-import { useWatch } from '@0g/react';
+import { stores } from '0g-box2d';
+import { useWatch } from '0g-react';
 
 export function useBodyRef<T extends HTMLElement>(
   entity: Entity,

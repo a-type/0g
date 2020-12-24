@@ -1,5 +1,5 @@
 import { PersistentStore, StateStore } from '0g';
-import { stores as box2dStores } from '@0g/box2d';
+import { stores as box2dStores } from '0g-box2d';
 import { vecScale } from 'math2d';
 
 export type BlockData = {
