@@ -15,7 +15,7 @@
   "scripts": {
     "test": "jest",
     "test:cov": "jest --coverage",
-    "build": "lerna run --scope 0g build && lerna run --scope @0g/* build",
+    "build": "lerna run --scope 0g build && lerna run --scope 0g-* build",
     "homepage": "lerna run --scope website build",
     "dev": "concurrently \"yarn workspace 0g dev\" \"yarn workspace 0g-box2d dev\" \"yarn workspace 0g-react dev\" \"yarn workspace website dev\"",
     "release": "yarn workspaces publish"
