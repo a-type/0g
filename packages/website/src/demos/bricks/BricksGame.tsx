@@ -4,6 +4,7 @@ import { World } from '0g-react';
 import { stores } from './stores';
 import * as renderers from './renderers';
 import * as systems from './systems';
+import { Editor } from '0g-editor';
 
 const game = new Game({
   stores: stores,
@@ -127,35 +128,38 @@ game
 
 export function BricksGame() {
   return (
-    <div
-      css={{
-        position: 'relative',
-        width: '100%',
-        height: '100%',
-        margin: 'auto',
-        overflow: 'hidden',
-      }}
-    >
+    <>
       <div
         css={{
-          position: 'absolute',
-          left: '50%',
-          top: '50%',
-          overflow: 'visible',
-          '& > *': {
-            position: 'absolute',
-            display: 'block',
-          },
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+          margin: 'auto',
+          overflow: 'hidden',
         }}
       >
-        <World game={game}>
-          <renderers.BallRenderer />
-          <renderers.BlockRenderer />
-          <renderers.PaddleRenderer />
-          <renderers.WallRenderer />
-          <renderers.DebrisRenderer />
-        </World>
+        <div
+          css={{
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            overflow: 'visible',
+            '& > *': {
+              position: 'absolute',
+              display: 'block',
+            },
+          }}
+        >
+          <World game={game}>
+            <renderers.BallRenderer />
+            <renderers.BlockRenderer />
+            <renderers.PaddleRenderer />
+            <renderers.WallRenderer />
+            <renderers.DebrisRenderer />
+          </World>
+        </div>
       </div>
-    </div>
+      <Editor game={game} />
+    </>
   );
 }

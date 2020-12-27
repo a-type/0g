@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import * as input from './input';
 import { EntityManager } from './entityManager';
 import { QueryManager } from './queryManager';
-import { Store } from './stores';
+import { Store, BaseStore } from './stores';
 import { StoreManager } from './storeManager';
 import { System, SystemSpec } from './systems';
 
@@ -54,6 +54,7 @@ export class Game extends EventEmitter {
     this._raf = requestFrame;
     this._cancelRaf = cancelFrame;
     this._playState = initialState;
+    this.initializeStores();
     if (this._playState === 'running') {
       this.resume();
     }
@@ -138,5 +139,28 @@ export class Game extends EventEmitter {
 
     // cleanup destroyed
     this._entityManager.executeDestroys();
+  };
+
+  /**
+   * Writes all the default values of each kind of Store
+   * to a static property on the constructor
+   */
+  private initializeStores = () => {
+    const builtins = BaseStore.builtinKeys;
+    Object.values(this._stores).forEach((Store) => {
+      const instance = new Store();
+      (Store as {
+        new (): BaseStore;
+        defaultValues: any;
+      }).defaultValues = Object.entries(instance).reduce(
+        (acc, [key, value]) => {
+          if (!builtins.includes(key)) {
+            acc[key] = value;
+          }
+          return acc;
+        },
+        {} as any,
+      );
+    });
   };
 }

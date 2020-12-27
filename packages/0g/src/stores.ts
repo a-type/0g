@@ -1,25 +1,37 @@
+import { EventEmitter } from 'events';
 import { Poolable } from './internal/objectPool';
-import { Constructor } from './types';
 
-class BaseStore implements Poolable {
+export declare interface BaseStore {
+  on(event: 'change', callback: () => void): this;
+  off(event: 'change', callback: () => void): this;
+}
+
+export class BaseStore extends EventEmitter implements Poolable {
   static kind = 'base';
   static defaultValues: any = {};
+  static builtinKeys: string[] = Object.getOwnPropertyNames(new BaseStore());
   __alive = true;
 
-  __version = 0;
+  ___version = 0;
+
+  get __version() {
+    return this.___version;
+  }
 
   set<T extends BaseStore>(this: T, values: Partial<T>) {
     Object.assign(this, values);
-    this.__version++;
+    this.mark();
   }
 
   mark() {
-    this.__version++;
+    this.___version++;
+    this.emit('change');
   }
 
   reset = () => {
     this.set(Object.getPrototypeOf(this).constructor.defaultValues);
-    this.__version = 0;
+    this.___version = 0;
+    this.emit('change');
   };
 }
 
@@ -33,7 +45,16 @@ export class StateStore extends BaseStore {
 
 export type StoreInstance = PersistentStore | StateStore;
 
-export type Store = Constructor<PersistentStore> | Constructor<StateStore>;
-export type StoreInstanceFor<S extends Store> = S extends Constructor<infer T>
+export type StoreConstructor<T> = {
+  new (): T;
+  // defaultValues: any;
+  // kind: 'persistent' | 'state';
+};
+export type Store =
+  | StoreConstructor<PersistentStore>
+  | StoreConstructor<StateStore>;
+export type StoreInstanceFor<S extends Store> = S extends StoreConstructor<
+  infer T
+>
   ? T
   : never;
