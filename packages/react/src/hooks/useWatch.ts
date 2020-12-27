@@ -71,7 +71,6 @@ function useWatchEntity(entity: Entity, stores: Store[], callback: () => void) {
 
 function useWatchStore(store: StoreInstance, callback: () => void) {
   useEffect(() => {
-    console.debug('watch hit');
     callback();
     store.on('change', callback);
     return () => void store.off('change', callback);

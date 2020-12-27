@@ -19,7 +19,7 @@ export function EntityDetails({}: EntityDetailsProps) {
   }
 
   return (
-    <div>
+    <div key={entityId}>
       <div>{entityId}</div>
       <List>
         {entity.__stores.map((Store) => {
