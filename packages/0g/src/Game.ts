@@ -15,7 +15,7 @@ export declare interface Game {
 
 export class Game extends EventEmitter {
   private _entityManager = new EntityManager();
-  private _stores: Record<string, Store>;
+  private _storeSpecs: Record<string, Store>;
   private _systems: SystemSpec[];
   private _systemInstances: System[];
   private _queryManager = new QueryManager();
@@ -48,7 +48,7 @@ export class Game extends EventEmitter {
     this._entityManager.__game = this;
     this._queryManager.__game = this;
     this.setMaxListeners(Infinity);
-    this._stores = stores;
+    this._storeSpecs = stores;
     this._systems = systems;
     this._systemInstances = systems.map((Sys) => new Sys(this));
     this._raf = requestFrame;
@@ -64,7 +64,10 @@ export class Game extends EventEmitter {
     return this._entityManager;
   }
   get storeSpecs() {
-    return this._stores;
+    return this._storeSpecs;
+  }
+  get systems() {
+    return this._systems;
   }
   get playState() {
     return this._playState;
@@ -112,7 +115,7 @@ export class Game extends EventEmitter {
   loadScene = (serialized: { id: string; data: Record<string, any> }[]) => {
     for (const entry of serialized) {
       const spec = Object.keys(entry.data).map(
-        (storeKind) => this._stores[storeKind]!,
+        (storeKind) => this._storeSpecs[storeKind]!,
       );
       const entity = this.create(entry.id);
       for (const store of spec) {
@@ -147,7 +150,7 @@ export class Game extends EventEmitter {
    */
   private initializeStores = () => {
     const builtins = BaseStore.builtinKeys;
-    Object.values(this._stores).forEach((Store) => {
+    Object.values(this._storeSpecs).forEach((Store) => {
       const instance = new Store();
       (Store as {
         new (): BaseStore;

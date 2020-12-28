@@ -12,10 +12,17 @@ export const List = styled('ul', {
 export const ListItem = styled('li', {
   padding: '$3',
   backgroundColor: '$glass',
-  border: `1px solid $black`,
+  border: `none`,
   color: `$white`,
   textAlign: 'left',
   fontFamily: 'inherit',
+
+  ':focus': {
+    boxShadow: '0 0 0 2px #fff, 0 0 0 4px #202020',
+    outline: 'none',
+    border: 'none',
+  },
+
   variants: {
     state: {
       default: {},

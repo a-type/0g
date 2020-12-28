@@ -8,7 +8,7 @@ import {
 } from '@modulz/radix-icons';
 
 export const PanelSurface = styled('div', {
-  position: 'fixed',
+  position: 'absolute',
   top: 0,
   left: 0,
   right: 0,
@@ -17,9 +17,10 @@ export const PanelSurface = styled('div', {
 });
 
 const PanelRoot = styled(animated.div, {
-  minWidth: 400,
+  minWidth: 200,
   backgroundColor: '$glass',
   border: `1px solid $black`,
+  boxShadow: `inset 0 0 0 1px $white`,
   position: 'absolute',
   top: 0,
   bottom: 0,
@@ -27,6 +28,7 @@ const PanelRoot = styled(animated.div, {
   pointerEvents: 'all',
   display: 'flex',
   flexDirection: 'column',
+  padding: '$1',
 });
 
 const panelContext = React.createContext<{
@@ -86,6 +88,7 @@ export const PanelContent = styled('div', {
   overflowY: 'auto',
   display: 'flex',
   flexDirection: 'column',
+  alignItems: 'flex-start',
 });
 
 const PanelToggleButton = styled('button', {
@@ -137,3 +140,11 @@ function PanelToggleIcon({
     return <DoubleArrowLeftIcon />;
   }
 }
+
+export const PanelHeader = styled('div', {
+  paddingLeft: '$1',
+  paddingRight: '$1',
+  paddingTop: '$2',
+  paddingBottom: '$2',
+  width: '100%',
+});

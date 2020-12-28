@@ -158,8 +158,8 @@ export function BricksGame() {
             <renderers.DebrisRenderer />
           </World>
         </div>
+        <Editor game={game} />
       </div>
-      <Editor game={game} />
     </>
   );
 }

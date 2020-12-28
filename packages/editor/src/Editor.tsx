@@ -7,8 +7,10 @@ import {
   PanelSurface,
   PanelToggle,
   PanelContent,
+  PanelHeader,
 } from './components/Panel';
 import { EntityDetails } from './EntityDetails';
+import { AddEntityButton } from './AddEntityButton';
 
 export type EditorProps = {
   game: Game;
@@ -20,6 +22,9 @@ export function Editor({ game }: EditorProps) {
       <PanelSurface>
         <Panel anchor="left">
           <PanelContent>
+            <PanelHeader>
+              <AddEntityButton />
+            </PanelHeader>
             <EntityList />
           </PanelContent>
           <PanelToggle />

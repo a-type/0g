@@ -6,7 +6,7 @@ export const { styled, css } = createStyled({
     colors: {
       $white: '#fff',
       $black: '#202020',
-      $highlight: '#a0a0a0',
+      $highlight: '#404040',
       $glass: 'rgba(32, 32, 32, 0.5)',
     },
     space: {

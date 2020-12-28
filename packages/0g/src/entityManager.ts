@@ -6,21 +6,19 @@ import { ObjectPool } from './internal/objectPool';
 import { logger } from './logger';
 import { Store, StoreInstanceFor } from './stores';
 
-export declare interface EntityManagerEvents {
+export declare interface EntityManager {
   on(ev: 'entityAdded', callback: (entity: Entity) => void): this;
   on(ev: 'entityRemoved', callback: (entity: Entity) => void): this;
   on(ev: 'entityStoreAdded', callback: (entity: Entity) => void): this;
   on(ev: 'entityStoreRemoved', callback: (entity: Entity) => void): this;
   off(ev: 'entityAdded', callback: (entity: Entity) => void): this;
   off(ev: 'entityRemoved', callback: (entity: Entity) => void): this;
+  off(ev: 'entityStoreAdded', callback: (entity: Entity) => void): this;
+  off(ev: 'entityStoreRemoved', callback: (entity: Entity) => void): this;
 }
 
-export class EntityManagerEvents extends EventEmitter {}
-
-export class EntityManager {
+export class EntityManager extends EventEmitter {
   __game: Game = null as any;
-
-  events = new EntityManagerEvents();
 
   pool = new ObjectPool(() => new Entity());
 
@@ -50,7 +48,7 @@ export class EntityManager {
     this.entities[id] = ent;
     const registered = this.entities[id];
 
-    this.events.emit('entityAdded', registered);
+    this.emit('entityAdded', registered);
     this.__game.queries.onEntityCreated(registered);
     logger.debug(`Added ${id}`);
     return registered;
@@ -72,7 +70,7 @@ export class EntityManager {
       Object.assign(data, initial);
     }
     entity.__data.set(spec, data);
-    this.events.emit('entityStoreAdded', entity);
+    this.emit('entityStoreAdded', entity);
     this.__game.queries.onEntityStoresChanged(entity);
     return data;
   }
@@ -80,7 +78,7 @@ export class EntityManager {
   removeStoreFromEntity(entity: Entity, spec: Store) {
     if (!entity.__data.has(spec)) return entity;
     entity.__data.delete(spec);
-    this.events.emit('entityStoreRemoved', entity);
+    this.emit('entityStoreRemoved', entity);
     this.__game.queries.onEntityStoresChanged(entity);
     return entity;
   }
@@ -94,7 +92,7 @@ export class EntityManager {
     const entity = this.entities[id];
     delete this.entities[id];
     this.pool.release(entity);
-    this.events.emit('entityRemoved', entity);
+    this.emit('entityRemoved', entity);
     this.__game.queries.onEntityDestroyed(entity);
     logger.debug(`Destroyed ${id}`);
   };

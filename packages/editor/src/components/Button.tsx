@@ -1,8 +1,9 @@
 import { styled } from '../stitches.config';
 
 export const Button = styled('button', {
-  backgroundColor: 'gainsboro',
-  borderRadius: 9999,
+  backgroundColor: '$white',
+  color: '$black',
+  borderRadius: 8,
   fontSize: 13,
   lineHeight: '1',
   fontWeight: 500,
@@ -11,6 +12,7 @@ export const Button = styled('button', {
   paddingLeft: 16,
   paddingRight: 16,
   border: 0,
+  fontFamily: 'inherit',
 
   ':hover': {
     opacity: 0.9,
@@ -20,7 +22,7 @@ export const Button = styled('button', {
   },
   ':focus': {
     outline: 'none',
-    boxShadow: '0 0 0 2px yellow',
+    boxShadow: 'inset 0 0 0 2px #fff, inset 0 0 0 4px #202020',
   },
 
   '& + &': {

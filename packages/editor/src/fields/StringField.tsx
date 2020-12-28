@@ -28,7 +28,7 @@ export function StringField({ store, name }: StringFieldProps) {
   return (
     <Field>
       <FieldLabel htmlFor={id}>{name}</FieldLabel>
-      <FieldInput ref={ref} onChange={onChange} id={id} />
+      <FieldInput ref={ref} onBlur={onChange} id={id} />
     </Field>
   );
 }

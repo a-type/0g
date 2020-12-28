@@ -13,11 +13,11 @@ export function EntityList({}: EntityListProps) {
   const game = useGame();
 
   React.useEffect(() => {
-    game.entities.events.on('entityAdded', update);
-    game.entities.events.on('entityRemoved', update);
+    game.entities.on('entityAdded', update);
+    game.entities.on('entityRemoved', update);
     return () => {
-      game.entities.events.off('entityAdded', update);
-      game.entities.events.off('entityRemoved', update);
+      game.entities.off('entityAdded', update);
+      game.entities.off('entityRemoved', update);
     };
   }, []);
 
@@ -27,7 +27,7 @@ export function EntityList({}: EntityListProps) {
   );
 
   return (
-    <List>
+    <List css={{ width: '100%' }}>
       {game.entities.entityList.map((entity) => (
         <ListItem
           as="button"
