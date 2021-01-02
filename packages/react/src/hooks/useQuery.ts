@@ -13,12 +13,12 @@ export function useQuery(queryDef: QueryDef) {
       setForceUpdate(Math.random());
     }
 
-    query.events.on('entityAdded', onEntitiesChanged);
-    query.events.on('entityRemoved', onEntitiesChanged);
+    query.on('entityAdded', onEntitiesChanged);
+    query.on('entityRemoved', onEntitiesChanged);
 
     return () => {
-      query.events.off('entityAdded', onEntitiesChanged);
-      query.events.off('entityRemoved', onEntitiesChanged);
+      query.off('entityAdded', onEntitiesChanged);
+      query.off('entityRemoved', onEntitiesChanged);
     };
   }, [query]);
 

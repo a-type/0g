@@ -3,12 +3,14 @@ import {
   b2Body,
   b2BodyType,
   b2CircleShape,
+  b2EdgeShape,
   b2FixtureDef,
   b2PolygonShape,
   b2World,
 } from '@flyover/box2d';
 import { ContactListener, EntityContact } from './ContactListener';
 import * as stores from './stores';
+import { createCapsule } from './utils';
 
 function assignBodyConfig(body: b2Body, config: stores.BodyConfig, id: string) {
   const {
@@ -39,12 +41,32 @@ function createFixtureDef(config: stores.BodyConfig, id: string) {
   fix.friction = friction;
   fix.userData = { entityId: id };
 
-  if (shape.shape === 'rectangle') {
-    const s = new b2PolygonShape();
-    s.SetAsBox(shape.width / 2, shape.height / 2);
-    fix.shape = s;
-  } else {
-    fix.shape = new b2CircleShape(shape.radius);
+  let p: b2PolygonShape;
+  switch (shape.shape) {
+    case 'rectangle':
+      p = new b2PolygonShape();
+      p.SetAsBox(shape.width / 2, shape.height / 2);
+      fix.shape = p;
+      break;
+    case 'circle':
+      fix.shape = new b2CircleShape(shape.radius);
+      break;
+    case 'polygon':
+      p = new b2PolygonShape();
+      p.Set(shape.vertices);
+      fix.shape = p;
+      break;
+    case 'edge':
+      const e = new b2EdgeShape();
+      e.Set(shape.v1, shape.v2);
+      fix.shape = e;
+      break;
+    case 'capsule':
+      p = new b2PolygonShape();
+      p.Set(createCapsule(shape.width, shape.height, shape.segments ?? 8));
+      break;
+    default:
+      throw new Error(`Shape ${(shape as any).shape} not supported (yet)`);
   }
 
   return fix;
@@ -105,6 +127,8 @@ export class PhysicsWorld extends System {
 
   initBodies = this.frame(this.newBodies, (bodyEntity) => {
     if (!this.defaultWorld) {
+      // TODO: overkill?
+      console.warn(`No physics world when initializing ${bodyEntity.id}`);
       return;
     }
 

@@ -29,10 +29,10 @@ export class System {
   }
 
   watch(query: Query, stores: Store[], run: (entity: Entity) => void) {
+    const versionCache = new WeakMap<Entity, string>();
     return new FrameHandle(() => {
       // TODO: consider implications of object pooling on weakmap usage - it
       // probably makes them irrelevant, but possibly also incorrect?
-      const versionCache = new WeakMap<Entity, string>();
       // TODO: optimize this use case within Query
       query.entities.forEach((entity) => {
         const currentVersions = stores

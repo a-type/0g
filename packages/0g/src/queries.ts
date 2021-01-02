@@ -3,24 +3,24 @@ import { EventEmitter } from 'events';
 import { logger } from './logger';
 import { Store } from './stores';
 
-export declare interface QueryEvents {
+export declare interface Query {
   on(event: 'entityAdded', callback: (entity: Entity) => void): this;
   on(event: 'entityRemoved', callback: (entity: Entity) => void): this;
   off(event: 'entityAdded', callback: (entity: Entity) => void): this;
   off(event: 'entityRemoved', callback: (entity: Entity) => void): this;
 }
-export class QueryEvents extends EventEmitter {}
 
 export type QueryDef = {
   all?: Store[];
   none?: Store[];
 };
 
-export class Query<Def extends QueryDef = QueryDef> {
+export class Query<Def extends QueryDef = QueryDef> extends EventEmitter {
   entities = new Array<Entity>();
-  events = new QueryEvents();
 
-  constructor(public def: Def) {}
+  constructor(public def: Def) {
+    super();
+  }
 
   evaluate(entity: Entity) {
     const hasAll =
@@ -44,7 +44,7 @@ export class Query<Def extends QueryDef = QueryDef> {
     this.entities.push(entity);
     entity.__queries.add(this);
     logger.debug(`Added ${entity.id} to ${this.key}`);
-    this.events.emit('entityAdded', entity);
+    this.emit('entityAdded', entity);
   }
 
   remove(entity: Entity) {
@@ -53,7 +53,7 @@ export class Query<Def extends QueryDef = QueryDef> {
       this.entities.splice(index, 1);
       entity.__queries.delete(this);
       logger.debug(`Removed ${entity.id} from ${this.key}`);
-      this.events.emit('entityRemoved', entity);
+      this.emit('entityRemoved', entity);
     }
   }
 
