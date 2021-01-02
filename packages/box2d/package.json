@@ -1,6 +1,6 @@
 {
   "name": "0g-box2d",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "box2d plugin for 0g",
   "files": [
     "dist",
@@ -25,7 +25,7 @@
     "release": "npm publish --access public"
   },
   "peerDependencies": {
-    "0g": "^0.0.1",
+    "0g": "^0.0.2",
     "@flyover/box2d": "^1.0.1"
   },
   "dependencies": {
@@ -33,9 +33,9 @@
     "math2d": "^3.0.0"
   },
   "devDependencies": {
+    "0g": "^0.0.2",
     "@flyover/box2d": "^1.0.1",
     "@types/react": "^17.0.0",
-    "0g": "link:../0g",
     "concurrently": "^5.3.0"
   }
 }
