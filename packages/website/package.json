@@ -31,7 +31,8 @@
     "dev": "craco start",
     "build": "craco build",
     "test": "craco test",
-    "eject": "craco eject"
+    "eject": "craco eject",
+    "release": "echo \"no-op\""
   },
   "eslintConfig": {
     "extends": [

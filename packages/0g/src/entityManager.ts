@@ -18,13 +18,14 @@ export declare interface EntityManager {
 }
 
 export class EntityManager extends EventEmitter {
-  __game: Game = null as any;
-
   pool = new ObjectPool(() => new Entity());
-
   _destroyList = new Array<string>();
-
   entities: Record<string, Entity> = {};
+
+  constructor(private __game: Game) {
+    super();
+    this.__game.on('postStep', this.executeDestroys);
+  }
 
   get ids() {
     return Object.keys(this.entities);

@@ -114,7 +114,7 @@ export class PhysicsWorld extends System {
     return this.defaultWorldEntity?.get(stores.World);
   }
 
-  initWorlds = this.frame(this.newWorlds, (worldEntity) => {
+  initWorlds = this.step(this.newWorlds, (worldEntity) => {
     const worldConfig = worldEntity.get(stores.WorldConfig);
     const w = new b2World(worldConfig.gravity);
     const c = new ContactListener();
@@ -125,7 +125,7 @@ export class PhysicsWorld extends System {
     });
   });
 
-  initBodies = this.frame(this.newBodies, (bodyEntity) => {
+  initBodies = this.step(this.newBodies, (bodyEntity) => {
     if (!this.defaultWorld) {
       // TODO: overkill?
       console.warn(`No physics world when initializing ${bodyEntity.id}`);
@@ -164,14 +164,14 @@ export class PhysicsWorld extends System {
     applyFixtures(body.value, createFixtureDef(bodyConfig, entity.id));
   });
 
-  teardownBodies = this.frame(this.oldBodies, (bodyEntity) => {
+  teardownBodies = this.step(this.oldBodies, (bodyEntity) => {
     if (!this.defaultWorld) return;
     const body = bodyEntity.get(stores.Body);
     this.defaultWorld.value.DestroyBody(body.value);
     this.defaultWorld.contacts.unsubscribe(bodyEntity.id);
   });
 
-  resetContacts = this.frame(this.bodiesWithContacts, (bodyEntity) => {
+  resetContacts = this.step(this.bodiesWithContacts, (bodyEntity) => {
     const contacts = bodyEntity.get(stores.Contacts);
 
     contacts.set({
@@ -180,7 +180,7 @@ export class PhysicsWorld extends System {
     });
   });
 
-  stepWorlds = this.frame(this.worlds, (worldEntity) => {
+  stepWorlds = this.step(this.worlds, (worldEntity) => {
     const world = worldEntity.get(stores.World);
     const worldConfig = worldEntity.get(stores.WorldConfig);
     world.value.Step(
@@ -190,7 +190,7 @@ export class PhysicsWorld extends System {
     );
   });
 
-  updateTransforms = this.frame(this.bodies, (bodyEntity) => {
+  updateTransforms = this.step(this.bodies, (bodyEntity) => {
     const transform = bodyEntity.get(stores.Transform);
     const body = bodyEntity.get(stores.Body);
 
@@ -204,7 +204,7 @@ export class PhysicsWorld extends System {
   });
 
   // update contacts
-  updateContacts = this.frame(this.bodiesWithContacts, (bodyEntity) => {
+  updateContacts = this.step(this.bodiesWithContacts, (bodyEntity) => {
     const cached = bodyEntity.getWritable(stores.ContactsCache);
     const contacts = bodyEntity.getWritable(stores.Contacts);
 

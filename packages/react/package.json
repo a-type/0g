@@ -19,7 +19,7 @@
     "dev:esm": "tsc -m es6 --outDir dist-esm --watch",
     "dev": "concurrently \"yarn dev:cjs\" \"yarn dev:esm\"",
     "prepublishOnly": "yarn build",
-    "release": "npm publish --access public",
+    "release": "npm publish --access public --registry https://registry.npmjs.org",
     "storybook": "start-storybook -p 6006",
     "storybook:build": "build-storybook -o docs/storybook",
     "typedoc": "typedoc --options typedoc.json"

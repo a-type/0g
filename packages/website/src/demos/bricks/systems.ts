@@ -21,11 +21,11 @@ export class BallMovement extends System {
     none: [stores.BallState],
   });
 
-  initBalls = this.frame(this.uninitialized, (entity) => {
+  initBalls = this.step(this.uninitialized, (entity) => {
     entity.add(stores.BallState, { needsLaunch: true });
   });
 
-  run = this.frame(this.balls, (entity) => {
+  run = this.step(this.balls, (entity) => {
     const transform = entity.get(stores.Transform);
     const body = entity.get(stores.Body);
     const config = entity.get(stores.BallConfig);
@@ -68,7 +68,7 @@ export class BrickBreaker extends System {
     none: [],
   });
 
-  run = this.frame(this.balls, (entity) => {
+  run = this.step(this.balls, (entity) => {
     const contacts = entity.get(stores.Contacts);
     let contact: EntityContact;
     for (contact of contacts.began) {
@@ -95,7 +95,7 @@ export class PaddleMovement extends System {
     none: [],
   });
 
-  run = this.frame(this.paddles, (entity) => {
+  run = this.step(this.paddles, (entity) => {
     const body = entity.get(stores.Body);
     const config = entity.get(stores.PaddleConfig);
 
@@ -123,7 +123,7 @@ export class DebrisCleanup extends System {
     none: [],
   });
 
-  run = this.frame(this.debris, (entity) => {
+  run = this.step(this.debris, (entity) => {
     const transform = entity.get(stores.Transform);
     if (Math.abs(transform.x) > 75 || Math.abs(transform.y) > 75) {
       this.game.destroy(entity.id);
@@ -137,7 +137,7 @@ export class BlockSpawner extends System {
     none: [],
   });
 
-  run = this.frame(this.spawner, (entity) => {
+  run = this.step(this.spawner, (entity) => {
     const config = entity.get(stores.BlocksConfig);
     if (config.alreadySpawned) return;
     config.set({ alreadySpawned: true });
@@ -186,7 +186,7 @@ export class DebrisSpawner extends System {
     none: [],
   });
 
-  run = this.frame(this.spawner, (entity) => {
+  run = this.step(this.spawner, (entity) => {
     const config = entity.get(stores.DebrisControllerConfig);
     if (config.alreadySpawned) return;
     config.set({ alreadySpawned: true });

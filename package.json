@@ -19,7 +19,8 @@
     "homepage": "lerna run --scope website build",
     "dev": "concurrently \"yarn workspace 0g dev\" \"yarn workspace 0g-box2d dev\" \"yarn workspace 0g-react dev\" \"yarn workspace og-editor dev\" \"yarn workspace website dev\"",
     "release": "yarn workspaces run release",
-    "version": "yarn workspaces run version --no-git-tag-version"
+    "version": "yarn workspaces run version --no-git-tag-version",
+    "link": "yarn workspaces run link"
   },
   "repository": {
     "type": "git",

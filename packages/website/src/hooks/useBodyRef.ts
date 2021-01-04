@@ -22,11 +22,15 @@ export function useBodyRef<T extends HTMLElement>(
     const width =
       bodyConfig.shape.shape === 'circle'
         ? bodyConfig.shape.radius * 2 * pixelScale
-        : bodyConfig.shape.width * pixelScale;
+        : bodyConfig.shape.shape === 'rectangle'
+        ? bodyConfig.shape.width * pixelScale
+        : 0;
     const height =
       bodyConfig.shape.shape === 'circle'
         ? bodyConfig.shape.radius * 2 * pixelScale
-        : bodyConfig.shape.height * pixelScale;
+        : bodyConfig.shape.shape === 'rectangle'
+        ? bodyConfig.shape.height * pixelScale
+        : 0;
     const { x, y, angle } = transform;
 
     if (ref.current) {

@@ -5,7 +5,8 @@ import { Query, QueryDef } from './queries';
 
 export class QueryManager {
   private queryCache: Record<string, Query<any>> = {};
-  __game: Game = null as any;
+
+  constructor(private __game: Game) {}
 
   create<Def extends QueryDef>(userDef: Partial<Def>) {
     const def = {

@@ -4,14 +4,18 @@ import { Query, QueryDef } from './queries';
 import { Store } from './stores';
 
 export class FrameHandle {
-  constructor(private handle: () => any, private game: Game) {
+  constructor(
+    private handle: () => any,
+    private game: Game,
+    private event: 'step' | 'postStep' | 'preStep' = 'step',
+  ) {
     this.attach();
   }
   attach() {
-    this.game.on('step', this.handle);
+    this.game.on(this.event as any, this.handle);
   }
   detach() {
-    this.game.off('step', this.handle);
+    this.game.off(this.event as any, this.handle);
   }
 }
 
@@ -22,7 +26,7 @@ export class System {
     return this.game.queries.create(queryDef);
   }
 
-  frame(query: Query, run: (entity: Entity) => void) {
+  step(query: Query, run: (entity: Entity) => void) {
     return new FrameHandle(() => {
       query.entities.forEach(run);
     }, this.game);
@@ -44,6 +48,26 @@ export class System {
         }
       });
     }, this.game);
+  }
+
+  postStep(query: Query, run: (entity: Entity) => void) {
+    return new FrameHandle(
+      () => {
+        query.entities.forEach(run);
+      },
+      this.game,
+      'postStep',
+    );
+  }
+
+  preStep(query: Query, run: (entity: Entity) => void) {
+    return new FrameHandle(
+      () => {
+        query.entities.forEach(run);
+      },
+      this.game,
+      'preStep',
+    );
   }
 }
 

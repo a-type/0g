@@ -9,16 +9,25 @@ import { System, SystemSpec } from './systems';
 export type GamePlayState = 'paused' | 'running';
 
 export declare interface Game {
-  on(event: 'step', callback: () => void): this;
+  on(event: 'preStep', callback: () => any): this;
+  on(event: 'step', callback: () => any): this;
+  on(event: 'postStep', callback: () => any): this;
   on(event: 'playStateChanged', callback: (state: GamePlayState) => void): this;
+  off(event: 'preStep', callback: () => any): this;
+  off(event: 'step', callback: () => any): this;
+  off(event: 'postStep', callback: () => any): this;
+  off(
+    event: 'playStateChanged',
+    callback: (state: GamePlayState) => void,
+  ): this;
 }
 
 export class Game extends EventEmitter {
-  private _entityManager = new EntityManager();
+  private _entityManager = new EntityManager(this);
   private _storeSpecs: Record<string, Store>;
   private _systems: SystemSpec[];
   private _systemInstances: System[];
-  private _queryManager = new QueryManager();
+  private _queryManager = new QueryManager(this);
   private _storeManager = new StoreManager();
 
   private _raf: (cb: FrameRequestCallback) => number;
@@ -31,22 +40,24 @@ export class Game extends EventEmitter {
   private _time = 0;
   private _frameHandle = 0;
 
+  globals: Map<string, any>;
+
   constructor({
     stores,
     requestFrame = requestAnimationFrame.bind(window),
     cancelFrame = cancelAnimationFrame.bind(window),
-    initialPlayState: initialState = 'running',
+    initialPlayState: initialState = 'paused',
     systems = [],
+    globals = new Map(),
   }: {
     stores: Record<string, Store>;
     requestFrame?: (callback: FrameRequestCallback) => number;
     cancelFrame?: (frameHandle: number) => void;
     initialPlayState?: GamePlayState;
     systems?: SystemSpec[];
+    globals?: Map<string, any>;
   }) {
     super();
-    this._entityManager.__game = this;
-    this._queryManager.__game = this;
     this.setMaxListeners(Infinity);
     this._storeSpecs = stores;
     this._systems = systems;
@@ -54,6 +65,7 @@ export class Game extends EventEmitter {
     this._raf = requestFrame;
     this._cancelRaf = cancelFrame;
     this._playState = initialState;
+    this.globals = globals;
     this.initializeStores();
     if (this._playState === 'running') {
       this.resume();
@@ -98,13 +110,26 @@ export class Game extends EventEmitter {
     return this._entityManager.destroy(id);
   };
 
+  /** Resumes a paused game. Functionally equivalent to .play() */
   resume = () => {
     this._playState = 'running';
     this._lastFrameTime = null;
     this.runFrame(performance.now());
     this.emit('playStateChanged', this._playState);
   };
+  /**
+   * Start the built-in frame loop. This is the simplest way
+   * to get a game playing, but you can manually step the game
+   * using the .step(delta) method instead if you want to
+   * coordinate with a different animation frame loop (such as
+   * a WebXR session or Three.JS clock)
+   */
+  play = this.resume;
 
+  /**
+   * Pauses the built-in game loop. Will not have any effect
+   * if you manually step the game using .step(delta).
+   */
   pause = () => {
     this._playState = 'paused';
     // TODO: does this make sense?
@@ -128,6 +153,17 @@ export class Game extends EventEmitter {
     return this._entityManager.serialize();
   };
 
+  /**
+   * Manually step the game simulation forward. Provide a
+   * delta (in ms) of time elapsed since last frame.
+   */
+  step = (delta: number) => {
+    this._delta = delta;
+    this.emit('preStep');
+    this.emit('step');
+    this.emit('postStep');
+  };
+
   input = input;
 
   private runFrame = (time: DOMHighResTimeStamp) => {
@@ -138,10 +174,7 @@ export class Game extends EventEmitter {
     this._delta =
       this._lastFrameTime != null ? time - this._lastFrameTime : 16 + 2 / 3;
 
-    this.emit('step');
-
-    // cleanup destroyed
-    this._entityManager.executeDestroys();
+    this.step(this._delta);
   };
 
   /**
