@@ -4,7 +4,7 @@ The weightless game framework for TypeScript.
 
 ### TypeScript Focused
 
-`0G` strikes a balance between flexibility and confidence, supporting seamless TypeScript typing for important data boundaries like Stores and core engine features.
+`0G` strikes a balance between flexibility and confidence, supporting seamless TypeScript typing for important data boundaries like Components and core engine features.
 
 ### ECS inspired
 
@@ -21,7 +21,7 @@ For more details, take a look at the [`@0g/react`](https://github.com/a-type/0g/
 ## Show me a Game
 
 ```tsx
-class Transform extends PersistentStore {
+class Transform extends Component {
   x = 0;
   y = 0;
   randomJump() {
@@ -32,14 +32,14 @@ class Transform extends PersistentStore {
   }
 }
 
-class ButtonTag extends PersistentStore {}
+class ButtonTag extends Component {}
 
-class Button extends StateStore {
+class Button extends StateComponent {
   element: HTMLButtonElement | null = null;
   lastJump: number;
 }
 
-class Score extends PersistentStore {
+class Score extends Component {
   points = 0;
   increment() {
     this.set({ points: this.points + 1 });
@@ -56,7 +56,7 @@ class ButtonMover extends System {
   buttons = this.query({
     all: [ButtonTag, Button, Transform],
   });
-  // reference the player to increment store
+  // reference the player to increment component
   players = this.query({
     all: [Score],
   });
@@ -104,7 +104,7 @@ class ScoreRenderer extends System {
 }
 
 const game = new Game({
-  stores: { Transform, ButtonTag, Button, Score },
+  components: { Transform, ButtonTag, Button, Score },
   systems: [ButtonMover],
 });
 
@@ -117,10 +117,10 @@ game.create('button').add(Transform).add(ButtonTag);
 
 ### ECS-based Architecture
 
-#### Stores
+#### Components
 
 ```tsx
-class Transform extends PersistentStore {
+class Transform extends Component {
   x = 0;
   y = 0;
   angle = 0;
@@ -134,11 +134,11 @@ class Transform extends PersistentStore {
 }
 ```
 
-To start modeling your game behavior, you'll probably first begin defining Stores.
+To start modeling your game behavior, you'll probably first begin defining Components.
 
-"Stores" replace ECS "Components" naming (disambiguating the term from React Components). Stores are where your game state lives. The purpose of the rest of your code is either to group, change, or render Stores.
+"Components" replace ECS "Components" naming (disambiguating the term from React Components). Components are where your game state lives. The purpose of the rest of your code is either to group, change, or render Components.
 
-Stores come in two flavors:
+Components come in two flavors:
 
 - _Persistent_ : Serializeable and runtime-editable<sup>1</sup>, this data forms the loadable "scene."
   - Example: Store the configuration of a physics rigidbody for each character
@@ -154,7 +154,7 @@ const transform = entity.get(stores.Transform);
 transform.x = 100;
 ```
 
-As in classic ECS, Entities are identifiers for groupings of Stores. Each Entity has an ID. In `0G`, an Entity object provides some convenience tools for retrieving, updating, and adding Stores to itself.
+As in classic ECS, Entities are identifiers for groupings of Components. Each Entity has an ID. In `0G`, an Entity object provides some convenience tools for retrieving, updating, and adding Components to itself.
 
 #### Queries
 
@@ -165,7 +165,7 @@ bodies = this.query({
 });
 ```
 
-It's important, as a game developer, to find Entities in the game and iterate over them. Generally you want to find Entities by certain criteria. In `0G` the primary criteria is which Stores they have associated.
+It's important, as a game developer, to find Entities in the game and iterate over them. Generally you want to find Entities by certain criteria. In `0G` the primary criteria is which Components they have associated.
 
 Queries are managed by the game, and they monitor changes to Entities and select which Entities match your criteria. For example, you could have a Query which selects all Entities that have a `Transform` and `Body` store to do physics calculations.
 
@@ -188,12 +188,12 @@ class DemoMove extends System {
 }
 ```
 
-Systems are where your game logic lives. They utilize Queries to access Entities in the game which meet certain constraints. Using those Queries, they can iterate over matching entities each frame, or monitor specific Stores for changes.
+Systems are where your game logic lives. They utilize Queries to access Entities in the game which meet certain constraints. Using those Queries, they can iterate over matching entities each frame, or monitor specific Components for changes.
 
 ##### Using Systems to Render
 
 Systems are also how you render your game. `0G` supports flexible approaches to rendering.
 
-For Vanilla JS, you might want to use State Stores (non-persistent) to initialize and store a renderable object, like a Pixi `Sprite` or a ThreeJS `Mesh`. The System can update the renderable each frame like any other data.
+For Vanilla JS, you might want to use State Components (non-persistent) to initialize and store a renderable object, like a Pixi `Sprite` or a ThreeJS `Mesh`. The System can update the renderable each frame like any other data.
 
 If you want to use React to render a game, you can utilize the [`@0g/react`](https://github.com/a-type/0g/tree/master/packages/react) package to actually write Systems as React Components. The package provides the hooks you'll need to accomplish the same behavior as class-based Systems.

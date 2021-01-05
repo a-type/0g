@@ -1,5 +1,5 @@
-import { PersistentStore, StateStore } from '0g';
-import { stores as box2dStores } from '0g-box2d';
+import { Component, StateComponent } from '0g';
+import { components as box2dComponents } from '0g-box2d';
 import { vecScale } from 'math2d';
 
 export type BlockData = {
@@ -15,21 +15,21 @@ const randomUnit = () => {
   };
 };
 
-export const stores = {
-  ...box2dStores,
-  BallConfig: class BallConfig extends PersistentStore {
+export const components = {
+  ...box2dComponents,
+  BallConfig: class BallConfig extends Component {
     speed = 12;
   },
-  BallState: class BallState extends StateStore {
+  BallState: class BallState extends StateComponent {
     needsLaunch = true;
   },
-  BlockInfo: class BlockInfo extends PersistentStore {
+  BlockInfo: class BlockInfo extends Component {
     spawnerId: string | null = null;
     key: string | null = null;
     text = 'TODO';
     fontSize = 80;
   },
-  BlocksConfig: class BlocksConfig extends PersistentStore {
+  BlocksConfig: class BlocksConfig extends Component {
     blockWidth = 6;
     blockHeight = 8;
     fontSize = 80;
@@ -47,14 +47,14 @@ export const stores = {
     ] as Array<Array<BlockData>>;
     alreadySpawned = false;
   },
-  PaddleConfig: class PaddleConfig extends PersistentStore {
+  PaddleConfig: class PaddleConfig extends Component {
     speed = 16;
   },
-  DebrisConfig: class DebrisConfig extends PersistentStore {
+  DebrisConfig: class DebrisConfig extends Component {
     text = '%';
     index = 0;
   },
-  DebrisControllerConfig: class DebrisControllerConfig extends PersistentStore {
+  DebrisControllerConfig: class DebrisControllerConfig extends Component {
     items = new Array(20).fill(null).map((_, i) => ({
       text: '%',
       size: Math.random() * 2 + 1,
@@ -67,5 +67,5 @@ export const stores = {
     }));
     alreadySpawned = false;
   },
-  WallTag: class WallTag extends PersistentStore {},
+  WallTag: class WallTag extends Component {},
 };

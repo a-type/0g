@@ -1,13 +1,13 @@
 import * as React from 'react';
 import { Game } from '0g';
 import { World } from '0g-react';
-import { stores } from './stores';
+import { components } from './components';
 import * as renderers from './renderers';
 import * as systems from './systems';
 import { Editor } from '0g-editor';
 
 const game = new Game({
-  stores: stores,
+  components,
   systems: [
     systems.PhysicsWorld,
     systems.BlockSpawner,
@@ -22,16 +22,16 @@ const game = new Game({
 
 (window as any).game = game;
 
-game.create('physics').add(stores.WorldConfig, { gravity: { x: 0, y: 0 } });
+game.create('physics').add(components.WorldConfig, { gravity: { x: 0, y: 0 } });
 
 game
   .create('paddle')
-  .add(stores.PaddleConfig)
-  .add(stores.Transform, {
+  .add(components.PaddleConfig)
+  .add(components.Transform, {
     x: 0,
     y: 10,
   })
-  .add(stores.BodyConfig, {
+  .add(components.BodyConfig, {
     shape: {
       shape: 'rectangle',
       width: 20,
@@ -45,10 +45,10 @@ game
 
 game
   .create('ball')
-  .add(stores.BallConfig)
-  .add(stores.Transform)
-  .add(stores.Contacts)
-  .add(stores.BodyConfig, {
+  .add(components.BallConfig)
+  .add(components.Transform)
+  .add(components.Contacts)
+  .add(components.BodyConfig, {
     shape: {
       shape: 'circle',
       radius: 1,
@@ -61,12 +61,12 @@ game
 
 game
   .create('leftWall')
-  .add(stores.WallTag)
-  .add(stores.Transform, {
+  .add(components.WallTag)
+  .add(components.Transform, {
     x: -25,
     y: 0,
   })
-  .add(stores.BodyConfig, {
+  .add(components.BodyConfig, {
     shape: {
       shape: 'rectangle',
       width: 0.5,
@@ -76,16 +76,16 @@ game
     isStatic: true,
     friction: 0,
   })
-  .add(stores.Contacts);
+  .add(components.Contacts);
 
 game
   .create('rightWall')
-  .add(stores.WallTag)
-  .add(stores.Transform, {
+  .add(components.WallTag)
+  .add(components.Transform, {
     x: 25,
     y: 0,
   })
-  .add(stores.BodyConfig, {
+  .add(components.BodyConfig, {
     shape: {
       shape: 'rectangle',
       width: 0.5,
@@ -95,16 +95,16 @@ game
     isStatic: true,
     friction: 0,
   })
-  .add(stores.Contacts);
+  .add(components.Contacts);
 
 game
   .create('topWall')
-  .add(stores.WallTag)
-  .add(stores.Transform, {
+  .add(components.WallTag)
+  .add(components.Transform, {
     x: 0,
     y: -25,
   })
-  .add(stores.BodyConfig, {
+  .add(components.BodyConfig, {
     shape: {
       shape: 'rectangle',
       width: 50,
@@ -114,17 +114,20 @@ game
     isStatic: true,
     friction: 0,
   })
-  .add(stores.Contacts);
+  .add(components.Contacts);
 
-game.create('blockSpawner').add(stores.BlocksConfig).add(stores.Transform, {
-  x: 0,
-  y: -10,
-});
+game
+  .create('blockSpawner')
+  .add(components.BlocksConfig)
+  .add(components.Transform, {
+    x: 0,
+    y: -10,
+  });
 
 game
   .create('debrisController')
-  .add(stores.DebrisControllerConfig)
-  .add(stores.Transform);
+  .add(components.DebrisControllerConfig)
+  .add(components.Transform);
 
 export function BricksGame() {
   return (

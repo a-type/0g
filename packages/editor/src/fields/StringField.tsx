@@ -1,11 +1,10 @@
-import { StoreInstance } from '0g';
 import * as React from 'react';
 import { useId } from '../hooks/useId';
 import { Field, FieldLabel, FieldInput } from '../components/Field';
-import { StoreFieldProps } from './types';
+import { ComponentFieldProps } from './types';
 import { useWatch } from '0g-react';
 
-export type StringFieldProps = StoreFieldProps;
+export type StringFieldProps = ComponentFieldProps;
 
 export function StringField({ store, name }: StringFieldProps) {
   const id = useId();

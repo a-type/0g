@@ -1,36 +1,36 @@
 import { System } from '0g';
 import { EntityContact, systems as box2dSystems } from '0g-box2d';
 import { vecNormalize, vecScale } from 'math2d';
-import { stores } from './stores';
+import { components } from './components';
 
 export const { PhysicsWorld } = box2dSystems;
 
 export class BallMovement extends System {
   balls = this.query({
     all: [
-      stores.BallConfig,
-      stores.BallState,
-      stores.Transform,
-      stores.Contacts,
-      stores.Body,
+      components.BallConfig,
+      components.BallState,
+      components.Transform,
+      components.Contacts,
+      components.Body,
     ],
     none: [],
   });
   uninitialized = this.query({
-    all: [stores.BallConfig],
-    none: [stores.BallState],
+    all: [components.BallConfig],
+    none: [components.BallState],
   });
 
   initBalls = this.step(this.uninitialized, (entity) => {
-    entity.add(stores.BallState, { needsLaunch: true });
+    entity.add(components.BallState, { needsLaunch: true });
   });
 
   run = this.step(this.balls, (entity) => {
-    const transform = entity.get(stores.Transform);
-    const body = entity.get(stores.Body);
-    const config = entity.get(stores.BallConfig);
-    const contacts = entity.get(stores.Contacts);
-    const state = entity.get(stores.BallState);
+    const transform = entity.get(components.Transform);
+    const body = entity.get(components.Body);
+    const config = entity.get(components.BallConfig);
+    const contacts = entity.get(components.Contacts);
+    const state = entity.get(components.BallState);
 
     if (Math.abs(transform.y) > 75 || Math.abs(transform.x) > 75) {
       body.value.SetPositionXY(0, 0);
@@ -64,23 +64,23 @@ export class BallMovement extends System {
 
 export class BrickBreaker extends System {
   balls = this.query({
-    all: [stores.BallConfig, stores.Contacts],
+    all: [components.BallConfig, components.Contacts],
     none: [],
   });
 
   run = this.step(this.balls, (entity) => {
-    const contacts = entity.get(stores.Contacts);
+    const contacts = entity.get(components.Contacts);
     let contact: EntityContact;
     for (contact of contacts.began) {
       if (!contact.otherId) continue;
       const other = this.game.get(contact.otherId);
       if (!other) continue;
-      const info = other.maybeGet(stores.BlockInfo);
+      const info = other.maybeGet(components.BlockInfo);
       if (!info) continue; // not a block
       this.game.destroy(other.id);
       // also make paddle a little smaller
       const paddle = this.game.get('paddle')!;
-      const paddleBodyConfig = paddle.get(stores.BodyConfig);
+      const paddleBodyConfig = paddle.get(components.BodyConfig);
       if (paddleBodyConfig.shape.shape === 'rectangle') {
         paddleBodyConfig.shape.width *= 0.9;
         paddleBodyConfig.mark();
@@ -91,13 +91,13 @@ export class BrickBreaker extends System {
 
 export class PaddleMovement extends System {
   paddles = this.query({
-    all: [stores.PaddleConfig, stores.Body, stores.Transform],
+    all: [components.PaddleConfig, components.Body, components.Transform],
     none: [],
   });
 
   run = this.step(this.paddles, (entity) => {
-    const body = entity.get(stores.Body);
-    const config = entity.get(stores.PaddleConfig);
+    const body = entity.get(components.Body);
+    const config = entity.get(components.PaddleConfig);
 
     const velocity = { x: 0, y: 0 };
     if (
@@ -119,12 +119,12 @@ export class PaddleMovement extends System {
 
 export class DebrisCleanup extends System {
   debris = this.query({
-    all: [stores.DebrisConfig, stores.Transform],
+    all: [components.DebrisConfig, components.Transform],
     none: [],
   });
 
   run = this.step(this.debris, (entity) => {
-    const transform = entity.get(stores.Transform);
+    const transform = entity.get(components.Transform);
     if (Math.abs(transform.x) > 75 || Math.abs(transform.y) > 75) {
       this.game.destroy(entity.id);
     }
@@ -133,16 +133,16 @@ export class DebrisCleanup extends System {
 
 export class BlockSpawner extends System {
   spawner = this.query({
-    all: [stores.BlocksConfig, stores.Transform],
+    all: [components.BlocksConfig, components.Transform],
     none: [],
   });
 
   run = this.step(this.spawner, (entity) => {
-    const config = entity.get(stores.BlocksConfig);
+    const config = entity.get(components.BlocksConfig);
     if (config.alreadySpawned) return;
     config.set({ alreadySpawned: true });
 
-    const { x, y } = entity.get(stores.Transform);
+    const { x, y } = entity.get(components.Transform);
 
     const totalWidth =
       config.blocks.reduce((max, row) => Math.max(max, row.length), 0) *
@@ -157,18 +157,18 @@ export class BlockSpawner extends System {
         if (info) {
           this.game
             .create(info.key)
-            .add(stores.Transform, {
+            .add(components.Transform, {
               x: x + v * config.blockWidth + hOffset,
               y: y + h * config.blockHeight + vOffset,
             })
-            .add(stores.BodyConfig, {
+            .add(components.BodyConfig, {
               shape: {
                 shape: 'rectangle',
                 width: config.blockWidth,
                 height: config.blockHeight,
               },
             })
-            .add(stores.BlockInfo, {
+            .add(components.BlockInfo, {
               spawnerId: entity.id,
               key: info.key,
               fontSize: config.fontSize,
@@ -182,31 +182,31 @@ export class BlockSpawner extends System {
 
 export class DebrisSpawner extends System {
   spawner = this.query({
-    all: [stores.DebrisControllerConfig],
+    all: [components.DebrisControllerConfig],
     none: [],
   });
 
   run = this.step(this.spawner, (entity) => {
-    const config = entity.get(stores.DebrisControllerConfig);
+    const config = entity.get(components.DebrisControllerConfig);
     if (config.alreadySpawned) return;
     config.set({ alreadySpawned: true });
 
     config.items.forEach((d, i) => {
       this.game
         .create(`debris-${d.key}`)
-        .add(stores.Transform, {
+        .add(components.Transform, {
           x: d.x,
           y: d.y,
           angle: d.angle,
         })
-        .add(stores.BodyConfig, {
+        .add(components.BodyConfig, {
           shape: {
             shape: 'rectangle',
             width: d.size,
             height: d.size,
           },
         })
-        .add(stores.DebrisConfig, {
+        .add(components.DebrisConfig, {
           text: d.text,
           index: i,
         });

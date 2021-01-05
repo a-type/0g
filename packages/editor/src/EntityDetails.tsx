@@ -1,11 +1,11 @@
 import { Entity } from '0g';
 import { useGame } from '0g-react';
 import * as React from 'react';
-import { AddStoreButton } from './AddStoreButton';
+import { AddComponentButton } from './AddComponentButton';
 import { List, ListItem } from './components/List';
 import { PanelHeader } from './components/Panel';
 import { useForceUpdate } from './hooks/useForceUpdate';
-import { StoreEditor } from './StoreEditor';
+import { ComponentEditor } from './ComponentEditor';
 import { useStore } from './useStore';
 
 export type EntityDetailsProps = {
@@ -26,11 +26,11 @@ export function EntityDetails({}: EntityDetailsProps) {
     function updateIfEntity(entity: Entity) {
       if (entity.id === entityId) update();
     }
-    game.entities.on('entityStoreAdded', updateIfEntity);
-    game.entities.on('entityStoreRemoved', updateIfEntity);
+    game.entities.on('entityComponentAdded', updateIfEntity);
+    game.entities.on('entityComponentRemoved', updateIfEntity);
     return () => {
-      game.entities.off('entityStoreAdded', updateIfEntity);
-      game.entities.off('entityStoreRemoved', updateIfEntity);
+      game.entities.off('entityComponentAdded', updateIfEntity);
+      game.entities.off('entityComponentRemoved', updateIfEntity);
     };
   }, [entityId]);
 
@@ -42,7 +42,7 @@ export function EntityDetails({}: EntityDetailsProps) {
     <React.Fragment key={entityId}>
       <PanelHeader>
         <h3>{entityId}</h3>
-        <AddStoreButton entityId={entityId} />
+        <AddComponentButton entityId={entityId} />
       </PanelHeader>
       <List css={{ minWidth: 400 }}>
         {entity.__stores.map((Store) => {
@@ -50,7 +50,7 @@ export function EntityDetails({}: EntityDetailsProps) {
           if (!store) return null;
           return (
             <ListItem key={Store.name}>
-              <StoreEditor store={store} />
+              <ComponentEditor component={store} />
             </ListItem>
           );
         })}

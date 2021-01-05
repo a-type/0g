@@ -1,4 +1,4 @@
-import { Entity } from './entity';
+import { Entity } from './Entity';
 import { Game } from './Game';
 import { Query, QueryDef } from './Query';
 import { ComponentType } from './components';

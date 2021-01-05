@@ -9,10 +9,14 @@ import {
   b2World,
 } from '@flyover/box2d';
 import { ContactListener, EntityContact } from './ContactListener';
-import * as stores from './stores';
+import * as components from './components';
 import { createCapsule } from './utils';
 
-function assignBodyConfig(body: b2Body, config: stores.BodyConfig, id: string) {
+function assignBodyConfig(
+  body: b2Body,
+  config: components.BodyConfig,
+  id: string
+) {
   const {
     // TODO: verify assumptions about defaults
     isStatic = false,
@@ -32,7 +36,7 @@ function assignBodyConfig(body: b2Body, config: stores.BodyConfig, id: string) {
   return body;
 }
 
-function createFixtureDef(config: stores.BodyConfig, id: string) {
+function createFixtureDef(config: components.BodyConfig, id: string) {
   const { density, restitution, friction, shape } = config;
 
   const fix = new b2FixtureDef();
@@ -82,28 +86,28 @@ function applyFixtures(body: b2Body, fix: b2FixtureDef) {
 
 export class PhysicsWorld extends System {
   newWorlds = this.query({
-    all: [stores.WorldConfig],
-    none: [stores.World],
+    all: [components.WorldConfig],
+    none: [components.World],
   });
   worlds = this.query({
-    all: [stores.World],
+    all: [components.World],
     none: [],
   });
   bodies = this.query({
-    all: [stores.Body, stores.Transform],
+    all: [components.Body, components.Transform],
     none: [],
   });
   bodiesWithContacts = this.query({
-    all: [stores.Contacts, stores.ContactsCache],
+    all: [components.Contacts, components.ContactsCache],
     none: [],
   });
   newBodies = this.query({
-    all: [stores.BodyConfig, stores.Transform],
-    none: [stores.Body],
+    all: [components.BodyConfig, components.Transform],
+    none: [components.Body],
   });
   oldBodies = this.query({
-    all: [stores.Body],
-    none: [stores.BodyConfig],
+    all: [components.Body],
+    none: [components.BodyConfig],
   });
 
   // TODO: multi world support? right now all bodies are added to first world.
@@ -111,15 +115,15 @@ export class PhysicsWorld extends System {
     return this.worlds.entities[0];
   }
   private get defaultWorld() {
-    return this.defaultWorldEntity?.get(stores.World);
+    return this.defaultWorldEntity?.get(components.World);
   }
 
   initWorlds = this.step(this.newWorlds, (worldEntity) => {
-    const worldConfig = worldEntity.get(stores.WorldConfig);
+    const worldConfig = worldEntity.get(components.WorldConfig);
     const w = new b2World(worldConfig.gravity);
     const c = new ContactListener();
     w.SetContactListener(c);
-    worldEntity.add(stores.World, {
+    worldEntity.add(components.World, {
       value: w,
       contacts: c,
     });
@@ -132,8 +136,8 @@ export class PhysicsWorld extends System {
       return;
     }
 
-    const bodyConfig = bodyEntity.get(stores.BodyConfig);
-    const transform = bodyEntity.get(stores.Transform);
+    const bodyConfig = bodyEntity.get(components.BodyConfig);
+    const transform = bodyEntity.get(components.Transform);
 
     const b = this.defaultWorld.value.CreateBody();
     const { x, y, angle } = transform;
@@ -143,22 +147,22 @@ export class PhysicsWorld extends System {
     assignBodyConfig(b, bodyConfig, bodyEntity.id);
     applyFixtures(b, createFixtureDef(bodyConfig, bodyEntity.id));
 
-    bodyEntity.add(stores.Body, {
+    bodyEntity.add(components.Body, {
       value: b,
     });
 
     // subscribe contacts if present
-    const contacts = bodyEntity.maybeGet(stores.Contacts);
+    const contacts = bodyEntity.maybeGet(components.Contacts);
     if (contacts) {
-      bodyEntity.add(stores.ContactsCache);
-      const contactsCache = bodyEntity.get(stores.ContactsCache);
+      bodyEntity.add(components.ContactsCache);
+      const contactsCache = bodyEntity.get(components.ContactsCache);
       this.defaultWorld.contacts.subscribe(bodyEntity.id, contactsCache);
     }
   });
 
-  updateBodies = this.watch(this.bodies, [stores.BodyConfig], (entity) => {
-    const bodyConfig = entity.get(stores.BodyConfig);
-    const body = entity.get(stores.Body);
+  updateBodies = this.watch(this.bodies, [components.BodyConfig], (entity) => {
+    const bodyConfig = entity.get(components.BodyConfig);
+    const body = entity.get(components.Body);
 
     assignBodyConfig(body.value, bodyConfig, entity.id);
     applyFixtures(body.value, createFixtureDef(bodyConfig, entity.id));
@@ -166,13 +170,13 @@ export class PhysicsWorld extends System {
 
   teardownBodies = this.step(this.oldBodies, (bodyEntity) => {
     if (!this.defaultWorld) return;
-    const body = bodyEntity.get(stores.Body);
+    const body = bodyEntity.get(components.Body);
     this.defaultWorld.value.DestroyBody(body.value);
     this.defaultWorld.contacts.unsubscribe(bodyEntity.id);
   });
 
   resetContacts = this.step(this.bodiesWithContacts, (bodyEntity) => {
-    const contacts = bodyEntity.get(stores.Contacts);
+    const contacts = bodyEntity.get(components.Contacts);
 
     contacts.set({
       began: [],
@@ -181,8 +185,8 @@ export class PhysicsWorld extends System {
   });
 
   stepWorlds = this.step(this.worlds, (worldEntity) => {
-    const world = worldEntity.get(stores.World);
-    const worldConfig = worldEntity.get(stores.WorldConfig);
+    const world = worldEntity.get(components.World);
+    const worldConfig = worldEntity.get(components.WorldConfig);
     world.value.Step(
       1 / 60.0,
       worldConfig.velocityIterations,
@@ -191,8 +195,8 @@ export class PhysicsWorld extends System {
   });
 
   updateTransforms = this.step(this.bodies, (bodyEntity) => {
-    const transform = bodyEntity.get(stores.Transform);
-    const body = bodyEntity.get(stores.Body);
+    const transform = bodyEntity.get(components.Transform);
+    const body = bodyEntity.get(components.Body);
 
     const pos = body.value.GetPosition();
 
@@ -205,8 +209,8 @@ export class PhysicsWorld extends System {
 
   // update contacts
   updateContacts = this.step(this.bodiesWithContacts, (bodyEntity) => {
-    const cached = bodyEntity.getWritable(stores.ContactsCache);
-    const contacts = bodyEntity.getWritable(stores.Contacts);
+    const cached = bodyEntity.getWritable(components.ContactsCache);
+    const contacts = bodyEntity.getWritable(components.Contacts);
 
     let c: EntityContact;
     for (c of cached.began.values()) {

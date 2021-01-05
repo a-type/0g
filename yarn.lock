@@ -3,13 +3,13 @@
 
 
 "0g-box2d@link:packages/box2d":
-  version "0.0.2"
+  version "0.0.3"
   dependencies:
     "@tsdotnet/object-pool" "^1.0.6"
     math2d "^3.0.0"
 
 "0g-editor@link:packages/editor":
-  version "0.0.2"
+  version "0.0.3"
   dependencies:
     "@modulz/radix-icons" "^3.3.0"
     "@radix-ui/react-context-menu" "^0.0.1"
@@ -19,13 +19,21 @@
     "@radix-ui/react-tabs" "^0.0.1"
     "@react-spring/web" "^9.0.0-rc.3"
     "@stitches/react" "0.0.3-canary.4"
+    resize-observer-polyfill "^1.5.1"
     zustand "^3.2.0"
 
 "0g-react@link:packages/react":
+  version "0.0.3"
+
+"0g@^0.0.2":
   version "0.0.2"
+  resolved "https://registry.yarnpkg.com/0g/-/0g-0.0.2.tgz#05809894d57329dcabfd3400c39c8c347121508f"
+  integrity sha512-qHeDAVa41KUWjRPvGybMx1NcpEJpL0IHdNaFirOqKwI5usYIT6l8eLt2mgeEFgxR+anHGn0AorzvSP9MJIaeoQ==
+  dependencies:
+    shortid "^2.2.16"
 
 "0g@link:packages/0g":
-  version "0.0.2"
+  version "0.0.3"
   dependencies:
     shortid "^2.2.16"
 

@@ -2,9 +2,9 @@ import { ContactListener, EntityContact } from './ContactListener';
 import { DEFAULT_WORLD_NAME } from './constants';
 import { BodyShape } from './types';
 import { b2Body, b2World } from '@flyover/box2d';
-import { PersistentStore, StateStore } from '0g';
+import { Component, StateComponent } from '0g';
 
-export class Transform extends PersistentStore {
+export class Transform extends Component {
   x = 0;
   y = 0;
   angle = 0;
@@ -16,7 +16,7 @@ export class Transform extends PersistentStore {
   }
 }
 
-export class BodyConfig extends PersistentStore {
+export class BodyConfig extends Component {
   shape = {
     shape: 'circle',
     radius: 1,
@@ -34,17 +34,17 @@ export class BodyConfig extends PersistentStore {
   worldName = DEFAULT_WORLD_NAME;
 }
 
-export class Body extends StateStore {
+export class Body extends StateComponent {
   value: b2Body = (null as unknown) as b2Body;
 }
 
-export class Contacts extends StateStore {
+export class Contacts extends StateComponent {
   began = new Array<EntityContact>();
   current = new Array<EntityContact>();
   ended = new Array<EntityContact>();
 }
 
-export class ContactsCache extends StateStore {
+export class ContactsCache extends StateComponent {
   began = new Set<EntityContact>();
   ended = new Set<EntityContact>();
   onBeginContact(contact: EntityContact) {
@@ -55,7 +55,7 @@ export class ContactsCache extends StateStore {
   }
 }
 
-export class WorldConfig extends PersistentStore {
+export class WorldConfig extends Component {
   gravity = { x: 0, y: 0 };
   velocityIterations = 8;
   positionIterations = 3;
@@ -64,7 +64,7 @@ export class WorldConfig extends PersistentStore {
   worldName = DEFAULT_WORLD_NAME as string | undefined;
 }
 
-export class World extends StateStore {
+export class World extends StateComponent {
   value: b2World = (null as unknown) as b2World;
   contacts: ContactListener = (null as unknown) as ContactListener;
 }

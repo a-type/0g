@@ -1,4 +1,4 @@
-import { Entity } from './entity';
+import { Entity } from './Entity';
 import { Game } from './Game';
 import { logger } from './logger';
 import { Query, QueryDef } from './Query';

@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { Entity } from '0g';
-import { stores } from '0g-box2d';
+import { components } from '0g-box2d';
 import { useWatch } from '0g-react';
 
 export function useBodyRef<T extends HTMLElement>(
@@ -15,9 +15,9 @@ export function useBodyRef<T extends HTMLElement>(
 ) {
   const ref = useRef<T>(null);
 
-  useWatch(entity, [stores.BodyConfig, stores.Transform], () => {
-    const bodyConfig = entity.get(stores.BodyConfig);
-    const transform = entity.get(stores.Transform);
+  useWatch(entity, [components.BodyConfig, components.Transform], () => {
+    const bodyConfig = entity.get(components.BodyConfig);
+    const transform = entity.get(components.Transform);
 
     const width =
       bodyConfig.shape.shape === 'circle'

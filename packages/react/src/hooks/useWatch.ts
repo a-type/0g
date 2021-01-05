@@ -1,39 +1,39 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Store, Query, QueryDef, Entity, StoreInstance } from '0g';
+import { ComponentType, Query, QueryDef, Entity, ComponentInstance } from '0g';
 import { useFrame, useQueryFrame } from './useFrame';
 
 export function useWatch(
   input: Query<QueryDef>,
-  stores: Store[],
+  components: ComponentType[],
   callback: (entity: Entity) => void,
 ): void;
 export function useWatch(
   input: Entity,
-  stores: Store[],
+  components: ComponentType[],
   callback: () => void,
 ): void;
-export function useWatch(input: StoreInstance, callback: () => void): void;
+export function useWatch(input: ComponentInstance, callback: () => void): void;
 export function useWatch(
   input: any,
-  storesOrCallback: any,
+  componentsOrCallback: any,
   callback?: any,
 ): void {
   if (input instanceof Query) {
-    return useWatchQuery(input, storesOrCallback, callback);
+    return useWatchQuery(input, componentsOrCallback, callback);
   } else if (input instanceof Entity) {
-    return useWatchEntity(input, storesOrCallback, callback);
+    return useWatchEntity(input, componentsOrCallback, callback);
   } else {
-    return useWatchStore(input, storesOrCallback);
+    return useWatchStore(input, componentsOrCallback);
   }
 }
 
-function getStoreVersions(entity: Entity, stores: Store[]) {
-  return stores.map((store) => entity.get(store).__version).join(',');
+function getStoreVersions(entity: Entity, components: ComponentType[]) {
+  return components.map((store) => entity.get(store).__version).join(',');
 }
 
 function useWatchQuery(
   query: Query<QueryDef>,
-  stores: Store[],
+  components: ComponentType[],
   callback: (entity: Entity) => void,
 ) {
   const [versionCache] = useState(() => {
@@ -44,32 +44,36 @@ function useWatchQuery(
     query,
     useCallback(
       (entity) => {
-        const currentVersions = getStoreVersions(entity, stores);
+        const currentVersions = getStoreVersions(entity, components);
         if (currentVersions !== versionCache.get(entity)) {
           versionCache.set(entity, currentVersions);
           callback(entity);
         }
       },
-      [versionCache, stores],
+      [versionCache, components],
     ),
   );
 }
 
-function useWatchEntity(entity: Entity, stores: Store[], callback: () => void) {
+function useWatchEntity(
+  entity: Entity,
+  components: ComponentType[],
+  callback: () => void,
+) {
   const versionsRef = useRef('');
 
   useFrame(
     useCallback(() => {
-      const currentVersions = getStoreVersions(entity, stores);
+      const currentVersions = getStoreVersions(entity, components);
       if (currentVersions !== versionsRef.current) {
         versionsRef.current = currentVersions;
         callback();
       }
-    }, [versionsRef, entity, stores]),
+    }, [versionsRef, entity, components]),
   );
 }
 
-function useWatchStore(store: StoreInstance, callback: () => void) {
+function useWatchStore(store: ComponentInstance, callback: () => void) {
   useEffect(() => {
     callback();
     store.on('change', callback);

@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 import shortid from 'shortid';
-import { Entity } from './entity';
+import { Entity } from './Entity';
 import { Game } from './Game';
 import { ObjectPool } from './internal/objectPool';
 import { logger } from './logger';
@@ -9,12 +9,12 @@ import { ComponentType, ComponentInstanceFor } from './components';
 export declare interface EntityManager {
   on(ev: 'entityAdded', callback: (entity: Entity) => void): this;
   on(ev: 'entityRemoved', callback: (entity: Entity) => void): this;
-  on(ev: 'entityStoreAdded', callback: (entity: Entity) => void): this;
-  on(ev: 'entityStoreRemoved', callback: (entity: Entity) => void): this;
+  on(ev: 'entityComponentAdded', callback: (entity: Entity) => void): this;
+  on(ev: 'entityComponentRemoved', callback: (entity: Entity) => void): this;
   off(ev: 'entityAdded', callback: (entity: Entity) => void): this;
   off(ev: 'entityRemoved', callback: (entity: Entity) => void): this;
-  off(ev: 'entityStoreAdded', callback: (entity: Entity) => void): this;
-  off(ev: 'entityStoreRemoved', callback: (entity: Entity) => void): this;
+  off(ev: 'entityComponentAdded', callback: (entity: Entity) => void): this;
+  off(ev: 'entityComponentRemoved', callback: (entity: Entity) => void): this;
 }
 
 export class EntityManager extends EventEmitter {
@@ -71,7 +71,7 @@ export class EntityManager extends EventEmitter {
       Object.assign(data, initial);
     }
     entity.__data.set(spec, data);
-    this.emit('entityStoreAdded', entity);
+    this.emit('entityComponentAdded', entity);
     this.__game.queries.onEntityStoresChanged(entity);
     return data;
   }
@@ -79,7 +79,7 @@ export class EntityManager extends EventEmitter {
   removeStoreFromEntity(entity: Entity, spec: ComponentType) {
     if (!entity.__data.has(spec)) return entity;
     entity.__data.delete(spec);
-    this.emit('entityStoreRemoved', entity);
+    this.emit('entityComponentRemoved', entity);
     this.__game.queries.onEntityStoresChanged(entity);
     return entity;
   }

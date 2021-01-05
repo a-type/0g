@@ -1,6 +1,6 @@
-import { StoreInstance } from '0g';
+import { ComponentInstance } from '0g';
 
-export interface StoreFieldProps {
-  store: StoreInstance;
+export interface ComponentFieldProps {
+  store: ComponentInstance;
   name: string;
 }

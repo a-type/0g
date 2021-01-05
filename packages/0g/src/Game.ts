@@ -24,7 +24,7 @@ export declare interface Game {
 
 export class Game extends EventEmitter {
   private _entityManager = new EntityManager(this);
-  private _storeSpecs: Record<string, ComponentType>;
+  private _componentTypes: Record<string, ComponentType>;
   private _systems: SystemSpec[];
   private _systemInstances: System[];
   private _queryManager = new QueryManager(this);
@@ -43,14 +43,14 @@ export class Game extends EventEmitter {
   globals: Map<string, any>;
 
   constructor({
-    stores,
+    components,
     requestFrame = requestAnimationFrame.bind(window),
     cancelFrame = cancelAnimationFrame.bind(window),
     initialPlayState: initialState = 'paused',
     systems = [],
     globals = new Map(),
   }: {
-    stores: Record<string, ComponentType>;
+    components: Record<string, ComponentType>;
     requestFrame?: (callback: FrameRequestCallback) => number;
     cancelFrame?: (frameHandle: number) => void;
     initialPlayState?: GamePlayState;
@@ -59,7 +59,7 @@ export class Game extends EventEmitter {
   }) {
     super();
     this.setMaxListeners(Infinity);
-    this._storeSpecs = stores;
+    this._componentTypes = components;
     this._systems = systems;
     this._systemInstances = systems.map((Sys) => new Sys(this));
     this._raf = requestFrame;
@@ -75,8 +75,8 @@ export class Game extends EventEmitter {
   get entities() {
     return this._entityManager;
   }
-  get storeSpecs() {
-    return this._storeSpecs;
+  get componentTypes() {
+    return this._componentTypes;
   }
   get systems() {
     return this._systems;
@@ -140,7 +140,7 @@ export class Game extends EventEmitter {
   loadScene = (serialized: { id: string; data: Record<string, any> }[]) => {
     for (const entry of serialized) {
       const spec = Object.keys(entry.data).map(
-        (storeKind) => this._storeSpecs[storeKind]!,
+        (storeKind) => this._componentTypes[storeKind]!,
       );
       const entity = this.create(entry.id);
       for (const store of spec) {
@@ -183,7 +183,7 @@ export class Game extends EventEmitter {
    */
   private initializeStores = () => {
     const builtins = Component.builtinKeys;
-    Object.values(this._storeSpecs).forEach((Comp) => {
+    Object.values(this._componentTypes).forEach((Comp) => {
       const instance = new Comp();
       (Comp as {
         new (): any;

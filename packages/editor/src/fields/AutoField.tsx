@@ -1,16 +1,19 @@
-import { StoreInstance } from '0g';
+import { ComponentInstance } from '0g';
 import * as React from 'react';
 import { NumberField } from './NumberField';
 import { StringField } from './StringField';
 
 export type AutoFieldProps = {
-  store: StoreInstance;
+  store: ComponentInstance;
   name: string;
 };
 
 type SupportedTypes = 'string' | 'number';
 
-function getType(store: StoreInstance, name: string): SupportedTypes | null {
+function getType(
+  store: ComponentInstance,
+  name: string,
+): SupportedTypes | null {
   // get the constructor
   const Constructor = Object.getPrototypeOf(store).constructor;
   // default value of the field

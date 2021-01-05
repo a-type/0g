@@ -8,9 +8,9 @@ import {
   FieldCurrentValue,
 } from '../components/Field';
 import { useId } from '../hooks/useId';
-import { StoreFieldProps } from './types';
+import { ComponentFieldProps } from './types';
 
-export type NumberFieldProps = StoreFieldProps;
+export type NumberFieldProps = ComponentFieldProps;
 
 export function NumberField({ store, name }: NumberFieldProps) {
   const id = useId();

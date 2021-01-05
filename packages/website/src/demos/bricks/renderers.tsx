@@ -4,7 +4,7 @@ import { usePlayState, useQuery } from '0g-react';
 import { RectangleBodyShape } from '0g-box2d';
 import { useBodyRef } from '../../hooks/useBodyRef';
 import { Button } from '../../components/Button';
-import { stores } from './stores';
+import { components } from './components';
 
 const Ball = memo(({ entity }: { entity: Entity }) => {
   return (
@@ -21,7 +21,7 @@ const Ball = memo(({ entity }: { entity: Entity }) => {
 
 export const BallRenderer = () => {
   const balls = useQuery({
-    all: [stores.BallConfig, stores.Transform, stores.BodyConfig],
+    all: [components.BallConfig, components.Transform, components.BodyConfig],
     none: [],
   });
 
@@ -35,7 +35,7 @@ export const BallRenderer = () => {
 };
 
 const Block = memo(({ entity }: { entity: Entity }) => {
-  const info = entity.get(stores.BlockInfo);
+  const info = entity.get(components.BlockInfo);
 
   return (
     <div
@@ -53,7 +53,7 @@ const Block = memo(({ entity }: { entity: Entity }) => {
 
 export const BlockRenderer = () => {
   const blocks = useQuery({
-    all: [stores.BlockInfo, stores.Transform, stores.BodyConfig],
+    all: [components.BlockInfo, components.Transform, components.BodyConfig],
     none: [],
   });
 
@@ -78,7 +78,7 @@ const Paddle = memo(({ entity }: { entity: Entity }) => {
 
 export const PaddleRenderer = () => {
   const paddles = useQuery({
-    all: [stores.PaddleConfig, stores.Transform, stores.BodyConfig],
+    all: [components.PaddleConfig, components.Transform, components.BodyConfig],
     none: [],
   });
 
@@ -94,7 +94,7 @@ export const PaddleRenderer = () => {
 const Wall = ({ entity }: { entity: Entity }) => {
   const [showHit, setShowHit] = useState(false);
 
-  const contacts = entity.get(stores.Contacts);
+  const contacts = entity.get(components.Contacts);
 
   const hasContact = !!contacts.began.length;
 
@@ -120,7 +120,12 @@ const Wall = ({ entity }: { entity: Entity }) => {
 
 export const WallRenderer = () => {
   const walls = useQuery({
-    all: [stores.WallTag, stores.Transform, stores.BodyConfig, stores.Contacts],
+    all: [
+      components.WallTag,
+      components.Transform,
+      components.BodyConfig,
+      components.Contacts,
+    ],
     none: [],
   });
 
@@ -134,8 +139,8 @@ export const WallRenderer = () => {
 };
 
 const Debris = memo(({ entity }: { entity: Entity }) => {
-  const bodyConfig = entity.get(stores.BodyConfig);
-  const config = entity.get(stores.DebrisConfig);
+  const bodyConfig = entity.get(components.BodyConfig);
+  const config = entity.get(components.DebrisConfig);
   const size = (bodyConfig.shape as RectangleBodyShape).width;
   return (
     <div key={entity.id} ref={useBodyRef(entity)} css={{ fontSize: size * 10 }}>
@@ -146,7 +151,7 @@ const Debris = memo(({ entity }: { entity: Entity }) => {
 
 export const DebrisRenderer = () => {
   const debris = useQuery({
-    all: [stores.DebrisConfig, stores.BodyConfig, stores.Transform],
+    all: [components.DebrisConfig, components.BodyConfig, components.Transform],
     none: [],
   });
 

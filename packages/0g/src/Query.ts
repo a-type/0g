@@ -1,4 +1,4 @@
-import { Entity } from './entity';
+import { Entity } from './Entity';
 import { EventEmitter } from 'events';
 import { logger } from './logger';
 import { ComponentType } from './components';
