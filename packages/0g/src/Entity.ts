@@ -1,5 +1,5 @@
 import { Poolable } from './internal/objectPool';
-import { Query } from './queries';
+import { Query } from './Query';
 import {
   ComponentType,
   ComponentInstance,

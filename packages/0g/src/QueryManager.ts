@@ -1,7 +1,7 @@
 import { Entity } from './entity';
 import { Game } from './Game';
 import { logger } from './logger';
-import { Query, QueryDef } from './queries';
+import { Query, QueryDef } from './Query';
 
 export class QueryManager {
   private queryCache: Record<string, Query<any>> = {};

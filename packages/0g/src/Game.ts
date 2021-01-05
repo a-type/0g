@@ -1,10 +1,10 @@
 import { EventEmitter } from 'events';
 import * as input from './input';
-import { EntityManager } from './entityManager';
-import { QueryManager } from './queryManager';
-import { Component, ComponentType, StateComponent } from './components';
+import { EntityManager } from './EntityManager';
+import { QueryManager } from './QueryManager';
+import { Component, ComponentType } from './components';
 import { ComponentManager } from './ComponentManager';
-import { System, SystemSpec } from './systems';
+import { System, SystemSpec } from './System';
 
 export type GamePlayState = 'paused' | 'running';
 

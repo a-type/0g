@@ -1,6 +1,6 @@
 import { Entity } from './entity';
 import { Game } from './Game';
-import { Query, QueryDef } from './queries';
+import { Query, QueryDef } from './Query';
 import { ComponentType } from './components';
 
 export class FrameHandle {
