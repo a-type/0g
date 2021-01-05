@@ -4,7 +4,7 @@ import { Entity } from './entity';
 import { Game } from './Game';
 import { ObjectPool } from './internal/objectPool';
 import { logger } from './logger';
-import { Store, StoreInstanceFor } from './stores';
+import { ComponentType, ComponentInstanceFor } from './components';
 
 export declare interface EntityManager {
   on(ev: 'entityAdded', callback: (entity: Entity) => void): this;
@@ -60,10 +60,10 @@ export class EntityManager extends EventEmitter {
     logger.debug(`Queueing ${id} for destroy`);
   }
 
-  addStoreToEntity<Spec extends Store>(
+  addStoreToEntity<Spec extends ComponentType>(
     entity: Entity,
     spec: Spec,
-    initial?: Partial<StoreInstanceFor<Spec>>,
+    initial?: Partial<ComponentInstanceFor<Spec>>,
   ) {
     logger.debug(`Adding ${spec.name} to ${entity.id}`);
     const data = this.__game.stores.acquire(spec);
@@ -76,7 +76,7 @@ export class EntityManager extends EventEmitter {
     return data;
   }
 
-  removeStoreFromEntity(entity: Entity, spec: Store) {
+  removeStoreFromEntity(entity: Entity, spec: ComponentType) {
     if (!entity.__data.has(spec)) return entity;
     entity.__data.delete(spec);
     this.emit('entityStoreRemoved', entity);

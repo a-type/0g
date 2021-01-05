@@ -1,7 +1,7 @@
 import { Entity } from './entity';
 import { EventEmitter } from 'events';
 import { logger } from './logger';
-import { Store } from './stores';
+import { ComponentType } from './components';
 
 export declare interface Query {
   on(event: 'entityAdded', callback: (entity: Entity) => void): this;
@@ -11,8 +11,8 @@ export declare interface Query {
 }
 
 export type QueryDef = {
-  all?: Store[];
-  none?: Store[];
+  all?: ComponentType[];
+  none?: ComponentType[];
 };
 
 export class Query<Def extends QueryDef = QueryDef> extends EventEmitter {

@@ -2,8 +2,8 @@ import { EventEmitter } from 'events';
 import * as input from './input';
 import { EntityManager } from './entityManager';
 import { QueryManager } from './queryManager';
-import { Store, BaseStore } from './stores';
-import { StoreManager } from './storeManager';
+import { Component, ComponentType, StateComponent } from './components';
+import { ComponentManager } from './ComponentManager';
 import { System, SystemSpec } from './systems';
 
 export type GamePlayState = 'paused' | 'running';
@@ -24,11 +24,11 @@ export declare interface Game {
 
 export class Game extends EventEmitter {
   private _entityManager = new EntityManager(this);
-  private _storeSpecs: Record<string, Store>;
+  private _storeSpecs: Record<string, ComponentType>;
   private _systems: SystemSpec[];
   private _systemInstances: System[];
   private _queryManager = new QueryManager(this);
-  private _storeManager = new StoreManager();
+  private _storeManager = new ComponentManager(this);
 
   private _raf: (cb: FrameRequestCallback) => number;
   private _cancelRaf: (handle: number) => void;
@@ -50,7 +50,7 @@ export class Game extends EventEmitter {
     systems = [],
     globals = new Map(),
   }: {
-    stores: Record<string, Store>;
+    stores: Record<string, ComponentType>;
     requestFrame?: (callback: FrameRequestCallback) => number;
     cancelFrame?: (frameHandle: number) => void;
     initialPlayState?: GamePlayState;
@@ -182,11 +182,11 @@ export class Game extends EventEmitter {
    * to a static property on the constructor
    */
   private initializeStores = () => {
-    const builtins = BaseStore.builtinKeys;
-    Object.values(this._storeSpecs).forEach((Store) => {
-      const instance = new Store();
-      (Store as {
-        new (): BaseStore;
+    const builtins = Component.builtinKeys;
+    Object.values(this._storeSpecs).forEach((Comp) => {
+      const instance = new Comp();
+      (Comp as {
+        new (): any;
         defaultValues: any;
       }).defaultValues = Object.entries(instance).reduce(
         (acc, [key, value]) => {

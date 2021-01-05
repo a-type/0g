@@ -1,7 +1,7 @@
 import { Entity } from './entity';
 import { Game } from './Game';
 import { Query, QueryDef } from './queries';
-import { Store } from './stores';
+import { ComponentType } from './components';
 
 export class FrameHandle {
   constructor(
@@ -32,7 +32,7 @@ export class System {
     }, this.game);
   }
 
-  watch(query: Query, stores: Store[], run: (entity: Entity) => void) {
+  watch(query: Query, stores: ComponentType[], run: (entity: Entity) => void) {
     const versionCache = new WeakMap<Entity, string>();
     return new FrameHandle(() => {
       // TODO: consider implications of object pooling on weakmap usage - it
