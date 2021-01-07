@@ -7,17 +7,23 @@ import {
 } from './components';
 import { Game } from './Game';
 
+/**
+ * An "Entity" is really an ID number, but
+ * this class helps facilitate more OOP-style
+ * operations which deal with the data associated
+ * with any Entity.
+ */
 export class Entity implements Poolable {
-  __data = new Map<ComponentType, ComponentInstance>();
   __queries = new Set<Query<any>>();
-  __game: Game = null as any;
-  __stores: ComponentType[] = [];
+  __componentTypes: ComponentType[] = [];
   __alive = true;
 
-  id: string = 'unallocated';
+  id: number = 0;
 
-  init(id: string, specs: ComponentType[]) {
-    this.__stores = specs;
+  constructor(private __game: Game) {}
+
+  init(id: number, specs: ComponentType[]) {
+    this.__componentTypes = specs;
     this.id = id;
     specs.forEach((spec) => {
       this.add(spec);
@@ -72,7 +78,10 @@ export class Entity implements Poolable {
   private getOrNull<Spec extends ComponentType>(
     spec: Spec,
   ): ComponentInstanceFor<Spec> | null {
-    const val = this.__data.get(spec) as ComponentInstanceFor<Spec>;
+    const val = this.__game.componentManager.get(
+      this.id,
+      spec.id,
+    ) as ComponentInstanceFor<Spec>;
     return val || null;
   }
 
@@ -80,29 +89,27 @@ export class Entity implements Poolable {
     spec: Spec,
     initial?: Partial<ComponentInstanceFor<Spec>>,
   ) {
-    this.__game.entities.addStoreToEntity(this, spec, initial);
-    this.__stores.push(spec);
+    this.__game.componentManager.add(this.id, spec.id, initial);
+    this.__componentTypes.push(spec);
     return this;
   }
 
   remove(spec: ComponentType) {
-    this.__game.entities.removeStoreFromEntity(this, spec);
+    this.__game.componentManager.remove(this.id, spec.id);
+    this.__componentTypes.splice(this.__componentTypes.indexOf(spec));
     return this;
   }
 
   reset() {
-    this.__data.forEach((data, spec) => {
-      this.__game.stores.release(data);
-    });
-    this.__data.clear();
-    this.__stores = [];
+    this.__game.componentManager.removeAll(this.id);
+    this.__componentTypes = [];
     this.__queries = new Set();
   }
 
   get specs() {
     return {
       queries: Array.from(this.__queries.values()).map((q) => q.key),
-      stores: this.__stores.map((spec) => spec.name),
+      stores: this.__componentTypes.map((spec) => spec.name),
     };
   }
 }

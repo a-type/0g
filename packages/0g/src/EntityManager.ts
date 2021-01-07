@@ -1,10 +1,9 @@
 import { EventEmitter } from 'events';
-import shortid from 'shortid';
 import { Entity } from './Entity';
 import { Game } from './Game';
 import { ObjectPool } from './internal/objectPool';
 import { logger } from './logger';
-import { ComponentType, ComponentInstanceFor } from './components';
+import SparseMap from 'mnemonist/sparse-map';
 
 export declare interface EntityManager {
   on(ev: 'entityAdded', callback: (entity: Entity) => void): this;
@@ -18,9 +17,9 @@ export declare interface EntityManager {
 }
 
 export class EntityManager extends EventEmitter {
-  pool = new ObjectPool(() => new Entity());
-  _destroyList = new Array<string>();
-  entities: Record<string, Entity> = {};
+  private pool = new ObjectPool(() => new Entity(this.__game));
+  private _destroyList = new Array<number>();
+  private entityMap = new SparseMap<Entity>(this.__game.constants.maxEntities);
 
   constructor(private __game: Game) {
     super();
@@ -28,60 +27,38 @@ export class EntityManager extends EventEmitter {
   }
 
   get ids() {
-    return Object.keys(this.entities);
+    return this.entityMap.keys();
   }
 
   get entityList() {
-    return Object.values(this.entities);
+    return this.entityMap.values();
   }
 
-  has(id: string) {
-    return !!this.entities[id];
+  has(id: number) {
+    return this.entityMap.has(id);
   }
 
-  create(ownId: string | null = null) {
-    const id = ownId || shortid();
+  create(ownId: number | null = null) {
+    const id = ownId || this.__game.idManager.get();
 
     const ent = this.pool.acquire();
-    ent.__game = this.__game;
     ent.id = id;
 
-    this.entities[id] = ent;
-    const registered = this.entities[id];
-
-    this.emit('entityAdded', registered);
-    this.__game.queries.onEntityCreated(registered);
+    this.entityMap.set(id, ent);
+    this.emit('entityAdded', ent);
+    this.__game.queries.onEntityCreated(ent);
     logger.debug(`Added ${id}`);
-    return registered;
+    return ent;
   }
 
-  destroy(id: string) {
+  get(id: number) {
+    const ent = this.entityMap.get(id);
+    return ent ?? null;
+  }
+
+  destroy(id: number) {
     this._destroyList.push(id);
     logger.debug(`Queueing ${id} for destroy`);
-  }
-
-  addStoreToEntity<Spec extends ComponentType>(
-    entity: Entity,
-    spec: Spec,
-    initial?: Partial<ComponentInstanceFor<Spec>>,
-  ) {
-    logger.debug(`Adding ${spec.name} to ${entity.id}`);
-    const data = this.__game.stores.acquire(spec);
-    if (initial) {
-      Object.assign(data, initial);
-    }
-    entity.__data.set(spec, data);
-    this.emit('entityComponentAdded', entity);
-    this.__game.queries.onEntityStoresChanged(entity);
-    return data;
-  }
-
-  removeStoreFromEntity(entity: Entity, spec: ComponentType) {
-    if (!entity.__data.has(spec)) return entity;
-    entity.__data.delete(spec);
-    this.emit('entityComponentRemoved', entity);
-    this.__game.queries.onEntityStoresChanged(entity);
-    return entity;
   }
 
   executeDestroys = () => {
@@ -89,29 +66,29 @@ export class EntityManager extends EventEmitter {
     this._destroyList.length = 0;
   };
 
-  private executeDestroy = (id: string) => {
-    const entity = this.entities[id];
-    delete this.entities[id];
+  private executeDestroy = (id: number) => {
+    const entity = this.entityMap.get(id);
+    if (!entity || entity.id !== id) {
+      throw new Error(`Attempted to destroy entity ${id} which was not valid`);
+    }
+    this.entityMap.delete(id);
     this.pool.release(entity);
+    this.__game.idManager.release(id);
+
     this.emit('entityRemoved', entity);
     this.__game.queries.onEntityDestroyed(entity);
     logger.debug(`Destroyed ${id}`);
   };
 
   serialize() {
-    return this.entityList.map(this.serializeEntity);
+    const serialized = [];
+    for (const ent of this.entityList) {
+      serialized.push(this.serializeEntity(ent));
+    }
+    return serialized;
   }
 
   private serializeEntity(entity: Entity) {
-    const s = {
-      id: entity.id,
-      data: {} as Record<string, any>,
-    };
-    for (const [spec, dat] of entity.__data.entries()) {
-      // ephemeral, recreated at runtime on load
-      if ((spec as any).kind === 'state') return;
-      s.data[spec.name] = dat;
-    }
-    return s;
+    return null; // TODO
   }
 }

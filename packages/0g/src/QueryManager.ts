@@ -20,7 +20,7 @@ export class QueryManager {
     }
 
     // evaluate all existing entities
-    this.__game.entities.entityList.forEach((entity) => {
+    this.__game.entityManager.entityList.forEach((entity) => {
       this.queryCache[key].evaluate(entity);
     });
 

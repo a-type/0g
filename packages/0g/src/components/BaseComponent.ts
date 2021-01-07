@@ -12,6 +12,7 @@ export class BaseComponent extends EventEmitter implements Poolable {
   static builtinKeys: string[] = Object.getOwnPropertyNames(
     new BaseComponent(),
   );
+  static id: number = 0;
   __alive = true;
 
   ___version = 0;

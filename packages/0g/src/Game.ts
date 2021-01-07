@@ -5,8 +5,14 @@ import { QueryManager } from './QueryManager';
 import { Component, ComponentType } from './components';
 import { ComponentManager } from './ComponentManager';
 import { System, SystemSpec } from './System';
+import { IdManager } from './IdManager';
 
 export type GamePlayState = 'paused' | 'running';
+
+export type GameConstants = {
+  maxComponentId: number;
+  maxEntities: number;
+};
 
 export declare interface Game {
   on(event: 'preStep', callback: () => any): this;
@@ -24,11 +30,11 @@ export declare interface Game {
 
 export class Game extends EventEmitter {
   private _entityManager = new EntityManager(this);
-  private _componentTypes: Record<string, ComponentType>;
   private _systems: SystemSpec[];
   private _systemInstances: System[];
   private _queryManager = new QueryManager(this);
-  private _storeManager = new ComponentManager(this);
+  private _componentManager;
+  private _idManager = new IdManager();
 
   private _raf: (cb: FrameRequestCallback) => number;
   private _cancelRaf: (handle: number) => void;
@@ -42,6 +48,11 @@ export class Game extends EventEmitter {
 
   globals: Map<string, any>;
 
+  private _constants: GameConstants = {
+    maxComponentId: 256,
+    maxEntities: 2 ** 16,
+  };
+
   constructor({
     components,
     requestFrame = requestAnimationFrame.bind(window),
@@ -50,7 +61,7 @@ export class Game extends EventEmitter {
     systems = [],
     globals = new Map(),
   }: {
-    components: Record<string, ComponentType>;
+    components: ComponentType[];
     requestFrame?: (callback: FrameRequestCallback) => number;
     cancelFrame?: (frameHandle: number) => void;
     initialPlayState?: GamePlayState;
@@ -59,24 +70,26 @@ export class Game extends EventEmitter {
   }) {
     super();
     this.setMaxListeners(Infinity);
-    this._componentTypes = components;
+    this._componentManager = new ComponentManager(components, this);
     this._systems = systems;
     this._systemInstances = systems.map((Sys) => new Sys(this));
     this._raf = requestFrame;
     this._cancelRaf = cancelFrame;
     this._playState = initialState;
     this.globals = globals;
-    this.initializeStores();
     if (this._playState === 'running') {
       this.resume();
     }
   }
 
-  get entities() {
+  get idManager() {
+    return this._idManager;
+  }
+  get entityManager() {
     return this._entityManager;
   }
-  get componentTypes() {
-    return this._componentTypes;
+  get componentManager() {
+    return this._componentManager;
   }
   get systems() {
     return this._systems;
@@ -96,17 +109,17 @@ export class Game extends EventEmitter {
   get queries() {
     return this._queryManager;
   }
-  get stores() {
-    return this._storeManager;
+  get constants() {
+    return this._constants;
   }
 
-  get = (id: string) => {
-    return this.entities.entities[id] ?? null;
+  get = (id: number) => {
+    return this.entityManager.get(id);
   };
-  create = (ownId: string | null = null) => {
+  create = (ownId: number | null = null) => {
     return this._entityManager.create(ownId);
   };
-  destroy = (id: string) => {
+  destroy = (id: number) => {
     return this._entityManager.destroy(id);
   };
 
@@ -138,15 +151,7 @@ export class Game extends EventEmitter {
   };
 
   loadScene = (serialized: { id: string; data: Record<string, any> }[]) => {
-    for (const entry of serialized) {
-      const spec = Object.keys(entry.data).map(
-        (storeKind) => this._componentTypes[storeKind]!,
-      );
-      const entity = this.create(entry.id);
-      for (const store of spec) {
-        entity.add(store, entry.data[store.name]);
-      }
-    }
+    // TODO
   };
 
   saveScene = () => {
@@ -175,28 +180,5 @@ export class Game extends EventEmitter {
       this._lastFrameTime != null ? time - this._lastFrameTime : 16 + 2 / 3;
 
     this.step(this._delta);
-  };
-
-  /**
-   * Writes all the default values of each kind of Store
-   * to a static property on the constructor
-   */
-  private initializeStores = () => {
-    const builtins = Component.builtinKeys;
-    Object.values(this._componentTypes).forEach((Comp) => {
-      const instance = new Comp();
-      (Comp as {
-        new (): any;
-        defaultValues: any;
-      }).defaultValues = Object.entries(instance).reduce(
-        (acc, [key, value]) => {
-          if (!builtins.includes(key)) {
-            acc[key] = value;
-          }
-          return acc;
-        },
-        {} as any,
-      );
-    });
   };
 }
