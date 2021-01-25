@@ -1,9 +1,5 @@
 import { ComponentPool } from './ComponentPool';
-import {
-  ComponentInstance,
-  ComponentInstanceFor,
-  ComponentType,
-} from './components';
+import { Component, ComponentInstanceFor, ComponentType } from './components';
 import { Game } from './Game';
 
 /**
@@ -11,7 +7,7 @@ import { Game } from './Game';
  * the presence of Components assigned to Entities.
  */
 export class ComponentManager {
-  pools = new Array<ComponentPool<ComponentInstance>>();
+  pools = new Array<ComponentPool<Component>>();
 
   constructor(public componentTypes: ComponentType[], private game: Game) {
     // initialize pools, one for each ComponentType by ID. ComponentType IDs are incrementing integers.
@@ -27,45 +23,13 @@ export class ComponentManager {
     });
   }
 
-  /**
-   * Add a Component to an Entity, optionally providing some initial data.
-   */
-  add(
-    entityId: number,
-    componentId: number,
-    initial?: Partial<ComponentInstance>,
-  ) {
-    this.pools[componentId].add(entityId, initial);
-  }
+  acquire = (typeId: number, initialValues: any) => {
+    return this.pools[typeId].acquire(initialValues);
+  };
 
-  /**
-   * Remove a single Component type from an Entity.
-   */
-  remove(entityId: number, componentId: number) {
-    this.pools[componentId].remove(entityId);
-  }
-
-  /**
-   * Removes all Components from an Entity. This is not the fastest thing
-   * in the world.
-   */
-  removeAll(entityId: number) {
-    this.pools.forEach((pool) => pool.remove(entityId));
-  }
-
-  /**
-   * Gets a Component assigned to an Entity by Type
-   */
-  get(entityId: number, componentId: number) {
-    return this.pools[componentId].get(entityId);
-  }
-
-  /**
-   * Returns if an Entity has a Component by Type
-   */
-  has(entityId: number, componentId: number) {
-    return this.pools[componentId].has(entityId);
-  }
+  release = (instance: Component) => {
+    return this.pools[instance.type].release(instance);
+  };
 
   /**
    * Determines the default values of a Component - the

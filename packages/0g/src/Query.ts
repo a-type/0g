@@ -1,104 +1,128 @@
-import { Entity } from './Entity';
 import { EventEmitter } from 'events';
-import { logger } from './logger';
-import { ComponentInstance, ComponentType } from './components';
+import { ComponentInstanceFor, ComponentType } from './components';
 import { Game } from './Game';
-import { ComponentPool } from './ComponentPool';
-
-export declare interface Query {
-  on(event: 'entityAdded', callback: (entity: Entity) => void): this;
-  on(event: 'entityRemoved', callback: (entity: Entity) => void): this;
-  off(event: 'entityAdded', callback: (entity: Entity) => void): this;
-  off(event: 'entityRemoved', callback: (entity: Entity) => void): this;
-}
+import { Poolable } from './internal/objectPool';
+import { Archetype } from './Archetype';
+import { EntityImpostor } from './EntityImpostor';
 
 export type QueryDef = {
-  all?: ComponentType[];
+  all: ComponentType[];
   none?: ComponentType[];
 };
 
-export class Query<Def extends QueryDef = QueryDef> extends EventEmitter {
-  private allGroups: ComponentPool<ComponentInstance>[];
-  private noneGroups: ComponentPool<ComponentInstance>[];
+type ComponentsFromQueryDef<Def extends QueryDef> = ComponentInstanceFor<
+  Def['all'][0]
+>;
 
-  constructor(public def: Def, private game: Game) {
+type QueryDefForQuery<Q extends Query> = Q extends Query<infer Def>
+  ? Def
+  : never;
+
+export type QueryIteratorFn<Q extends Query> = {
+  (entity: EntityImpostor<ComponentsFromQueryDef<QueryDefForQuery<Q>>>): any;
+};
+
+type EntityImpostorFor<Q extends Query> = EntityImpostor<
+  ComponentsFromQueryDef<QueryDefForQuery<Q>>
+>;
+
+export class Query<Def extends QueryDef = QueryDef>
+  extends EventEmitter
+  implements Poolable {
+  public def: Def = { all: [] } as any;
+  private archetypes = new Array<Archetype>();
+  readonly removed = new Set<number>();
+
+  __alive = false;
+
+  constructor(private game: Game) {
     super();
+    game.on('preApplyOperations', this.cleanup);
+  }
 
-    if (!def.all?.length) {
-      // TODO: if this is always true, make it required in TS
+  initialize(def: Def) {
+    if (!def.all.length) {
       throw new Error('Query "all" is required');
     }
 
-    this.allGroups = (def.all || []).map(
-      (Type) => this.game.componentManager.pools[Type.id],
+    this.def = def;
+
+    Object.values(this.game.archetypeManager.archetypes).forEach(
+      this.matchArchetype,
     );
-    this.noneGroups = (def.none || []).map(
-      (Type) => this.game.componentManager.pools[Type.id],
-    );
+    this.game.archetypeManager.on('archetypeCreated', this.matchArchetype);
   }
 
-  forEach(callback: (ent: Entity) => any) {
-    // if there are multiple .all constraints, choose
-    // the smallest one as the primary iterator
-    const [primary, ...rest] = this.allGroups.sort((a, b) => a.size - b.size);
-    let components: ComponentInstance[] = [];
-    primary.forEach((instance, entityId) => {
-      components[primary.ComponentType.id] = instance;
-    });
-  }
-
-  evaluate(entity: Entity) {
-    const hasAll =
-      !this.def.all?.length ||
-      this.def.all.every((spec) => entity.maybeGet(spec));
-    const pass =
-      hasAll &&
-      (!this.def.none?.length ||
-        this.def.none.every((spec) => !entity.maybeGet(spec)));
-
-    if (pass) {
-      this.add(entity);
-    } else {
-      this.remove(entity);
+  private matchArchetype = (archetype: Archetype) => {
+    if (
+      archetype.hasAll(this.def.all) &&
+      (!this.def.none || !archetype.hasSome(this.def.none))
+    ) {
+      this.archetypes.push(archetype);
+      archetype.on('entityRemoved', this.handleEntityRemoved);
+      archetype.on('entityAdded', this.handleEntityAdded);
     }
-  }
+  };
 
-  add(entity: Entity) {
-    if (this.entities.includes(entity)) return;
+  reset = () => {
+    this.archetypes = [];
+    this.def = { all: [] } as any;
+    this.game.archetypeManager.off('archetypeCreated', this.matchArchetype);
+  };
 
-    this.entities.push(entity);
-    entity.__queries.add(this);
-    logger.debug(`Added ${entity.id} to ${this.key}`);
-    this.emit('entityAdded', entity);
-  }
-
-  remove(entity: Entity) {
-    const index = this.entities.indexOf(entity);
-    if (index !== -1) {
-      this.entities.splice(index, 1);
-      entity.__queries.delete(this);
-      logger.debug(`Removed ${entity.id} from ${this.key}`);
-      this.emit('entityRemoved', entity);
-    }
-  }
-
-  get stats() {
-    return {
-      count: this.entities.length,
+  // closure provides iterator properties
+  private iterator = ((): Iterator<EntityImpostorFor<this>> => {
+    const self = this;
+    let archetypeIndex = 0;
+    let archetypeIterator: Iterator<EntityImpostor<any>> | null = null;
+    let result: IteratorResult<EntityImpostorFor<this>> = {
+      done: true,
+      value: null as any,
     };
+    return {
+      next() {
+        while (archetypeIndex < self.archetypes.length) {
+          if (!archetypeIterator) {
+            archetypeIterator = self.archetypes[archetypeIndex][
+              Symbol.iterator
+            ]();
+          }
+          result = archetypeIterator.next();
+          // result is assigned from the current archetype iterator result -
+          // if the archetype is done, we move on to the next archetype until
+          // we run out.
+          if (result.done) {
+            archetypeIndex++;
+            archetypeIterator = null;
+            continue;
+          }
+          return result;
+        }
+
+        result.done = true;
+        archetypeIndex = 0;
+        return result;
+      },
+    } as Iterator<EntityImpostorFor<this>>;
+  })();
+
+  [Symbol.iterator]() {
+    return this.iterator;
   }
 
-  static defToKey(def: QueryDef): string {
-    return `a:${(def.all ?? [])
-      .map((s) => s.name)
-      .sort()
-      .toString()},n:${(def.none ?? [])
-      .map((s) => s.name)
-      .sort()
-      .toString()}`;
-  }
+  private cleanup = () => {
+    this.removed.clear();
+  };
 
-  get key(): string {
-    return Query.defToKey(this.def);
+  private handleEntityAdded = (entityId: number) => {
+    this.removed.delete(entityId);
+  };
+
+  private handleEntityRemoved = (entityId: number) => {
+    this.removed.add(entityId);
+  };
+
+  toString() {
+    return JSON.stringify(this.def);
   }
 }

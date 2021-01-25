@@ -1,8 +1,8 @@
 import { b2Contact, b2ContactListener, b2Fixture } from '@flyover/box2d';
 
 export type EntityContact = {
-  selfId: string | null;
-  otherId: string | null;
+  selfId: number | null;
+  otherId: number | null;
   contact: b2Contact;
   otherFixture: b2Fixture;
   selfFixture: b2Fixture;
@@ -18,8 +18,8 @@ const contactPairCache = new WeakMap<
 function getOrCreatePair(contact: b2Contact) {
   const aData = contact.GetFixtureA().GetUserData() ?? {};
   const bData = contact.GetFixtureB().GetUserData() ?? {};
-  const aId = (aData.entityId as string) || null;
-  const bId = (bData.entityId as string) || null;
+  const aId = (aData.entityId as number) || null;
+  const bId = (bData.entityId as number) || null;
   const key = `${aId}<->${bId}`;
 
   let pair = contactPairCache.get(contact);
@@ -62,7 +62,7 @@ type EntityContactListeners = {
 };
 
 export class ContactListener implements b2ContactListener {
-  private entityListeners: Record<string, EntityContactListeners> = {};
+  private entityListeners: Record<number, EntityContactListeners> = {};
   /** @private */
   BeginContact(contact: b2Contact) {
     this.invokeListeners(contact, 'onBeginContact');
@@ -91,11 +91,11 @@ export class ContactListener implements b2ContactListener {
     return;
   }
 
-  subscribe = (entityId: string, listeners: EntityContactListeners) => {
+  subscribe = (entityId: number, listeners: EntityContactListeners) => {
     this.entityListeners[entityId] = listeners;
   };
 
-  unsubscribe = (entityId: string) => {
+  unsubscribe = (entityId: number) => {
     delete this.entityListeners[entityId];
   };
 

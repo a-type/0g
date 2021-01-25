@@ -9,14 +9,18 @@ import {
   b2World,
 } from '@flyover/box2d';
 import { ContactListener, EntityContact } from './ContactListener';
-import * as components from './components';
+import {
+  BodyConfig,
+  Body,
+  World,
+  WorldConfig,
+  Transform,
+  Contacts,
+  ContactsCache,
+} from './components';
 import { createCapsule } from './utils';
 
-function assignBodyConfig(
-  body: b2Body,
-  config: components.BodyConfig,
-  id: string
-) {
+function assignBodyConfig(body: b2Body, config: BodyConfig, id: number) {
   const {
     // TODO: verify assumptions about defaults
     isStatic = false,
@@ -36,7 +40,7 @@ function assignBodyConfig(
   return body;
 }
 
-function createFixtureDef(config: components.BodyConfig, id: string) {
+function createFixtureDef(config: BodyConfig, id: number) {
   const { density, restitution, friction, shape } = config;
 
   const fix = new b2FixtureDef();
@@ -86,97 +90,105 @@ function applyFixtures(body: b2Body, fix: b2FixtureDef) {
 
 export class PhysicsWorld extends System {
   newWorlds = this.query({
-    all: [components.WorldConfig],
-    none: [components.World],
+    all: [WorldConfig],
+    none: [World],
   });
   worlds = this.query({
-    all: [components.World],
+    all: [World],
     none: [],
   });
   bodies = this.query({
-    all: [components.Body, components.Transform],
+    all: [Body, Transform],
     none: [],
   });
   bodiesWithContacts = this.query({
-    all: [components.Contacts, components.ContactsCache],
+    all: [Contacts, ContactsCache],
     none: [],
   });
   newBodies = this.query({
-    all: [components.BodyConfig, components.Transform],
-    none: [components.Body],
+    all: [BodyConfig, Transform],
+    none: [Body],
   });
   oldBodies = this.query({
-    all: [components.Body],
-    none: [components.BodyConfig],
+    all: [Body],
+    none: [BodyConfig],
   });
 
-  // TODO: multi world support? right now all bodies are added to first world.
-  private get defaultWorldEntity() {
-    return this.worlds.entities[0];
-  }
-  private get defaultWorld() {
-    return this.defaultWorldEntity?.get(components.World);
-  }
+  /**
+   * Stores the current Box2D world
+   */
+  world: b2World | null = null;
+  contacts: ContactListener | null = null;
 
-  initWorlds = this.step(this.newWorlds, (worldEntity) => {
-    const worldConfig = worldEntity.get(components.WorldConfig);
+  initWorlds = this.step(this.newWorlds, (components, entityId) => {
+    const worldConfig = components.get(WorldConfig);
     const w = new b2World(worldConfig.gravity);
     const c = new ContactListener();
     w.SetContactListener(c);
-    worldEntity.add(components.World, {
+    this.game.add(entityId, World, {
       value: w,
       contacts: c,
     });
+    // store the world to the cached state
+    this.world = w;
+    this.contacts = c;
   });
 
-  initBodies = this.step(this.newBodies, (bodyEntity) => {
-    if (!this.defaultWorld) {
+  initBodies = this.step(this.newBodies, (components, entityId) => {
+    if (!this.world) {
       // TODO: overkill?
-      console.warn(`No physics world when initializing ${bodyEntity.id}`);
+      console.warn(`No physics world when initializing ${entityId}`);
       return;
     }
 
-    const bodyConfig = bodyEntity.get(components.BodyConfig);
-    const transform = bodyEntity.get(components.Transform);
+    const bodyConfig = components.get(BodyConfig);
+    const transform = components.get(Transform);
 
-    const b = this.defaultWorld.value.CreateBody();
+    const b = this.world.CreateBody();
     const { x, y, angle } = transform;
     b.SetAngle(angle);
     b.SetPositionXY(x, y);
 
-    assignBodyConfig(b, bodyConfig, bodyEntity.id);
-    applyFixtures(b, createFixtureDef(bodyConfig, bodyEntity.id));
+    assignBodyConfig(b, bodyConfig, entityId);
+    applyFixtures(b, createFixtureDef(bodyConfig, entityId));
 
-    bodyEntity.add(components.Body, {
+    this.game.add(entityId, Body, {
       value: b,
     });
 
     // subscribe contacts if present
-    const contacts = bodyEntity.maybeGet(components.Contacts);
+    const contacts = this.game.componentManager.get(entityId, Contacts);
     if (contacts) {
-      bodyEntity.add(components.ContactsCache);
-      const contactsCache = bodyEntity.get(components.ContactsCache);
-      this.defaultWorld.contacts.subscribe(bodyEntity.id, contactsCache);
+      this.game.componentManager.add(entityId, ContactsCache);
+      const contactsCache = this.game.componentManager.get(
+        entityId,
+        ContactsCache
+      )!;
+      this.contacts?.subscribe(entityId, contactsCache);
     }
   });
 
-  updateBodies = this.watch(this.bodies, [components.BodyConfig], (entity) => {
-    const bodyConfig = entity.get(components.BodyConfig);
-    const body = entity.get(components.Body);
+  updateBodies = this.watch(
+    this.bodies,
+    [BodyConfig],
+    (components, entityId) => {
+      const bodyConfig = components.get(BodyConfig);
+      const body = components.get(Body);
 
-    assignBodyConfig(body.value, bodyConfig, entity.id);
-    applyFixtures(body.value, createFixtureDef(bodyConfig, entity.id));
+      assignBodyConfig(body.value, bodyConfig, entityId);
+      applyFixtures(body.value, createFixtureDef(bodyConfig, entityId));
+    }
+  );
+
+  teardownBodies = this.step(this.oldBodies, (components, entityId) => {
+    if (!this.world) return;
+    const body = components.get(Body);
+    this.world.DestroyBody(body.value);
+    this.contacts?.unsubscribe(entityId);
   });
 
-  teardownBodies = this.step(this.oldBodies, (bodyEntity) => {
-    if (!this.defaultWorld) return;
-    const body = bodyEntity.get(components.Body);
-    this.defaultWorld.value.DestroyBody(body.value);
-    this.defaultWorld.contacts.unsubscribe(bodyEntity.id);
-  });
-
-  resetContacts = this.step(this.bodiesWithContacts, (bodyEntity) => {
-    const contacts = bodyEntity.get(components.Contacts);
+  resetContacts = this.step(this.bodiesWithContacts, (components) => {
+    const contacts = components.get(Contacts);
 
     contacts.set({
       began: [],
@@ -184,9 +196,9 @@ export class PhysicsWorld extends System {
     });
   });
 
-  stepWorlds = this.step(this.worlds, (worldEntity) => {
-    const world = worldEntity.get(components.World);
-    const worldConfig = worldEntity.get(components.WorldConfig);
+  stepWorlds = this.step(this.worlds, (components) => {
+    const world = components.get(World);
+    const worldConfig = components.get(WorldConfig);
     world.value.Step(
       1 / 60.0,
       worldConfig.velocityIterations,
@@ -194,9 +206,9 @@ export class PhysicsWorld extends System {
     );
   });
 
-  updateTransforms = this.step(this.bodies, (bodyEntity) => {
-    const transform = bodyEntity.get(components.Transform);
-    const body = bodyEntity.get(components.Body);
+  updateTransforms = this.step(this.bodies, (components) => {
+    const transform = components.get(Transform);
+    const body = components.get(Body);
 
     const pos = body.value.GetPosition();
 
@@ -208,9 +220,9 @@ export class PhysicsWorld extends System {
   });
 
   // update contacts
-  updateContacts = this.step(this.bodiesWithContacts, (bodyEntity) => {
-    const cached = bodyEntity.getWritable(components.ContactsCache);
-    const contacts = bodyEntity.getWritable(components.Contacts);
+  updateContacts = this.step(this.bodiesWithContacts, (components) => {
+    const cached = components.get(ContactsCache);
+    const contacts = components.get(Contacts);
 
     let c: EntityContact;
     for (c of cached.began.values()) {
@@ -223,6 +235,11 @@ export class PhysicsWorld extends System {
       contacts.current = contacts.current.filter((v) => v.id !== c.id);
       contacts.ended.push(c);
       cached.ended.delete(c);
+    }
+
+    if (cached.began.size || cached.ended.size) {
+      cached.mark();
+      contacts.mark();
     }
   });
 }
