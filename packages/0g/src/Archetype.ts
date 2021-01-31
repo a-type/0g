@@ -40,8 +40,6 @@ export class Archetype<
   private components: Array<Array<Component>>;
   /** Maps entity ID -> index in component arrays */
   private entityIndexLookup = new Array<number | undefined>();
-  readonly added = new Array<number>();
-  readonly removed = new Array<number>();
   private entityImpostor = new EntityImpostor<ComponentInstanceFor<T[0]>>();
 
   constructor(public id: string) {
@@ -75,7 +73,6 @@ export class Archetype<
           self.components.map(
             (l) => l[entityIndex],
           ) as InstanceListFromTypes<T>,
-          self.added.includes(entityId),
         );
         entityIndex++;
         return result;
@@ -87,6 +84,7 @@ export class Archetype<
     return this.iterator;
   }
 
+  // TODO: FIX INDEX LOGIC IN THESE TWO
   addEntity(entityId: number, componentInstances: InstanceListFromTypes<T>) {
     // this is the index ("column") of this entity in the table
     const index = this.entityIds.length;
@@ -98,7 +96,6 @@ export class Archetype<
     this.components.forEach((componentArray, componentIndex) => {
       componentArray[index] = componentInstances[componentIndex];
     });
-    this.added.push(entityId);
     this.emit('entityAdded', entityId);
   }
 
@@ -120,7 +117,6 @@ export class Archetype<
     this.components.forEach((componentArray, componentIndex) => {
       componentData[componentIndex] = componentArray.splice(index, 1)[0];
     });
-    this.removed.push(entityId);
     this.emit('entityRemoved', entityId);
     return componentData;
   }
@@ -132,11 +128,7 @@ export class Archetype<
       return null;
     }
 
-    this.entityImpostor.__set(
-      entityId,
-      this.getComponentList(entityIndex),
-      this.added.includes(entityId),
-    );
+    this.entityImpostor.__set(entityId, this.getComponentList(entityIndex));
     return this.entityImpostor;
   }
 
@@ -158,8 +150,7 @@ export class Archetype<
   };
 
   cleanup = () => {
-    this.added.length = 0;
-    this.removed.length = 0;
+    // TODO: remove if unused
   };
 
   get entities() {
@@ -185,6 +176,10 @@ export class Archetype<
       if (i === '1') count++;
     }
     return count;
+  }
+
+  toString() {
+    return this.id;
   }
 }
 
@@ -329,7 +324,6 @@ export class ArchetypeManager extends EventEmitter {
     let archetype = this.archetypes[id];
     if (!archetype) {
       archetype = this.archetypes[id] = new Archetype(id);
-      this.game.on('preApplyOperations', archetype.cleanup);
       this.emit('archetypeCreated', archetype);
     }
     return archetype;

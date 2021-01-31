@@ -22,22 +22,34 @@ export type QueryIteratorFn<Q extends Query> = {
   (entity: EntityImpostor<ComponentsFromQueryDef<QueryDefForQuery<Q>>>): any;
 };
 
-type EntityImpostorFor<Q extends Query> = EntityImpostor<
-  ComponentsFromQueryDef<QueryDefForQuery<Q>>
+type EntityImpostorFor<Q extends QueryDef> = EntityImpostor<
+  ComponentsFromQueryDef<Q>
 >;
+
+type QueryEvents = {
+  entityAdded(entityId: number): void;
+  entityRemoved(entityId: number): void;
+};
+
+export declare interface Query {
+  on<U extends keyof QueryEvents>(ev: U, cb: QueryEvents[U]): this;
+  off<U extends keyof QueryEvents>(ev: U, cb: QueryEvents[U]): this;
+  emit<U extends keyof QueryEvents>(
+    ev: U,
+    ...args: Parameters<QueryEvents[U]>
+  ): boolean;
+}
 
 export class Query<Def extends QueryDef = QueryDef>
   extends EventEmitter
   implements Poolable {
   public def: Def = { all: [] } as any;
   private archetypes = new Array<Archetype>();
-  readonly removed = new Set<number>();
 
   __alive = false;
 
   constructor(private game: Game) {
     super();
-    game.on('preApplyOperations', this.cleanup);
   }
 
   initialize(def: Def) {
@@ -71,11 +83,11 @@ export class Query<Def extends QueryDef = QueryDef>
   };
 
   // closure provides iterator properties
-  private iterator = ((): Iterator<EntityImpostorFor<this>> => {
+  private iterator = ((): Iterator<EntityImpostorFor<Def>> => {
     const self = this;
     let archetypeIndex = 0;
     let archetypeIterator: Iterator<EntityImpostor<any>> | null = null;
-    let result: IteratorResult<EntityImpostorFor<this>> = {
+    let result: IteratorResult<EntityImpostorFor<Def>> = {
       done: true,
       value: null as any,
     };
@@ -103,26 +115,26 @@ export class Query<Def extends QueryDef = QueryDef>
         archetypeIndex = 0;
         return result;
       },
-    } as Iterator<EntityImpostorFor<this>>;
+    } as Iterator<EntityImpostorFor<Def>>;
   })();
 
   [Symbol.iterator]() {
     return this.iterator;
   }
 
-  private cleanup = () => {
-    this.removed.clear();
-  };
-
   private handleEntityAdded = (entityId: number) => {
-    this.removed.delete(entityId);
+    this.emit('entityAdded', entityId);
   };
 
   private handleEntityRemoved = (entityId: number) => {
-    this.removed.add(entityId);
+    this.emit('entityRemoved', entityId);
   };
 
   toString() {
     return JSON.stringify(this.def);
+  }
+
+  get archetypeIds() {
+    return this.archetypes.map((a) => a.id);
   }
 }

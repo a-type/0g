@@ -5,4 +5,5 @@ module.exports = {
     '**/__tests__/**/*.(spec|test).[jt]s?(x)',
     '**/?(*.)+(spec|test).[jt]s?(x)',
   ],
+  clearMocks: true,
 };

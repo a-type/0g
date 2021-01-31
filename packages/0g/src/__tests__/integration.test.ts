@@ -1,8 +1,9 @@
-import { time } from 'console';
 import { Component } from '../components';
 import { EntityImpostor } from '../EntityImpostor';
 import { Game } from '../Game';
 import { System } from '../System';
+
+const delta = 16 + 2 / 3;
 
 describe('integration tests', () => {
   class OutputComponent extends Component {
@@ -74,9 +75,8 @@ describe('integration tests', () => {
     const a = game.create();
     game.add(a, OutputComponent);
 
-    const timestamp = 16 + 2 / 3;
     console.log('Step 1');
-    game.step(timestamp);
+    game.step(delta);
 
     let entity: EntityImpostor<OutputComponent>;
 
@@ -86,7 +86,7 @@ describe('integration tests', () => {
     expect(entity.get(OutputComponent).removablePresent).toBe(false);
 
     console.log('Step 2');
-    game.step(timestamp);
+    game.step(delta);
     entity = game.get(a)!;
 
     expect(entity.get(OutputComponent).removablePresent).toBe(false);
@@ -94,7 +94,7 @@ describe('integration tests', () => {
     expect(entity.maybeGet(RemovableComponent)!.stepsSinceAdded).toBe(0);
 
     console.log('Step 3');
-    game.step(timestamp);
+    game.step(delta);
     entity = game.get(a)!;
 
     expect(entity.get(OutputComponent).removablePresent).toBe(true);
@@ -102,7 +102,7 @@ describe('integration tests', () => {
     expect(entity.maybeGet(RemovableComponent)!.stepsSinceAdded).toBe(1);
 
     console.log('Step 4');
-    game.step(timestamp);
+    game.step(delta);
     entity = game.get(a)!;
 
     expect(entity.get(OutputComponent).removablePresent).toBe(true);
@@ -110,7 +110,7 @@ describe('integration tests', () => {
     expect(entity.maybeGet(RemovableComponent)!.stepsSinceAdded).toBe(2);
 
     console.log('Step 5');
-    game.step(timestamp);
+    game.step(delta);
     entity = game.get(a)!;
 
     // hasn't been updated yet
@@ -118,7 +118,7 @@ describe('integration tests', () => {
     expect(entity.maybeGet(RemovableComponent)).toBe(null);
 
     console.log('Step 6');
-    game.step(timestamp);
+    game.step(delta);
     entity = game.get(a)!;
 
     expect(entity.get(OutputComponent).removablePresent).toBe(false);
