@@ -4,7 +4,7 @@ import { Game } from './Game';
 import { Poolable } from './internal/objectPool';
 import { Archetype } from './Archetype';
 import { Filter, isFilter, has } from './filters';
-import { QueryIterator } from './QueryIterator';
+import { EntityImpostorFor, QueryIterator } from './QueryIterator';
 
 export type UserQueryDef = Array<Filter<ComponentType> | ComponentType>;
 
@@ -12,6 +12,14 @@ export interface QueryEvents {
   entityAdded(entityId: number): void;
   entityRemoved(entityId: number): void;
 }
+
+type ExtractQueryDef<Q extends Query> = Q extends Query<infer Def>
+  ? Def
+  : never;
+
+export type QueryIteratorFn<Q extends Query> = {
+  (ent: EntityImpostorFor<ExtractQueryDef<Q>>): void;
+};
 
 export declare interface Query {
   on<U extends keyof QueryEvents>(ev: U, cb: QueryEvents[U]): this;

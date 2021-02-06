@@ -11,7 +11,7 @@ type ComponentsFromQueryDef<Def extends UserQueryDef> = {
     : never;
 }[0];
 
-type EntityImpostorFor<Q extends UserQueryDef> = EntityImpostor<
+export type EntityImpostorFor<Q extends UserQueryDef> = EntityImpostor<
   ComponentsFromQueryDef<Q>
 >;
 

@@ -1,8 +1,8 @@
 import { useContext } from 'react';
-import { worldContext } from '../World';
+import { gameContext } from '../GameProvider';
 
 export function useGame() {
-  const game = useContext(worldContext);
+  const game = useContext(gameContext);
   if (!game) {
     throw new Error('Must be called within World');
   }
