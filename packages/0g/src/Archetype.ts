@@ -11,14 +11,6 @@ type InstanceListFromTypes<T extends Array<ComponentType>> = {
     : never;
 };
 
-type ArchetypeIterator<T extends ComponentType[]> = {
-  (
-    components: InstanceListFromTypes<T>,
-    entityId: number,
-    details: { added: boolean },
-  ): void;
-};
-
 export interface ArchetypeEvents {
   entityAdded(entityId: number): any;
   entityRemoved(entityId: number): any;
@@ -147,6 +139,14 @@ export class Archetype<
       if (this.id[T.id] === '1') return true;
     }
     return false;
+  };
+
+  includes = (Type: ComponentType) => {
+    return this.id[Type.id] === '1';
+  };
+
+  omits = (Type: ComponentType) => {
+    return !this.includes(Type);
   };
 
   cleanup = () => {

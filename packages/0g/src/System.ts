@@ -1,5 +1,5 @@
 import { Game } from './Game';
-import { Query, QueryDef, QueryIteratorFn } from './Query';
+import { UserQueryDef } from './Query';
 
 export class FrameHandle {
   active = true;
@@ -14,8 +14,12 @@ export class System {
   private handles: Record<string, FrameHandle[]> = {};
   constructor(protected game: Game) {}
 
-  query(queryDef: QueryDef) {
-    return this.game.queryManager.create(queryDef);
+  query<Def extends UserQueryDef>(queryDef: Def) {
+    return this.game.queryManager.create<Def>(queryDef);
+  }
+
+  trackingQuery<Def extends UserQueryDef>(queryDef: Def) {
+    return this.game.queryManager.createTracking<Def>(queryDef);
   }
 
   register(

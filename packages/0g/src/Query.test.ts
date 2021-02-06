@@ -1,5 +1,6 @@
 import { ArchetypeManager } from './Archetype';
 import { Component } from './components';
+import { not, Not } from './filters';
 import { Game } from './Game';
 import { Query } from './Query';
 import {
@@ -8,8 +9,6 @@ import {
   ComponentC,
   ComponentD,
 } from './__tests__/componentFixtures';
-
-jest.mock('./logger');
 
 const withA = 100;
 const withAB = 101;
@@ -51,10 +50,8 @@ describe('Query', () => {
   });
 
   it('registers Archetypes which match included components', () => {
-    const query = new Query(game);
-    query.initialize({
-      all: [ComponentA],
-    });
+    const query = new Query<[typeof ComponentA]>(game);
+    query.initialize([ComponentA]);
     expect.assertions(4);
     expect(query.archetypeIds).toEqual([
       '01000000000',
@@ -67,11 +64,8 @@ describe('Query', () => {
   });
 
   it('registers Archetypes which omit excluded components', () => {
-    const query = new Query(game);
-    query.initialize({
-      all: [ComponentA],
-      none: [ComponentB],
-    });
+    const query = new Query<[typeof ComponentA, Not<typeof ComponentB>]>(game);
+    query.initialize([ComponentA, not(ComponentB)]);
     expect.assertions(5);
     expect(query.archetypeIds).toEqual(['01000000000', '01001000000']);
     for (const ent of query) {
@@ -81,10 +75,8 @@ describe('Query', () => {
   });
 
   it('registers late-added Archetypes', () => {
-    const query = new Query(game);
-    query.initialize({
-      all: [ComponentB],
-    });
+    const query = new Query<[typeof ComponentB]>(game);
+    query.initialize([ComponentB]);
     addEntity(200, [new ComponentB(), new ComponentD()]);
     addEntity(201, [new ComponentC(), new ComponentD()]);
     expect.assertions(4);
@@ -104,10 +96,8 @@ describe('Query', () => {
     const onRemoved = jest.fn();
 
     beforeEach(() => {
-      query = new Query(game);
-      query.initialize({
-        all: [ComponentA],
-      });
+      query = new Query<[typeof ComponentA]>(game);
+      query.initialize([ComponentA]);
       query.on('entityAdded', onAdded);
       query.on('entityRemoved', onRemoved);
     });
