@@ -8,10 +8,10 @@ import { QueryIterator } from './QueryIterator';
 
 export type UserQueryDef = Array<Filter<ComponentType> | ComponentType>;
 
-type QueryEvents = {
+export interface QueryEvents {
   entityAdded(entityId: number): void;
   entityRemoved(entityId: number): void;
-};
+}
 
 export declare interface Query {
   on<U extends keyof QueryEvents>(ev: U, cb: QueryEvents[U]): this;

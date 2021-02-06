@@ -52,25 +52,34 @@ describe('TrackingQuery', () => {
   });
 
   it('maintains a list of matching entities', () => {
+    const onChange = jest.fn();
+
     const query = new TrackingQuery<[typeof ComponentA]>(game);
+    query.on('change', onChange);
     query.initialize([ComponentA]);
     expect(query.entities).toEqual([withA, withAB, withAD]);
     expect(query.added).toEqual([withA, withAB, withAD]);
+    expect(onChange).toHaveBeenCalledTimes(1);
 
     // reset frame tracking
     game.emit('preApplyOperations');
+    onChange.mockClear();
+
     expect(query.entities).toEqual([withA, withAB, withAD]);
     expect(query.added).toEqual([]);
     expect(query.removed).toEqual([]);
 
     // simple add case
     game.archetypeManager.addComponent(withC, new ComponentA());
+    game.emit('stepComplete');
 
     expect(query.entities).toEqual([withA, withAB, withAD, withC]);
     expect(query.added).toEqual([withC]);
     expect(query.removed).toEqual([]);
+    expect(onChange).toHaveBeenCalledTimes(1);
 
     game.emit('preApplyOperations');
+    onChange.mockClear();
 
     expect(query.entities).toEqual([withA, withAB, withAD, withC]);
     expect(query.added).toEqual([]);
@@ -78,12 +87,15 @@ describe('TrackingQuery', () => {
 
     // simple remove case
     game.archetypeManager.removeComponent(withAD, ComponentA.id);
+    game.emit('stepComplete');
 
     expect(query.entities).toEqual([withA, withAB, withC]);
     expect(query.added).toEqual([]);
     expect(query.removed).toEqual([withAD]);
+    expect(onChange).toHaveBeenCalledTimes(1);
 
     game.emit('preApplyOperations');
+    onChange.mockClear();
 
     expect(query.entities).toEqual([withA, withAB, withC]);
     expect(query.added).toEqual([]);
@@ -91,9 +103,11 @@ describe('TrackingQuery', () => {
 
     // internal move archetype case
     game.archetypeManager.addComponent(withA, new ComponentC());
+    game.emit('stepComplete');
 
     expect(query.entities).toEqual([withAB, withC, withA]);
     expect(query.added).toEqual([]);
     expect(query.removed).toEqual([]);
+    expect(onChange).not.toHaveBeenCalled();
   });
 });
