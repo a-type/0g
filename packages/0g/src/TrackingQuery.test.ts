@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { ArchetypeManager } from './Archetype';
+import { ArchetypeManager } from './ArchetypeManager';
 import { Component } from './components';
 import { Game } from './Game';
 import { TrackingQuery } from './TrackingQuery';
@@ -58,7 +58,7 @@ describe('TrackingQuery', () => {
     query.on('change', onChange);
     query.initialize([ComponentA]);
     expect(query.entities).toEqual([withA, withAB, withAD]);
-    expect(query.added).toEqual([withA, withAB, withAD]);
+    expect(query.addedIds).toEqual([withA, withAB, withAD]);
     expect(onChange).toHaveBeenCalledTimes(1);
 
     // reset frame tracking
@@ -66,48 +66,48 @@ describe('TrackingQuery', () => {
     onChange.mockClear();
 
     expect(query.entities).toEqual([withA, withAB, withAD]);
-    expect(query.added).toEqual([]);
-    expect(query.removed).toEqual([]);
+    expect(query.addedIds).toEqual([]);
+    expect(query.removedIds).toEqual([]);
 
     // simple add case
     game.archetypeManager.addComponent(withC, new ComponentA());
     game.emit('stepComplete');
 
     expect(query.entities).toEqual([withA, withAB, withAD, withC]);
-    expect(query.added).toEqual([withC]);
-    expect(query.removed).toEqual([]);
+    expect(query.addedIds).toEqual([withC]);
+    expect(query.removedIds).toEqual([]);
     expect(onChange).toHaveBeenCalledTimes(1);
 
     game.emit('preApplyOperations');
     onChange.mockClear();
 
     expect(query.entities).toEqual([withA, withAB, withAD, withC]);
-    expect(query.added).toEqual([]);
-    expect(query.removed).toEqual([]);
+    expect(query.addedIds).toEqual([]);
+    expect(query.removedIds).toEqual([]);
 
     // simple remove case
     game.archetypeManager.removeComponent(withAD, ComponentA.id);
     game.emit('stepComplete');
 
     expect(query.entities).toEqual([withA, withAB, withC]);
-    expect(query.added).toEqual([]);
-    expect(query.removed).toEqual([withAD]);
+    expect(query.addedIds).toEqual([]);
+    expect(query.removedIds).toEqual([withAD]);
     expect(onChange).toHaveBeenCalledTimes(1);
 
     game.emit('preApplyOperations');
     onChange.mockClear();
 
     expect(query.entities).toEqual([withA, withAB, withC]);
-    expect(query.added).toEqual([]);
-    expect(query.removed).toEqual([]);
+    expect(query.addedIds).toEqual([]);
+    expect(query.removedIds).toEqual([]);
 
     // internal move archetype case
     game.archetypeManager.addComponent(withA, new ComponentC());
     game.emit('stepComplete');
 
     expect(query.entities).toEqual([withAB, withC, withA]);
-    expect(query.added).toEqual([]);
-    expect(query.removed).toEqual([]);
+    expect(query.addedIds).toEqual([]);
+    expect(query.removedIds).toEqual([]);
     expect(onChange).not.toHaveBeenCalled();
   });
 });

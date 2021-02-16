@@ -1,4 +1,4 @@
-import { useGame } from '0g-react';
+import { useGame, useQuery } from '@0g/react';
 import * as React from 'react';
 import { List, ListItem } from './components/List';
 import { useForceUpdate } from './hooks/useForceUpdate';
@@ -8,18 +8,7 @@ import shallow from 'zustand/shallow';
 export type EntityListProps = {};
 
 export function EntityList({}: EntityListProps) {
-  const update = useForceUpdate();
-
-  const game = useGame();
-
-  React.useEffect(() => {
-    game.entities.on('entityAdded', update);
-    game.entities.on('entityRemoved', update);
-    return () => {
-      game.entities.off('entityAdded', update);
-      game.entities.off('entityRemoved', update);
-    };
-  }, []);
+  const allEntities = useQuery([]);
 
   const [selectedId, select] = useStore(
     (s) => [s.selectedEntityId, s.api.selectEntity],
@@ -28,14 +17,14 @@ export function EntityList({}: EntityListProps) {
 
   return (
     <List css={{ width: '100%' }}>
-      {game.entities.entityList.map((entity) => (
+      {allEntities.map((entityId) => (
         <ListItem
           as="button"
-          key={entity.id}
-          state={entity.id === selectedId ? 'selected' : 'default'}
-          onClick={() => select(entity.id)}
+          key={entityId}
+          state={entityId === selectedId ? 'selected' : 'default'}
+          onClick={() => select(entityId)}
         >
-          {entity.id}
+          {entityId}
         </ListItem>
       ))}
     </List>

@@ -1,6 +1,6 @@
 import React, { memo, useEffect, useState } from 'react';
 import { Entity } from '0g';
-import { usePlayState, useQuery } from '0g-react';
+import { usePlayState, useQuery } from '@0g/react';
 import { RectangleBodyShape } from '0g-box2d';
 import { useBodyRef } from '../../hooks/useBodyRef';
 import { Button } from '../../components/Button';

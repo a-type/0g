@@ -47,10 +47,6 @@ export class Query<Def extends UserQueryDef = UserQueryDef>
   };
 
   initialize(def: Def) {
-    if (!def.length) {
-      throw new Error('Query definition cannot be empty');
-    }
-
     this.def = this.processDef(def);
 
     Object.values(this.game.archetypeManager.archetypes).forEach(
@@ -80,7 +76,7 @@ export class Query<Def extends UserQueryDef = UserQueryDef>
 
   reset = () => {
     this.archetypes.length = 0;
-    this.def = { all: [] } as any;
+    this.def = [];
     this.game.archetypeManager.off('archetypeCreated', this.matchArchetype);
   };
 

@@ -16,6 +16,7 @@ export class IdManager {
       if (this.allocatedCount >= SIGNIFIER_MASK) {
         throw new Error('Ran out of IDs');
       }
+      // FIXME: incrementing first means ids start at 1
       id = ++this.allocatedCount;
     }
     return id!;

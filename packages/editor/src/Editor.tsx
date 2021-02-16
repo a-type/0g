@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Game } from '0g';
-import { World } from '0g-react';
+import { GameProvider } from '@0g/react';
 import { EntityList } from './EntityList';
 import {
   Panel,
@@ -18,7 +18,7 @@ export type EditorProps = {
 
 export function Editor({ game }: EditorProps) {
   return (
-    <World game={game}>
+    <GameProvider value={game}>
       <PanelSurface>
         <Panel anchor="left">
           <PanelContent>
@@ -36,6 +36,6 @@ export function Editor({ game }: EditorProps) {
           <PanelToggle />
         </Panel>
       </PanelSurface>
-    </World>
+    </GameProvider>
   );
 }

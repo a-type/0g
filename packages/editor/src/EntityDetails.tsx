@@ -1,5 +1,4 @@
-import { Entity } from '0g';
-import { useGame } from '0g-react';
+import { useGame } from '@0g/react';
 import * as React from 'react';
 import { AddComponentButton } from './AddComponentButton';
 import { List, ListItem } from './components/List';
@@ -7,6 +6,7 @@ import { PanelHeader } from './components/Panel';
 import { useForceUpdate } from './hooks/useForceUpdate';
 import { ComponentEditor } from './ComponentEditor';
 import { useStore } from './useStore';
+import { Component } from '0g';
 
 export type EntityDetailsProps = {
   children?: React.ReactNode;
@@ -18,23 +18,40 @@ export function EntityDetails({}: EntityDetailsProps) {
   const entityId = useStore((s) => s.selectedEntityId);
   const game = useGame();
 
-  const entity = entityId && game.get(entityId);
+  const [components, setComponents] = React.useState(new Array<Component>());
 
   // rerender if stores change
   React.useEffect(() => {
     if (!entityId) return;
-    function updateIfEntity(entity: Entity) {
-      if (entity.id === entityId) update();
+
+    const ent = game.get(entityId);
+    setComponents(Array.from(ent?.components.values() ?? []));
+
+    function onAddComponent(id: number, component: Component) {
+      if (id !== entityId) return;
+      setComponents((cur) => {
+        cur[component.type] = component;
+        return cur;
+      });
     }
-    game.entities.on('entityComponentAdded', updateIfEntity);
-    game.entities.on('entityComponentRemoved', updateIfEntity);
+
+    function onRemoveComponent(id: number, componentType: number) {
+      if (id !== entityId) return;
+      setComponents((cur) => {
+        delete cur[componentType];
+        return cur;
+      });
+    }
+
+    game.archetypeManager.on('entityComponentAdded', onAddComponent);
+    game.archetypeManager.on('entityComponentRemoved', onRemoveComponent);
     return () => {
-      game.entities.off('entityComponentAdded', updateIfEntity);
-      game.entities.off('entityComponentRemoved', updateIfEntity);
+      game.archetypeManager.off('entityComponentAdded', onAddComponent);
+      game.archetypeManager.off('entityComponentRemoved', onRemoveComponent);
     };
   }, [entityId]);
 
-  if (!entityId || !entity) {
+  if (!entityId) {
     return <React.Fragment>No entity</React.Fragment>;
   }
 
@@ -45,12 +62,11 @@ export function EntityDetails({}: EntityDetailsProps) {
         <AddComponentButton entityId={entityId} />
       </PanelHeader>
       <List css={{ minWidth: 400 }}>
-        {entity.__stores.map((Store) => {
-          const store = entity.maybeGet(Store);
-          if (!store) return null;
+        {components.map((comp) => {
+          if (!comp) return null;
           return (
-            <ListItem key={Store.name}>
-              <ComponentEditor component={store} />
+            <ListItem key={Object.getPrototypeOf(comp).name}>
+              <ComponentEditor component={comp} />
             </ListItem>
           );
         })}

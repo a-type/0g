@@ -1,4 +1,4 @@
-import { useWatch } from '0g-react';
+import { useWatch } from '@0g/react';
 import * as React from 'react';
 import {
   Field,

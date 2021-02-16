@@ -1,9 +1,9 @@
 import { Game } from './Game';
 import { ObjectPool } from './internal/objectPool';
-import { ComponentInstance } from './components';
+import { Component } from './components';
 import { ComponentTypeFor } from './components/types';
 
-export class ComponentPool<T extends ComponentInstance> {
+export class ComponentPool<T extends Component> {
   private pool: ObjectPool<T>;
 
   constructor(private Type: ComponentTypeFor<T>, private game: Game) {

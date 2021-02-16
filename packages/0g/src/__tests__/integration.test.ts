@@ -34,7 +34,7 @@ describe('integration tests', () => {
         const removable = ent.get(RemovableComponent);
 
         // set removablePresent flag
-        if (this.hasRemovable.added.includes(ent.id)) {
+        if (this.hasRemovable.addedIds.includes(ent.id)) {
           logger.debug('Setting removablePresent flag');
           output.removablePresent = true;
         }
@@ -50,7 +50,7 @@ describe('integration tests', () => {
         }
       }
 
-      for (const entId of this.hasRemovable.removed) {
+      for (const entId of this.hasRemovable.removedIds) {
         logger.debug(`Removed: iterating on ${entId}`);
         const entity = this.game.get(entId);
         if (!entity) continue;

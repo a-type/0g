@@ -1,5 +1,5 @@
 {
-  "name": "0g-editor",
+  "name": "@0g/editor",
   "version": "0.0.4",
   "description": "Runtime editor for 0g games",
   "main": "dist/index.js",
@@ -14,13 +14,13 @@
   "license": "MIT",
   "peerDependencies": {
     "0g": "0.0.2",
-    "0g-react": "0.0.2",
+    "@0g/react": "0.0.2",
     "react": "^17.0.0",
     "react-dom": "^17.0.0"
   },
   "devDependencies": {
     "0g": "link:../0g",
-    "0g-react": "link:../react",
+    "@0g/react": "link:../react",
     "@babel/core": "^7.12.10",
     "@storybook/addon-actions": "^6.1.11",
     "@storybook/addon-essentials": "^6.1.11",

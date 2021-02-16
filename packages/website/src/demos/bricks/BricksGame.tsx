@@ -1,10 +1,10 @@
 import * as React from 'react';
 import { Game } from '0g';
-import { World } from '0g-react';
+import { World } from '@0g/react';
 import { components } from './components';
 import * as renderers from './renderers';
 import * as systems from './systems';
-import { Editor } from '0g-editor';
+import { Editor } from '@0g/editor';
 
 const game = new Game({
   components,

@@ -3,7 +3,7 @@ import { ComponentTypeFor } from './components/types';
 
 export class EntityImpostor<QueriedComponents extends Component = Component> {
   private _id = 0;
-  private components = new Map<number, Component>();
+  readonly components = new Map<number, Component>();
 
   get id() {
     return this._id;
@@ -14,6 +14,7 @@ export class EntityImpostor<QueriedComponents extends Component = Component> {
     components: Component[] | Readonly<Component[]>,
   ) => {
     this._id = entityId;
+    this.components.clear();
     components.forEach((comp) => {
       this.components.set(comp.type, comp);
     });

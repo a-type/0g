@@ -1,4 +1,4 @@
-import { ArchetypeManager } from './Archetype';
+import { ArchetypeManager } from './ArchetypeManager';
 import { Component } from './components';
 import { not, Not } from './filters';
 import { Game } from './Game';
