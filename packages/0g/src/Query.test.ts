@@ -90,6 +90,66 @@ describe('Query', () => {
     }
   });
 
+  it('maintains a list of matching entities', () => {
+    const onChange = jest.fn();
+
+    const query = new Query<[typeof ComponentA]>(game);
+    query.on('change', onChange);
+    query.initialize([ComponentA]);
+    expect(query.entities).toEqual([withA, withAB, withAD]);
+    expect(query.addedIds).toEqual([withA, withAB, withAD]);
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    // reset frame tracking
+    game.emit('preApplyOperations');
+    onChange.mockClear();
+
+    expect(query.entities).toEqual([withA, withAB, withAD]);
+    expect(query.addedIds).toEqual([]);
+    expect(query.removedIds).toEqual([]);
+
+    // simple add case
+    game.archetypeManager.addComponent(withC, new ComponentA());
+    game.emit('stepComplete');
+
+    expect(query.entities).toEqual([withA, withAB, withAD, withC]);
+    expect(query.addedIds).toEqual([withC]);
+    expect(query.removedIds).toEqual([]);
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    game.emit('preApplyOperations');
+    onChange.mockClear();
+
+    expect(query.entities).toEqual([withA, withAB, withAD, withC]);
+    expect(query.addedIds).toEqual([]);
+    expect(query.removedIds).toEqual([]);
+
+    // simple remove case
+    game.archetypeManager.removeComponent(withAD, ComponentA.id);
+    game.emit('stepComplete');
+
+    expect(query.entities).toEqual([withA, withAB, withC]);
+    expect(query.addedIds).toEqual([]);
+    expect(query.removedIds).toEqual([withAD]);
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    game.emit('preApplyOperations');
+    onChange.mockClear();
+
+    expect(query.entities).toEqual([withA, withAB, withC]);
+    expect(query.addedIds).toEqual([]);
+    expect(query.removedIds).toEqual([]);
+
+    // internal move archetype case
+    game.archetypeManager.addComponent(withA, new ComponentC());
+    game.emit('stepComplete');
+
+    expect(query.entities).toEqual([withAB, withC, withA]);
+    expect(query.addedIds).toEqual([]);
+    expect(query.removedIds).toEqual([]);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   describe('events', () => {
     let query: Query;
     const onAdded = jest.fn();

@@ -2,8 +2,6 @@ import { EventEmitter } from 'events';
 import { Component, ComponentType } from './components';
 import { ComponentInstanceFor } from './components/types';
 import { EntityImpostor } from './EntityImpostor';
-import { Game } from './Game';
-import { logger } from './logger';
 
 type InstanceListFromTypes<T extends Array<ComponentType>> = {
   [K in keyof T]: T[K] extends ComponentType

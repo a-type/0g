@@ -1,3 +1,4 @@
+import { ComponentInstanceFor } from '../components';
 import { EntityImpostor } from '../EntityImpostor';
 import { ObjectPool } from '../internal/objectPool';
 import { State } from './State';
@@ -10,7 +11,9 @@ export class StatePool<T extends State<any>> {
     this.pool = new ObjectPool<T>(() => new this.Type());
   }
 
-  async acquire(entity: EntityImpostor<StateComponentDeps<T>>) {
+  async acquire(
+    entity: EntityImpostor<ComponentInstanceFor<StateComponentDeps<T>[0]>>,
+  ) {
     const instance = this.pool.acquire();
     await instance.initialize(entity);
     return instance;
