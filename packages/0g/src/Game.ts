@@ -8,8 +8,6 @@ import { IdManager } from './IdManager';
 import { ArchetypeManager } from './ArchetypeManager';
 import { Operation, OperationQueue } from './operations';
 import { EntityImpostor } from './EntityImpostor';
-import { StateManager } from './state/StateManager';
-import { StateCreator } from './state/State';
 
 export type GameConstants = {
   maxComponentId: number;
@@ -41,7 +39,6 @@ export class Game extends EventEmitter {
   private _archetypeManager: ArchetypeManager;
   private _operationQueue: OperationQueue = [];
   private _componentManager: ComponentManager;
-  private _stateManager: StateManager;
 
   // TODO: configurable?
   private _phases = ['preStep', 'step', 'postStep'] as const;
@@ -60,19 +57,16 @@ export class Game extends EventEmitter {
     components,
     systems = [],
     globals = new Map(),
-    states = [],
   }: {
     components: ComponentType[];
     systems?: SystemSpec[];
     globals?: Map<string, any>;
-    states?: StateCreator<any>[];
   }) {
     super();
     this.setMaxListeners(Infinity);
     this._componentManager = new ComponentManager(components, this);
     this._queryManager = new QueryManager(this);
     this._archetypeManager = new ArchetypeManager(this);
-    this._stateManager = new StateManager(states);
     this._systems = systems;
     this._systemInstances = systems.map((Sys) => new Sys(this));
     this.globals = globals;
