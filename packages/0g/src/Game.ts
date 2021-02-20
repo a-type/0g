@@ -81,9 +81,6 @@ export class Game extends EventEmitter {
   get archetypeManager() {
     return this._archetypeManager;
   }
-  get stateManager() {
-    return this._stateManager;
-  }
   get systems() {
     return this._systems;
   }
