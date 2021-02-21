@@ -1,9 +1,10 @@
 import { ComponentInstanceFor, ComponentType } from './components';
 import { EntityImpostor } from './EntityImpostor';
-import { Filter } from './filters';
-import { Query, UserQueryDef } from './Query';
+import { Changed, Filter } from './filters';
+import { Game } from './Game';
+import { Query, QueryComponentFilter } from './Query';
 
-type ComponentsFromQueryDef<Def extends UserQueryDef> = {
+type ComponentsFromQueryDef<Def extends QueryComponentFilter> = {
   [K in keyof Def]: Def[K] extends Filter<infer C>
     ? ComponentInstanceFor<C>
     : Def[K] extends ComponentType
@@ -11,11 +12,11 @@ type ComponentsFromQueryDef<Def extends UserQueryDef> = {
     : never;
 }[0];
 
-export type EntityImpostorFor<Q extends UserQueryDef> = EntityImpostor<
+export type EntityImpostorFor<Q extends QueryComponentFilter> = EntityImpostor<
   ComponentsFromQueryDef<Q>
 >;
 
-export class QueryIterator<Def extends UserQueryDef>
+export class QueryIterator<Def extends QueryComponentFilter>
   implements Iterator<EntityImpostorFor<Def>> {
   private archetypeIndex = 0;
   private archetypeIterator: Iterator<EntityImpostor<any>> | null = null;
@@ -23,8 +24,22 @@ export class QueryIterator<Def extends UserQueryDef>
     done: true,
     value: null as any,
   };
+  private changedFilters: Changed<any>[];
 
-  constructor(private query: Query<Def>) {}
+  constructor(private query: Query<Def>, private game: Game) {
+    this.changedFilters = query.filter.filter(
+      (f) => f.kind === 'changed',
+    ) as Changed<any>[];
+  }
+
+  private checkChangeFilter() {
+    if (this.changedFilters.length === 0) return true;
+    return this.changedFilters.some((filter) => {
+      this.game.componentManager.wasChangedLastFrame(
+        this.result.value.get(filter.Component.prototype.constructor).id,
+      );
+    });
+  }
 
   next() {
     while (this.archetypeIndex < this.query.archetypes.length) {
@@ -34,6 +49,13 @@ export class QueryIterator<Def extends UserQueryDef>
         ]();
       }
       this.result = this.archetypeIterator.next();
+
+      // if changed() filter(s) are present, ensure a change has
+      // occurred in the specified components
+      if (!this.checkChangeFilter()) {
+        continue;
+      }
+
       // result is assigned from the current archetype iterator result -
       // if the archetype is done, we move on to the next archetype until
       // we run out

@@ -1,40 +1,22 @@
 import { Game } from './Game';
-import { QueryComponentFilter } from './Query';
+import { Query, QueryComponentFilter } from './Query';
 
-export class FrameHandle {
-  active = true;
-  constructor(private handle: () => any) {}
+export function makeSystem<Filter extends QueryComponentFilter>(
+  filter: Filter,
+  run: (query: Query<Filter>, game: Game) => void,
+  phase: 'step' | 'preStep' | 'postStep' = 'step',
+) {
+  return function (game: Game) {
+    const query = game.queryManager.create(filter);
 
-  run() {
-    this.handle();
-  }
+    function onPhase() {
+      run(query, game);
+    }
+
+    game.on(phase, onPhase);
+
+    return () => {
+      game.off(phase, onPhase);
+    };
+  };
 }
-
-export class System {
-  private handles: Record<string, FrameHandle[]> = {};
-  constructor(protected game: Game) {}
-
-  query<Def extends QueryComponentFilter>(queryDef: Def) {
-    return this.game.queryManager.create<Def>(queryDef);
-  }
-
-  register(
-    handler: () => any,
-    event: 'preStep' | 'postStep' | 'step' = 'step',
-  ) {
-    const handle = new FrameHandle(handler);
-    this.handles[event] = this.handles[event] ?? [];
-    this.handles[event].push(handle);
-    return handle;
-  }
-
-  __gamePerformPhase(event: 'preStep' | 'postStep' | 'step') {
-    this.handles[event]?.forEach((handle) => {
-      if (handle.active) {
-        handle.run();
-      }
-    });
-  }
-}
-
-export type SystemSpec = { new (game: Game): System };

@@ -1,9 +1,10 @@
 import { Component } from '../components';
+import { makeEffect } from '../Effect';
 import { EntityImpostor } from '../EntityImpostor';
-import { not } from '../filters';
+import { changed, not } from '../filters';
 import { Game } from '../Game';
 import { logger } from '../logger';
-import { System } from '../System';
+import { makeSystem } from '../System';
 
 const delta = 16 + 2 / 3;
 
@@ -18,55 +19,61 @@ describe('integration tests', () => {
 
   const stepsTillToggle = 3;
 
-  class RemoveSyncSystem extends System {
-    hasRemovable = this.trackingQuery([RemovableComponent, OutputComponent]);
-    notHasRemovable = this.query([not(RemovableComponent), OutputComponent]);
+  const SetFlagEffect = makeEffect(
+    [RemovableComponent, OutputComponent],
+    (ent) => {
+      logger.debug('Setting removablePresent: true');
+      ent.get(OutputComponent).set({ removablePresent: true });
 
-    run = this.register(() => {
-      for (const ent of this.notHasRemovable) {
-        logger.debug('Adding RemovableComponent');
-        this.game.add(ent.id, RemovableComponent);
-      }
+      return () => {
+        logger.debug('Setting removablePresent: false');
+        ent.get(OutputComponent).set({ removablePresent: false });
+      };
+    },
+  );
 
-      for (const ent of this.hasRemovable) {
-        logger.debug(`Iterating on ${ent.id}`);
-        const output = ent.get(OutputComponent);
-        const removable = ent.get(RemovableComponent);
+  const ReAddRemovableEffect = makeEffect(
+    [not(RemovableComponent)],
+    (ent, game) => {
+      logger.debug('Adding RemovableComponent');
+      game.add(ent.id, RemovableComponent);
+    },
+  );
 
-        // set removablePresent flag
-        if (this.hasRemovable.addedIds.includes(ent.id)) {
-          logger.debug('Setting removablePresent flag');
-          output.removablePresent = true;
-        }
-
-        // increment steps till toggle
+  const IncrementRemoveTimerSystem = makeSystem(
+    [RemovableComponent],
+    (query) => {
+      let ent;
+      for (ent of query) {
+        const comp = ent.get(RemovableComponent);
         logger.debug('Incrementing stepsSinceAdded');
-        removable.stepsSinceAdded++;
+        comp.set({ stepsSinceAdded: comp.stepsSinceAdded + 1 });
+      }
+    },
+  );
 
-        // if expired, remove it
-        if (removable.stepsSinceAdded >= stepsTillToggle) {
+  const RemoveSystem = makeSystem(
+    [changed(RemovableComponent)],
+    (query, game) => {
+      let ent;
+      for (ent of query) {
+        if (ent.get(RemovableComponent).stepsSinceAdded >= stepsTillToggle) {
           logger.debug('Removing RemovableComponent');
-          this.game.remove(ent.id, RemovableComponent);
+          game.remove(ent.id, RemovableComponent);
         }
       }
-
-      for (const entId of this.hasRemovable.removedIds) {
-        logger.debug(`Removed: iterating on ${entId}`);
-        const entity = this.game.get(entId);
-        if (!entity) continue;
-
-        // set flag
-        const output = entity.get(OutputComponent);
-        logger.debug('Clearing removablePresent flag');
-        output.removablePresent = false;
-      }
-    });
-  }
+    },
+  );
 
   it('adds and removes components, and queries for those operations', () => {
     const game = new Game({
       components: [OutputComponent, RemovableComponent],
-      systems: [RemoveSyncSystem],
+      systems: [
+        SetFlagEffect,
+        ReAddRemovableEffect,
+        IncrementRemoveTimerSystem,
+        RemoveSystem,
+      ],
     });
 
     const a = game.create();
@@ -75,9 +82,7 @@ describe('integration tests', () => {
     logger.debug('Step 1');
     game.step(delta);
 
-    let entity: EntityImpostor<OutputComponent>;
-
-    entity = game.get(a)!;
+    let entity: EntityImpostor<OutputComponent> = game.get(a)!;
 
     expect(entity.maybeGet(OutputComponent)).not.toBe(null);
     expect(entity.get(OutputComponent).removablePresent).toBe(false);
@@ -86,7 +91,7 @@ describe('integration tests', () => {
     game.step(delta);
     entity = game.get(a)!;
 
-    expect(entity.get(OutputComponent).removablePresent).toBe(false);
+    expect(entity.get(OutputComponent).removablePresent).toBe(true);
     expect(entity.maybeGet(RemovableComponent)).not.toBe(null);
     expect(entity.maybeGet(RemovableComponent)!.stepsSinceAdded).toBe(0);
 
@@ -110,15 +115,14 @@ describe('integration tests', () => {
     game.step(delta);
     entity = game.get(a)!;
 
-    // hasn't been updated yet
-    expect(entity.get(OutputComponent).removablePresent).toBe(true);
+    expect(entity.get(OutputComponent).removablePresent).toBe(false);
     expect(entity.maybeGet(RemovableComponent)).toBe(null);
 
     logger.debug('Step 6');
     game.step(delta);
     entity = game.get(a)!;
 
-    expect(entity.get(OutputComponent).removablePresent).toBe(false);
+    expect(entity.get(OutputComponent).removablePresent).toBe(true);
     expect(entity.maybeGet(RemovableComponent)).not.toBe(null);
     expect(entity.maybeGet(RemovableComponent)!.stepsSinceAdded).toBe(0);
   });

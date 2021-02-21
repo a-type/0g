@@ -28,7 +28,24 @@ export const not = <Comp extends ComponentType>(
   __isFilter: true,
 });
 
-export type Filter<Comp extends ComponentType> = Not<Comp> | Has<Comp>;
+export type Changed<Comp extends ComponentType> = {
+  Component: Comp;
+  kind: 'changed';
+  __isFilter: true;
+};
+
+export const changed = <Comp extends ComponentType>(
+  Component: Comp,
+): Changed<Comp> => ({
+  Component,
+  kind: 'changed',
+  __isFilter: true,
+});
+
+export type Filter<Comp extends ComponentType> =
+  | Not<Comp>
+  | Has<Comp>
+  | Changed<Comp>;
 
 export type ComponentForFilter<Fil extends Filter<any>> = Fil extends Not<
   infer C

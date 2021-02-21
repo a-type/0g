@@ -7,7 +7,8 @@ import { Game } from './Game';
  * the presence of Components assigned to Entities.
  */
 export class ComponentManager {
-  pools = new Array<ComponentPool<Component>>();
+  private pools = new Array<ComponentPool<Component>>();
+  private changed = new Array<boolean>();
 
   constructor(public componentTypes: ComponentType[], private game: Game) {
     // initialize pools, one for each ComponentType by ID. ComponentType IDs are incrementing integers.
@@ -21,14 +22,25 @@ export class ComponentManager {
         ComponentInstanceFor<typeof Type>
       >(Type, this.game);
     });
+
+    // TODO: right time to do this?
+    game.on('preApplyOperations', this.resetChanged);
   }
 
   acquire = (typeId: number, initialValues: any) => {
-    return this.pools[typeId].acquire(initialValues);
+    const component = this.pools[typeId].acquire(initialValues);
+    component.id = this.game.idManager.get();
+    component.on('change', this.markChanged);
+    return component;
   };
 
   release = (instance: Component) => {
+    instance.off('change', this.markChanged);
     return this.pools[instance.type].release(instance);
+  };
+
+  wasChangedLastFrame = (componentInstanceId: number) => {
+    return !!this.changed[componentInstanceId];
   };
 
   /**
@@ -48,4 +60,12 @@ export class ComponentManager {
       {} as any,
     );
   }
+
+  private markChanged = (componentId: number) => {
+    this.changed[componentId] = true;
+  };
+
+  private resetChanged = () => {
+    this.changed.length = 0;
+  };
 }

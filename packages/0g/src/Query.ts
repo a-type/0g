@@ -5,23 +5,20 @@ import { Poolable } from './internal/objectPool';
 import { Archetype } from './Archetype';
 import { Filter, isFilter, has } from './filters';
 import { EntityImpostorFor, QueryIterator } from './QueryIterator';
-import { StateType } from './state/types';
 
 export type QueryComponentFilter = Array<Filter<ComponentType> | ComponentType>;
-export type QueryState = Array<StateType>;
 
 export interface QueryEvents {
   entityAdded(entityId: number): void;
   entityRemoved(entityId: number): void;
-  change(): void;
 }
 
 type ExtractQueryDef<Q extends Query> = Q extends Query<infer Def>
   ? Def
   : never;
 
-export type QueryIteratorFn<Q extends Query> = {
-  (ent: EntityImpostorFor<ExtractQueryDef<Q>>): void;
+export type QueryIteratorFn<Q extends Query, Returns = void> = {
+  (ent: EntityImpostorFor<ExtractQueryDef<Q>>): Returns;
 };
 
 export declare interface Query {
@@ -34,13 +31,11 @@ export declare interface Query {
 }
 
 export class Query<
-    FilterDef extends QueryComponentFilter = QueryComponentFilter,
-    StateDef extends QueryState = QueryState
+    FilterDef extends QueryComponentFilter = QueryComponentFilter
   >
   extends EventEmitter
   implements Poolable {
   public filter: Filter<ComponentType>[] = [];
-  public state: QueryState = [];
   readonly archetypes = new Array<Archetype>();
   private trackedEntities: number[] = [];
   private addedThisFrame: number[] = [];
@@ -57,8 +52,6 @@ export class Query<
     this.addedIterable = {
       [Symbol.iterator]: () => new AddedIterator(game, this),
     };
-    this.on('entityAdded', this.addToList);
-    this.on('entityRemoved', this.removeFromList);
     // when do we reset the frame-specific tracking?
     // right before we populate new values from this frame's operations.
     game.on('preApplyOperations', this.resetStepTracking);
@@ -71,9 +64,8 @@ export class Query<
     return userDef.map((fil) => (isFilter(fil) ? fil : has(fil)));
   };
 
-  initialize(def: FilterDef, state: StateDef = [] as any) {
+  initialize(def: FilterDef) {
     this.filter = this.processDef(def);
-    this.state = state;
 
     Object.values(this.game.archetypeManager.archetypes).forEach(
       this.matchArchetype,
@@ -90,9 +82,7 @@ export class Query<
     for (const ent of this) {
       this.trackedEntities.push(ent.id);
       this.addedThisFrame.push(ent.id);
-    }
-    if (this.trackedEntities.length) {
-      this.emit('change');
+      this.emitAdded(ent.id);
     }
   }
 
@@ -105,6 +95,9 @@ export class Query<
           break;
         case 'not':
           match = archetype.omits(filter.Component);
+          break;
+        case 'changed':
+          match = archetype.includes(filter.Component);
           break;
       }
       if (!match) return;
@@ -122,18 +115,18 @@ export class Query<
   };
 
   // closure provides iterator properties
-  private iterator = new QueryIterator<FilterDef>(this);
+  private iterator = new QueryIterator<FilterDef>(this, this.game);
 
   [Symbol.iterator]() {
     return this.iterator;
   }
 
   private handleEntityAdded = (entityId: number) => {
-    this.emit('entityAdded', entityId);
+    this.addToList(entityId);
   };
 
   private handleEntityRemoved = (entityId: number) => {
-    this.emit('entityRemoved', entityId);
+    this.removeFromList(entityId);
   };
 
   toString() {
@@ -191,9 +184,17 @@ export class Query<
 
   private processAddRemove = () => {
     if (this.changesThisFrame) {
-      this.emit('change');
-      // TODO: iterate add list, get EntityImpostors, run process
+      this.addedThisFrame.forEach(this.emitAdded);
+      this.removedThisFrame.forEach(this.emitRemoved);
     }
+  };
+
+  private emitAdded = (entityId: number) => {
+    this.emit('entityAdded', entityId);
+  };
+
+  private emitRemoved = (entityId: number) => {
+    this.emit('entityRemoved', entityId);
   };
 }
 

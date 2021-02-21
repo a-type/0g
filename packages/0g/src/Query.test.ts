@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events';
 import { ArchetypeManager } from './ArchetypeManager';
 import { Component } from './components';
 import { not, Not } from './filters';
@@ -18,7 +19,7 @@ const withD = 104;
 const withAD = 105;
 
 describe('Query', () => {
-  let game: Game;
+  let game: Game = null as any;
 
   // bootstrapping
   function addEntity(eid: number, components: Component[]) {
@@ -36,9 +37,8 @@ describe('Query', () => {
         },
       },
     } as any);
-    game = {
-      archetypeManager,
-    } as any;
+    game = new EventEmitter() as any;
+    (game as any).archetypeManager = archetypeManager;
 
     // bootstrap some testing archetypes
     addEntity(withA, [new ComponentA()]);
@@ -91,18 +91,20 @@ describe('Query', () => {
   });
 
   it('maintains a list of matching entities', () => {
-    const onChange = jest.fn();
+    const onAdded = jest.fn();
+    const onRemoved = jest.fn();
 
     const query = new Query<[typeof ComponentA]>(game);
-    query.on('change', onChange);
+    query.on('entityAdded', onAdded);
+    query.on('entityRemoved', onRemoved);
     query.initialize([ComponentA]);
     expect(query.entities).toEqual([withA, withAB, withAD]);
     expect(query.addedIds).toEqual([withA, withAB, withAD]);
-    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onAdded).toHaveBeenCalledTimes(3);
 
     // reset frame tracking
     game.emit('preApplyOperations');
-    onChange.mockClear();
+    onAdded.mockClear();
 
     expect(query.entities).toEqual([withA, withAB, withAD]);
     expect(query.addedIds).toEqual([]);
@@ -115,10 +117,10 @@ describe('Query', () => {
     expect(query.entities).toEqual([withA, withAB, withAD, withC]);
     expect(query.addedIds).toEqual([withC]);
     expect(query.removedIds).toEqual([]);
-    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onAdded).toHaveBeenCalledTimes(1);
 
     game.emit('preApplyOperations');
-    onChange.mockClear();
+    onAdded.mockClear();
 
     expect(query.entities).toEqual([withA, withAB, withAD, withC]);
     expect(query.addedIds).toEqual([]);
@@ -131,10 +133,10 @@ describe('Query', () => {
     expect(query.entities).toEqual([withA, withAB, withC]);
     expect(query.addedIds).toEqual([]);
     expect(query.removedIds).toEqual([withAD]);
-    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onRemoved).toHaveBeenCalledTimes(1);
 
     game.emit('preApplyOperations');
-    onChange.mockClear();
+    onAdded.mockClear();
 
     expect(query.entities).toEqual([withA, withAB, withC]);
     expect(query.addedIds).toEqual([]);
@@ -147,7 +149,7 @@ describe('Query', () => {
     expect(query.entities).toEqual([withAB, withC, withA]);
     expect(query.addedIds).toEqual([]);
     expect(query.removedIds).toEqual([]);
-    expect(onChange).not.toHaveBeenCalled();
+    expect(onAdded).not.toHaveBeenCalled();
   });
 
   describe('events', () => {
@@ -160,28 +162,30 @@ describe('Query', () => {
       query.initialize([ComponentA]);
       query.on('entityAdded', onAdded);
       query.on('entityRemoved', onRemoved);
+      game.emit('preApplyOperations');
     });
 
     it('emits entityAdded events when an entity is added to matching Archetype', () => {
       addEntity(200, [new ComponentA()]);
       addEntity(201, [new ComponentA(), new ComponentC()]);
       addEntity(202, [new ComponentD()]);
-      expect(onAdded).toHaveBeenCalledTimes(3);
+      game.emit('stepComplete');
+      expect(onAdded).toHaveBeenCalledTimes(2);
       expect(onAdded).toHaveBeenNthCalledWith(1, 200);
       expect(onAdded).toHaveBeenNthCalledWith(2, 201);
-      expect(onAdded).toHaveBeenNthCalledWith(3, 201);
     });
 
     it('emits entityRemoved events when an entity is removed from matching Archetype', () => {
       game.archetypeManager.removeComponent(withAB, ComponentA.id);
+      game.emit('stepComplete');
       expect(onRemoved).toHaveBeenCalledWith(withAB);
       expect(onAdded).not.toHaveBeenCalled();
     });
 
-    it('emits entityRemoved and entityAdded in order when entity is moved between matching Archetypes', () => {
+    it('does not emit added/removed when entity is moved between matching Archetypes', () => {
       game.archetypeManager.removeComponent(withAB, ComponentB.id);
-      expect(onRemoved).toHaveBeenCalledWith(withAB);
-      expect(onAdded).toHaveBeenCalledWith(withAB);
+      expect(onRemoved).not.toHaveBeenCalled();
+      expect(onAdded).not.toHaveBeenCalled();
     });
   });
 });

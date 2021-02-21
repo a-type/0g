@@ -2,8 +2,8 @@ import { EventEmitter } from 'events';
 import { Poolable } from '../internal/objectPool';
 
 export declare interface Component {
-  on(event: 'change', callback: () => void): this;
-  off(event: 'change', callback: () => void): this;
+  on(event: 'change', callback: (id: number) => void): this;
+  off(event: 'change', callback: (id: number) => void): this;
 }
 
 export class Component extends EventEmitter implements Poolable {
@@ -13,6 +13,7 @@ export class Component extends EventEmitter implements Poolable {
   __alive = true;
   ___version = 0;
   __type: number = 0;
+  id: number = 0;
 
   constructor() {
     super();
@@ -23,10 +24,6 @@ export class Component extends EventEmitter implements Poolable {
     return this.__type;
   }
 
-  get __version() {
-    return this.___version;
-  }
-
   set<T extends Component>(this: T, values: Partial<T>) {
     Object.assign(this, values);
     this.mark();
@@ -34,12 +31,12 @@ export class Component extends EventEmitter implements Poolable {
 
   mark() {
     this.___version++;
-    this.emit('change');
+    this.emit('change', this.id);
   }
 
   reset = () => {
     this.set(Object.getPrototypeOf(this).constructor.defaultValues);
     this.___version = 0;
-    this.emit('change');
+    this.emit('change', this.id);
   };
 }

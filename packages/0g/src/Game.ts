@@ -3,11 +3,11 @@ import * as input from './input';
 import { QueryManager } from './QueryManager';
 import { Component, ComponentInstanceFor, ComponentType } from './components';
 import { ComponentManager } from './ComponentManager';
-import { System, SystemSpec } from './System';
 import { IdManager } from './IdManager';
 import { ArchetypeManager } from './ArchetypeManager';
 import { Operation, OperationQueue } from './operations';
 import { EntityImpostor } from './EntityImpostor';
+import { ResourceManager } from './resources/ResourceManager';
 
 export type GameConstants = {
   maxComponentId: number;
@@ -32,13 +32,13 @@ export declare interface Game {
 }
 
 export class Game extends EventEmitter {
-  private _systems: SystemSpec[];
-  private _systemInstances: System[];
   private _queryManager: QueryManager;
   private _idManager = new IdManager();
   private _archetypeManager: ArchetypeManager;
   private _operationQueue: OperationQueue = [];
   private _componentManager: ComponentManager;
+  private _resourceManager = new ResourceManager();
+  private _runnableCleanups: (() => void)[];
 
   // TODO: configurable?
   private _phases = ['preStep', 'step', 'postStep'] as const;
@@ -59,7 +59,7 @@ export class Game extends EventEmitter {
     globals = new Map(),
   }: {
     components: ComponentType[];
-    systems?: SystemSpec[];
+    systems?: ((game: Game) => () => void)[];
     globals?: Map<string, any>;
   }) {
     super();
@@ -67,8 +67,7 @@ export class Game extends EventEmitter {
     this._componentManager = new ComponentManager(components, this);
     this._queryManager = new QueryManager(this);
     this._archetypeManager = new ArchetypeManager(this);
-    this._systems = systems;
-    this._systemInstances = systems.map((Sys) => new Sys(this));
+    this._runnableCleanups = systems.map((sys) => sys(this));
     this.globals = globals;
   }
 
@@ -81,9 +80,6 @@ export class Game extends EventEmitter {
   get archetypeManager() {
     return this._archetypeManager;
   }
-  get systems() {
-    return this._systems;
-  }
   get delta() {
     return this._delta;
   }
@@ -95,6 +91,9 @@ export class Game extends EventEmitter {
   }
   get constants() {
     return this._constants;
+  }
+  get resourceManager() {
+    return this._resourceManager;
   }
 
   create = () => {
@@ -145,23 +144,11 @@ export class Game extends EventEmitter {
   step = (delta: number) => {
     this._delta = delta;
     this._phases.forEach((phase) => {
-      this._systemInstances.forEach(this.phaseRunners[phase]);
       this.emit(phase);
     });
     this.emit('preApplyOperations');
     this.flushOperations();
     this.emit('stepComplete');
-  };
-
-  private phaseSystemRunner = (phase: 'preStep' | 'step' | 'postStep') => (
-    system: System,
-  ) => {
-    system.__gamePerformPhase(phase);
-  };
-  private phaseRunners = {
-    preStep: this.phaseSystemRunner('preStep'),
-    step: this.phaseSystemRunner('step'),
-    postStep: this.phaseSystemRunner('postStep'),
   };
 
   private flushOperations = () => {
