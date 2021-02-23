@@ -1,5 +1,5 @@
 import { Game } from './Game';
-import { Query, QueryComponentFilter, QueryIteratorFn } from './Query';
+import { QueryComponentFilter } from './Query';
 import { EntityImpostorFor } from './QueryIterator';
 
 type CleanupFn = () => void | Promise<void>;

@@ -1,24 +1,21 @@
 import { Game } from './Game';
 import { ObjectPool } from './internal/objectPool';
-import { Component } from './components';
-import { ComponentTypeFor } from './components/types';
+import { GenericComponent, ComponentType } from './components';
 
-export class ComponentPool<T extends Component> {
-  private pool: ObjectPool<T>;
+export class ComponentPool<S> {
+  private pool: ObjectPool<GenericComponent<S>>;
 
-  constructor(private Type: ComponentTypeFor<T>, private game: Game) {
-    this.pool = new ObjectPool<T>(() => new this.Type());
+  constructor(private Type: ComponentType<S>, private game: Game) {
+    this.pool = new ObjectPool<GenericComponent<S>>(() => new this.Type());
   }
 
-  acquire(initial?: Partial<T>) {
+  acquire(initial: Partial<S> = {}, id: number) {
     const instance = this.pool.acquire();
-    if (initial) {
-      Object.assign(instance, initial);
-    }
+    this.Type.initialize(instance, initial, id);
     return instance;
   }
 
-  release(instance: T) {
+  release(instance: GenericComponent<S>) {
     this.pool.release(instance);
   }
 

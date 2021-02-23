@@ -1,12 +1,12 @@
 import { Component, ComponentType } from './components';
 
-export type Has<Comp extends ComponentType> = {
+export type Has<Comp extends ComponentType<any>> = {
   Component: Comp;
   kind: 'has';
   __isFilter: true;
 };
 
-export const has = <Comp extends ComponentType>(
+export const has = <Comp extends ComponentType<any>>(
   Component: Comp,
 ): Has<Comp> => ({
   Component,
@@ -14,13 +14,13 @@ export const has = <Comp extends ComponentType>(
   __isFilter: true,
 });
 
-export type Not<Comp extends ComponentType> = {
+export type Not<Comp extends ComponentType<any>> = {
   Component: Comp;
   kind: 'not';
   __isFilter: true;
 };
 
-export const not = <Comp extends ComponentType>(
+export const not = <Comp extends ComponentType<any>>(
   Component: Comp,
 ): Not<Comp> => ({
   Component,
@@ -28,13 +28,13 @@ export const not = <Comp extends ComponentType>(
   __isFilter: true,
 });
 
-export type Changed<Comp extends ComponentType> = {
+export type Changed<Comp extends ComponentType<any>> = {
   Component: Comp;
   kind: 'changed';
   __isFilter: true;
 };
 
-export const changed = <Comp extends ComponentType>(
+export const changed = <Comp extends ComponentType<any>>(
   Component: Comp,
 ): Changed<Comp> => ({
   Component,
@@ -42,7 +42,7 @@ export const changed = <Comp extends ComponentType>(
   __isFilter: true,
 });
 
-export type Filter<Comp extends ComponentType> =
+export type Filter<Comp extends ComponentType<any>> =
   | Not<Comp>
   | Has<Comp>
   | Changed<Comp>;

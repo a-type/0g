@@ -1,5 +1,10 @@
 import { ComponentPool } from './ComponentPool';
-import { Component, ComponentInstanceFor, ComponentType } from './components';
+import {
+  Component,
+  ComponentType,
+  COMPONENT_CHANGE_HANDLE,
+  GenericComponent,
+} from './components';
 import { Game } from './Game';
 
 /**
@@ -7,20 +12,16 @@ import { Game } from './Game';
  * the presence of Components assigned to Entities.
  */
 export class ComponentManager {
-  private pools = new Array<ComponentPool<Component>>();
+  private pools = new Array<ComponentPool<any>>();
   private changed = new Array<boolean>();
 
-  constructor(public componentTypes: ComponentType[], private game: Game) {
+  constructor(public componentTypes: ComponentType<any>[], private game: Game) {
     // initialize pools, one for each ComponentType by ID. ComponentType IDs are incrementing integers.
     Object.values(componentTypes).forEach((Type) => {
       // assign an ID
       Type.id = game.idManager.get();
-      // assign default values
-      this.applyDefaultValues(Type);
       // create a pool
-      this.pools[Type.id] = new ComponentPool<
-        ComponentInstanceFor<typeof Type>
-      >(Type, this.game);
+      this.pools[Type.id] = new ComponentPool<any>(Type, this.game);
     });
 
     // TODO: right time to do this?
@@ -28,14 +29,16 @@ export class ComponentManager {
   }
 
   acquire = (typeId: number, initialValues: any) => {
-    const component = this.pools[typeId].acquire(initialValues);
-    component.id = this.game.idManager.get();
-    component.on('change', this.markChanged);
+    const component = this.pools[typeId].acquire(
+      initialValues,
+      this.game.idManager.get(),
+    );
+    component[COMPONENT_CHANGE_HANDLE] = this.markChanged;
     return component;
   };
 
-  release = (instance: Component) => {
-    instance.off('change', this.markChanged);
+  release = (instance: GenericComponent<any>) => {
+    delete instance[COMPONENT_CHANGE_HANDLE];
     return this.pools[instance.type].release(instance);
   };
 
@@ -43,26 +46,8 @@ export class ComponentManager {
     return !!this.changed[componentInstanceId];
   };
 
-  /**
-   * Determines the default values of a Component - the
-   * ones present initially on a brand new instance
-   */
-  private applyDefaultValues(Type: ComponentType) {
-    const builtins = Type.builtinKeys;
-    const instance = new Type();
-    Type.defaultValues = Object.entries(instance).reduce(
-      (acc, [key, value]) => {
-        if (!builtins.includes(key)) {
-          acc[key] = value;
-        }
-        return acc;
-      },
-      {} as any,
-    );
-  }
-
-  private markChanged = (componentId: number) => {
-    this.changed[componentId] = true;
+  private markChanged = (component: GenericComponent<any>) => {
+    this.changed[component.id] = true;
   };
 
   private resetChanged = () => {

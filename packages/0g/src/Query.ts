@@ -6,7 +6,9 @@ import { Archetype } from './Archetype';
 import { Filter, isFilter, has } from './filters';
 import { EntityImpostorFor, QueryIterator } from './QueryIterator';
 
-export type QueryComponentFilter = Array<Filter<ComponentType> | ComponentType>;
+export type QueryComponentFilter = Array<
+  Filter<ComponentType<any>> | ComponentType<any>
+>;
 
 export interface QueryEvents {
   entityAdded(entityId: number): void;
@@ -35,7 +37,7 @@ export class Query<
   >
   extends EventEmitter
   implements Poolable {
-  public filter: Filter<ComponentType>[] = [];
+  public filter: Filter<ComponentType<any>>[] = [];
   readonly archetypes = new Array<Archetype>();
   private trackedEntities: number[] = [];
   private addedThisFrame: number[] = [];
@@ -44,8 +46,6 @@ export class Query<
   private addedIterable: {
     [Symbol.iterator]: () => AddedIterator<FilterDef>;
   };
-
-  __alive = false;
 
   constructor(private game: Game) {
     super();

@@ -9,11 +9,11 @@ import { makeSystem } from '../System';
 const delta = 16 + 2 / 3;
 
 describe('integration tests', () => {
-  class OutputComponent extends Component {
+  class OutputComponent extends Component<OutputComponent>() {
     removablePresent = false;
   }
 
-  class RemovableComponent extends Component {
+  class RemovableComponent extends Component<RemovableComponent>() {
     stepsSinceAdded = 0;
   }
 
@@ -23,11 +23,16 @@ describe('integration tests', () => {
     [RemovableComponent, OutputComponent],
     (ent) => {
       logger.debug('Setting removablePresent: true');
-      ent.get(OutputComponent).set({ removablePresent: true });
+      const output = ent.get(OutputComponent);
+      ent.get(OutputComponent).update((output) => {
+        output.removablePresent = true;
+      });
 
       return () => {
         logger.debug('Setting removablePresent: false');
-        ent.get(OutputComponent).set({ removablePresent: false });
+        ent.get(OutputComponent).update((output) => {
+          output.removablePresent = false;
+        });
       };
     },
   );
@@ -45,9 +50,10 @@ describe('integration tests', () => {
     (query) => {
       let ent;
       for (ent of query) {
-        const comp = ent.get(RemovableComponent);
         logger.debug('Incrementing stepsSinceAdded');
-        comp.set({ stepsSinceAdded: comp.stepsSinceAdded + 1 });
+        ent.get(RemovableComponent).update((comp) => {
+          comp.stepsSinceAdded++;
+        });
       }
     },
   );

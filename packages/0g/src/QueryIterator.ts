@@ -3,11 +3,12 @@ import { EntityImpostor } from './EntityImpostor';
 import { Changed, Filter } from './filters';
 import { Game } from './Game';
 import { Query, QueryComponentFilter } from './Query';
+import { ComponentA, ComponentB } from './__tests__/componentFixtures';
 
 type ComponentsFromQueryDef<Def extends QueryComponentFilter> = {
   [K in keyof Def]: Def[K] extends Filter<infer C>
     ? ComponentInstanceFor<C>
-    : Def[K] extends ComponentType
+    : Def[K] extends ComponentType<any>
     ? ComponentInstanceFor<Def[K]>
     : never;
 }[0];
