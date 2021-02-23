@@ -2,7 +2,7 @@ import { ComponentPool } from './ComponentPool';
 import {
   ComponentType,
   COMPONENT_CHANGE_HANDLE,
-  GenericComponent,
+  ComponentInstance,
 } from './Component';
 import { Game } from './Game';
 
@@ -36,7 +36,7 @@ export class ComponentManager {
     return component;
   };
 
-  release = (instance: GenericComponent<any>) => {
+  release = (instance: ComponentInstance<any>) => {
     delete instance[COMPONENT_CHANGE_HANDLE];
     return this.pools[instance.type].release(instance);
   };
@@ -45,7 +45,7 @@ export class ComponentManager {
     return !!this.changed[componentInstanceId];
   };
 
-  private markChanged = (component: GenericComponent<any>) => {
+  private markChanged = (component: ComponentInstance<any>) => {
     this.changed[component.id] = true;
   };
 

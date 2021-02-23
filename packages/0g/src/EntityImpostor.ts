@@ -1,5 +1,5 @@
 import {
-  GenericComponent,
+  ComponentInstance,
   ComponentType,
   ComponentInstanceFor,
 } from './Component';
@@ -7,7 +7,7 @@ import {
 export class EntityImpostor<QueriedComponents extends ComponentType<any>> {
   private _id = 0;
   // TODO: make array
-  readonly components = new Map<number, GenericComponent<any>>();
+  readonly components = new Map<number, ComponentInstance<any>>();
 
   get id() {
     return this._id;
@@ -15,7 +15,7 @@ export class EntityImpostor<QueriedComponents extends ComponentType<any>> {
 
   __set = (
     entityId: number,
-    components: GenericComponent<any>[] | Readonly<GenericComponent<any>[]>,
+    components: ComponentInstance<any>[] | Readonly<ComponentInstance<any>[]>,
   ) => {
     this._id = entityId;
     this.components.clear();
@@ -28,7 +28,7 @@ export class EntityImpostor<QueriedComponents extends ComponentType<any>> {
     return this.components.get(Type.id)! as ComponentInstanceFor<T>;
   };
 
-  maybeGet = <T extends GenericComponent<any>>(
+  maybeGet = <T extends ComponentInstance<any>>(
     Type: ComponentType<T>,
   ): T | null => {
     return (this.components.get(Type.id) ?? null) as T | null;

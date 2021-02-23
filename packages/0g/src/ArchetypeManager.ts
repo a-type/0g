@@ -4,7 +4,7 @@ import {
   Component,
   ComponentInstanceFor,
   ComponentType,
-  GenericComponent,
+  ComponentInstance,
 } from './Component';
 import { Game } from './Game';
 import { logger } from './logger';
@@ -14,7 +14,7 @@ export interface ArchetypeManagerEvents {
   entityCreated(entityId: number): void;
   entityComponentAdded(
     entityId: number,
-    component: GenericComponent<any>,
+    component: ComponentInstance<any>,
   ): void;
   entityComponentRemoved(entityId: number, componentType: number): void;
   entityDestroyed(entityId: number): void;
@@ -63,8 +63,8 @@ export class ArchetypeManager extends EventEmitter {
   }
 
   private getInsertionIndex(
-    instanceList: GenericComponent<any>[],
-    instance: GenericComponent<any>,
+    instanceList: ComponentInstance<any>[],
+    instance: ComponentInstance<any>,
   ) {
     let insertionIndex = instanceList.findIndex((i) => i.type > instance.type);
     if (insertionIndex === -1) {

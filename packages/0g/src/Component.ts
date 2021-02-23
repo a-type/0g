@@ -47,7 +47,7 @@ function defaultInitialize<Comp>(target: any, overrides: Partial<Comp>) {
   Object.assign(target, overrides);
 }
 
-export type GenericComponent<T> = Poolable &
+export type ComponentInstance<T> = Poolable &
   T & {
     update: ComponentUpdateFn<T>;
     updated: boolean;
@@ -57,7 +57,7 @@ export type GenericComponent<T> = Poolable &
   };
 
 export type BaseComponentType<T> = {
-  new (): GenericComponent<T>;
+  new (): ComponentInstance<T>;
   id: number;
   defaults: T;
   initialize: ComponentInitializeFn<T>;
@@ -68,7 +68,7 @@ function BaseComponent<T>({ defaults }: { defaults: T }): BaseComponentType<T> {
     static id = 0;
     static defaults = defaults;
     static initialize: ComponentInitializeFn<
-      GenericComponent<T>
+      ComponentInstance<T>
     > = defaultInitialize;
 
     id = 0;
@@ -152,4 +152,4 @@ export function State<T>(defaults: T) {
 
 export type ComponentInstanceFor<
   T extends ComponentType<any>
-> = T extends ComponentType<infer Shape> ? GenericComponent<Shape> : never;
+> = T extends ComponentType<infer Shape> ? ComponentInstance<Shape> : never;

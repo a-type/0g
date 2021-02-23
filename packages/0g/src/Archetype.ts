@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import {
   ComponentInstanceFor,
   ComponentType,
-  GenericComponent,
+  ComponentInstance,
 } from './Component';
 import { EntityImpostor } from './EntityImpostor';
 
@@ -30,7 +30,7 @@ export class Archetype<
   T extends ComponentType<any>[] = ComponentType<any>[]
 > extends EventEmitter {
   private entityIds = new Array<number>();
-  private components: Array<Array<GenericComponent<any>>>;
+  private components: Array<Array<ComponentInstance<any>>>;
   /** Maps entity ID -> index in component arrays */
   private entityIndexLookup = new Array<number | undefined>();
   private entityImpostor = new EntityImpostor<ComponentInstanceFor<T[0]>>();
@@ -39,9 +39,9 @@ export class Archetype<
     super();
     // initialize component storage arrays
     const numTypes = this.countOnes(id);
-    this.components = new Array<Array<GenericComponent<any>>>(numTypes)
+    this.components = new Array<Array<ComponentInstance<any>>>(numTypes)
       .fill([])
-      .map(() => new Array<GenericComponent<any>>());
+      .map(() => new Array<ComponentInstance<any>>());
   }
 
   private iterator = (() => {
@@ -107,7 +107,7 @@ export class Archetype<
 
     this.entityIds.splice(index, 1);
     const componentData = new Array<
-      GenericComponent<any>
+      ComponentInstance<any>
     >() as InstanceListFromTypes<T>;
     this.components.forEach((componentArray, componentIndex) => {
       componentData[componentIndex] = componentArray.splice(index, 1)[0];
@@ -161,7 +161,7 @@ export class Archetype<
   }
 
   private _tmpComponentList: InstanceListFromTypes<T> = new Array<
-    GenericComponent<any>
+    ComponentInstance<any>
   >() as InstanceListFromTypes<T>;
   private getComponentList = (
     entityIndex: number,

@@ -4,7 +4,7 @@ import { QueryManager } from './QueryManager';
 import {
   ComponentInstanceFor,
   ComponentType,
-  GenericComponent,
+  ComponentInstance,
 } from './Component';
 import { ComponentManager } from './ComponentManager';
 import { IdManager } from './IdManager';
@@ -162,7 +162,7 @@ export class Game extends EventEmitter {
   };
 
   private applyOperation = (operation: Operation) => {
-    let instance: GenericComponent<any>;
+    let instance: ComponentInstance<any>;
     switch (operation.op) {
       case 'addComponent':
         instance = this.componentManager.acquire(
