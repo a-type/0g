@@ -1,6 +1,10 @@
-import { GenericComponent, ComponentType } from './components';
+import {
+  GenericComponent,
+  ComponentType,
+  ComponentInstanceFor,
+} from './components';
 
-export class EntityImpostor<QueriedComponents extends GenericComponent<any>> {
+export class EntityImpostor<QueriedComponents extends ComponentType<any>> {
   private _id = 0;
   // TODO: make array
   readonly components = new Map<number, GenericComponent<any>>();
@@ -20,8 +24,8 @@ export class EntityImpostor<QueriedComponents extends GenericComponent<any>> {
     });
   };
 
-  get = <T extends QueriedComponents>(Type: ComponentType<T>): T => {
-    return this.components.get(Type.id)! as T;
+  get = <T extends QueriedComponents>(Type: T): ComponentInstanceFor<T> => {
+    return this.components.get(Type.id)! as ComponentInstanceFor<T>;
   };
 
   maybeGet = <T extends GenericComponent<any>>(

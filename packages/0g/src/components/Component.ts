@@ -47,25 +47,26 @@ function defaultInitialize<Comp>(target: any, overrides: Partial<Comp>) {
   Object.assign(target, overrides);
 }
 
-export interface GenericComponent<T> extends Poolable {
-  update: ComponentUpdateFn<T>;
-  updated: boolean;
-  id: number;
-  type: number;
-  [COMPONENT_CHANGE_HANDLE]?: (self: T) => void;
-}
+export type GenericComponent<T> = Poolable &
+  T & {
+    update: ComponentUpdateFn<T>;
+    updated: boolean;
+    id: number;
+    type: number;
+    [COMPONENT_CHANGE_HANDLE]?: (self: T) => void;
+  };
 
 export type BaseComponentType<T> = {
   new (): GenericComponent<T>;
   id: number;
   defaults: T;
-  initialize: ComponentInitializeFn<GenericComponent<T>>;
+  initialize: ComponentInitializeFn<T>;
 };
 
-function BaseComponent<T>(): BaseComponentType<T> {
+function BaseComponent<T>({ defaults }: { defaults: T }): BaseComponentType<T> {
   return class BaseComponent implements Poolable {
     static id = 0;
-    static defaults: T;
+    static defaults = defaults;
     static initialize: ComponentInitializeFn<
       GenericComponent<T>
     > = defaultInitialize;
@@ -73,14 +74,14 @@ function BaseComponent<T>(): BaseComponentType<T> {
     id = 0;
     type = Object.getPrototypeOf(this).constructor.id;
 
+    constructor() {
+      Object.assign(this, defaults);
+    }
+
     [COMPONENT_CHANGE_HANDLE]: (self: T) => void;
 
     reset = () => {
-      Object.getPrototypeOf(this).constructor.initialize(
-        this,
-        Object.getPrototypeOf(this).constructor.defaults,
-        0,
-      );
+      Object.getPrototypeOf(this).constructor.initialize(this, defaults, 0);
     };
 
     /**
@@ -110,41 +111,45 @@ function BaseComponent<T>(): BaseComponentType<T> {
     set updated(_: true) {
       this[COMPONENT_CHANGE_HANDLE](this as any);
     }
-  };
+  } as any;
 }
 
-type SerializedComponentType<T> = BaseComponentType<T> & {
+export interface SerializedComponentType<T> extends BaseComponentType<T> {
   serialize: ComponentSerialize<T>;
   deserialize: ComponentDeserialize<T>;
   serialized: true;
-};
-type UnserializedComponentType<T> = BaseComponentType<T> & {
+}
+export interface UnserializedComponentType<T> extends BaseComponentType<T> {
   serialized: false;
-};
+}
+
 export type ComponentType<T> =
   | SerializedComponentType<T>
   | UnserializedComponentType<T>;
 
-export function Component<T>({
-  serialize = defaultSerialize,
-  deserialize = defaultDeserialize,
-}: {
-  serialize?: ComponentSerialize<T>;
-  deserialize?: ComponentDeserialize<T>;
-} = {}) {
-  const Type = BaseComponent<T>() as SerializedComponentType<T>;
+export function Component<T>(
+  defaults: T,
+  {
+    serialize = defaultSerialize,
+    deserialize = defaultDeserialize,
+  }: {
+    serialize?: ComponentSerialize<T>;
+    deserialize?: ComponentDeserialize<T>;
+  } = {},
+) {
+  const Type = BaseComponent<T>({ defaults }) as SerializedComponentType<T>;
   Type.serialize = serialize;
   Type.deserialize = deserialize;
   Type.serialized = true;
   return Type;
 }
 
-export function State<T>() {
-  const Type = BaseComponent<T>() as UnserializedComponentType<T>;
+export function State<T>(defaults: T) {
+  const Type = BaseComponent<T>({ defaults }) as UnserializedComponentType<T>;
   Type.serialized = false;
   return Type;
 }
 
 export type ComponentInstanceFor<
   T extends ComponentType<any>
-> = T extends ComponentType<infer Shape> ? Shape : never;
+> = T extends ComponentType<infer Shape> ? GenericComponent<Shape> : never;

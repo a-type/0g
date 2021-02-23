@@ -2,9 +2,9 @@ import { Archetype } from './Archetype';
 import { Component } from './components';
 import { EntityImpostor } from './EntityImpostor';
 
-class A extends Component {}
-class B extends Component {}
-class C extends Component {}
+class A extends Component({}) {}
+class B extends Component({}) {}
+class C extends Component({}) {}
 
 A.id = 0;
 B.id = 1;
@@ -41,7 +41,7 @@ describe('Archetypes', () => {
 
     arch.removeEntity(entities[1][1]);
 
-    const iterated = new Array<EntityImpostor>();
+    const iterated = new Array<EntityImpostor<any>>();
     for (const item of arch) {
       expect(item.id).not.toEqual(5);
     }

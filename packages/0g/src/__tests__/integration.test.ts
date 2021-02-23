@@ -9,13 +9,13 @@ import { makeSystem } from '../System';
 const delta = 16 + 2 / 3;
 
 describe('integration tests', () => {
-  class OutputComponent extends Component<OutputComponent>() {
-    removablePresent = false;
-  }
+  class OutputComponent extends Component({
+    removablePresent: false,
+  }) {}
 
-  class RemovableComponent extends Component<RemovableComponent>() {
-    stepsSinceAdded = 0;
-  }
+  class RemovableComponent extends Component({
+    stepsSinceAdded: 0,
+  }) {}
 
   const stepsTillToggle = 3;
 
@@ -23,7 +23,6 @@ describe('integration tests', () => {
     [RemovableComponent, OutputComponent],
     (ent) => {
       logger.debug('Setting removablePresent: true');
-      const output = ent.get(OutputComponent);
       ent.get(OutputComponent).update((output) => {
         output.removablePresent = true;
       });
@@ -88,7 +87,7 @@ describe('integration tests', () => {
     logger.debug('Step 1');
     game.step(delta);
 
-    let entity: EntityImpostor<OutputComponent> = game.get(a)!;
+    let entity: EntityImpostor<typeof OutputComponent> = game.get(a)!;
 
     expect(entity.maybeGet(OutputComponent)).not.toBe(null);
     expect(entity.get(OutputComponent).removablePresent).toBe(false);

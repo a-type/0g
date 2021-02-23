@@ -5,16 +5,16 @@ import { Game } from './Game';
 import { Query, QueryComponentFilter } from './Query';
 import { ComponentA, ComponentB } from './__tests__/componentFixtures';
 
-type ComponentsFromQueryDef<Def extends QueryComponentFilter> = {
+type ComponentTypesFromQueryDef<Def extends QueryComponentFilter> = {
   [K in keyof Def]: Def[K] extends Filter<infer C>
-    ? ComponentInstanceFor<C>
+    ? C
     : Def[K] extends ComponentType<any>
-    ? ComponentInstanceFor<Def[K]>
+    ? Def[K]
     : never;
 }[0];
 
 export type EntityImpostorFor<Q extends QueryComponentFilter> = EntityImpostor<
-  ComponentsFromQueryDef<Q>
+  ComponentTypesFromQueryDef<Q>
 >;
 
 export class QueryIterator<Def extends QueryComponentFilter>
