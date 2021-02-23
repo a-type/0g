@@ -1,7 +1,11 @@
 import { EventEmitter } from 'events';
 import * as input from './input';
 import { QueryManager } from './QueryManager';
-import { Component, ComponentInstanceFor, ComponentType } from './components';
+import {
+  ComponentInstanceFor,
+  ComponentType,
+  GenericComponent,
+} from './Component';
 import { ComponentManager } from './ComponentManager';
 import { IdManager } from './IdManager';
 import { ArchetypeManager } from './ArchetypeManager';
@@ -58,7 +62,7 @@ export class Game extends EventEmitter {
     systems = [],
     globals = new Map(),
   }: {
-    components: ComponentType[];
+    components: ComponentType<any>[];
     systems?: ((game: Game) => () => void)[];
     globals?: Map<string, any>;
   }) {
@@ -112,10 +116,10 @@ export class Game extends EventEmitter {
     });
   };
 
-  add = <T extends ComponentType>(
+  add = <ComponentShape>(
     entityId: number,
-    Type: T,
-    initial?: Partial<ComponentInstanceFor<T>>,
+    Type: ComponentType<ComponentShape>,
+    initial?: Partial<ComponentShape>,
   ) => {
     this._operationQueue.push({
       op: 'addComponent',
@@ -125,7 +129,7 @@ export class Game extends EventEmitter {
     });
   };
 
-  remove = <T extends ComponentType>(entityId: number, Type: T) => {
+  remove = <T extends ComponentType<any>>(entityId: number, Type: T) => {
     this._operationQueue.push({
       op: 'removeComponent',
       entityId,
@@ -133,7 +137,7 @@ export class Game extends EventEmitter {
     });
   };
 
-  get = (entityId: number): EntityImpostor | null => {
+  get = (entityId: number): EntityImpostor<any> | null => {
     return this.archetypeManager.getEntity(entityId);
   };
 
@@ -158,7 +162,7 @@ export class Game extends EventEmitter {
   };
 
   private applyOperation = (operation: Operation) => {
-    let instance: Component;
+    let instance: GenericComponent<any>;
     switch (operation.op) {
       case 'addComponent':
         instance = this.componentManager.acquire(

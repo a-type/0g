@@ -1,6 +1,6 @@
 import { Game } from './Game';
 import { ObjectPool } from './internal/objectPool';
-import { GenericComponent, ComponentType } from './components';
+import { GenericComponent, ComponentType } from './Component';
 
 export class ComponentPool<S> {
   private pool: ObjectPool<GenericComponent<S>>;

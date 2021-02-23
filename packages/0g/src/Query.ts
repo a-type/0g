@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { ComponentType } from './components';
+import { ComponentType } from './Component';
 import { Game } from './Game';
 import { Poolable } from './internal/objectPool';
 import { Archetype } from './Archetype';

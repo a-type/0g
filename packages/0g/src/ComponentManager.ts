@@ -1,10 +1,9 @@
 import { ComponentPool } from './ComponentPool';
 import {
-  Component,
   ComponentType,
   COMPONENT_CHANGE_HANDLE,
   GenericComponent,
-} from './components';
+} from './Component';
 import { Game } from './Game';
 
 /**

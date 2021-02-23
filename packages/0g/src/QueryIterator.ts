@@ -1,9 +1,8 @@
-import { ComponentInstanceFor, ComponentType } from './components';
+import { ComponentType } from './Component';
 import { EntityImpostor } from './EntityImpostor';
 import { Changed, Filter } from './filters';
 import { Game } from './Game';
 import { Query, QueryComponentFilter } from './Query';
-import { ComponentA, ComponentB } from './__tests__/componentFixtures';
 
 type ComponentTypesFromQueryDef<Def extends QueryComponentFilter> = {
   [K in keyof Def]: Def[K] extends Filter<infer C>

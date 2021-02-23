@@ -1,5 +1,5 @@
 import { Archetype } from './Archetype';
-import { Component } from './components';
+import { Component } from './Component';
 import { EntityImpostor } from './EntityImpostor';
 
 class A extends Component({}) {}

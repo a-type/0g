@@ -1,13 +1,21 @@
 import { EventEmitter } from 'events';
 import { Archetype } from './Archetype';
-import { Component, ComponentInstanceFor, ComponentType } from './components';
+import {
+  Component,
+  ComponentInstanceFor,
+  ComponentType,
+  GenericComponent,
+} from './Component';
 import { Game } from './Game';
 import { logger } from './logger';
 
 export interface ArchetypeManagerEvents {
   archetypeCreated(archetype: Archetype): void;
   entityCreated(entityId: number): void;
-  entityComponentAdded(entityId: number, component: Component): void;
+  entityComponentAdded(
+    entityId: number,
+    component: GenericComponent<any>,
+  ): void;
   entityComponentRemoved(entityId: number, componentType: number): void;
   entityDestroyed(entityId: number): void;
 }
@@ -54,7 +62,10 @@ export class ArchetypeManager extends EventEmitter {
     this.emit('entityCreated', entityId);
   }
 
-  private getInsertionIndex(instanceList: Component[], instance: Component) {
+  private getInsertionIndex(
+    instanceList: GenericComponent<any>[],
+    instance: GenericComponent<any>,
+  ) {
     let insertionIndex = instanceList.findIndex((i) => i.type > instance.type);
     if (insertionIndex === -1) {
       insertionIndex = instanceList.length;
@@ -64,7 +75,7 @@ export class ArchetypeManager extends EventEmitter {
     return insertionIndex;
   }
 
-  addComponent<T extends ComponentType>(
+  addComponent<T extends ComponentType<any>>(
     entityId: number,
     instance: ComponentInstanceFor<T>,
   ) {
@@ -157,7 +168,7 @@ export class ArchetypeManager extends EventEmitter {
     return archetype;
   }
 
-  private getId(Types: ComponentType[]) {
+  private getId(Types: ComponentType<any>[]) {
     return Types.map((T) => T.id).reduce(this.flipBit, this.emptyId);
   }
 

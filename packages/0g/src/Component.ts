@@ -1,4 +1,4 @@
-import { Poolable } from '../internal/objectPool';
+import { Poolable } from './internal/objectPool';
 
 export const COMPONENT_CHANGE_HANDLE = Symbol('Component change handle');
 

@@ -1,10 +1,13 @@
 import { EventEmitter } from 'events';
-import { Component, ComponentType } from './components';
-import { ComponentInstanceFor } from './components/types';
+import {
+  ComponentInstanceFor,
+  ComponentType,
+  GenericComponent,
+} from './Component';
 import { EntityImpostor } from './EntityImpostor';
 
-type InstanceListFromTypes<T extends Array<ComponentType>> = {
-  [K in keyof T]: T[K] extends ComponentType
+type InstanceListFromTypes<T extends Array<ComponentType<any>>> = {
+  [K in keyof T]: T[K] extends ComponentType<any>
     ? ComponentInstanceFor<T[K]>
     : never;
 };
@@ -24,10 +27,10 @@ export declare interface Archetype {
 }
 
 export class Archetype<
-  T extends ComponentType[] = ComponentType[]
+  T extends ComponentType<any>[] = ComponentType<any>[]
 > extends EventEmitter {
   private entityIds = new Array<number>();
-  private components: Array<Array<Component>>;
+  private components: Array<Array<GenericComponent<any>>>;
   /** Maps entity ID -> index in component arrays */
   private entityIndexLookup = new Array<number | undefined>();
   private entityImpostor = new EntityImpostor<ComponentInstanceFor<T[0]>>();
@@ -36,9 +39,9 @@ export class Archetype<
     super();
     // initialize component storage arrays
     const numTypes = this.countOnes(id);
-    this.components = new Array<Array<Component>>(numTypes)
+    this.components = new Array<Array<GenericComponent<any>>>(numTypes)
       .fill([])
-      .map(() => new Array<Component>());
+      .map(() => new Array<GenericComponent<any>>());
   }
 
   private iterator = (() => {
@@ -103,7 +106,9 @@ export class Archetype<
     this.entityIndexLookup[entityId] = undefined;
 
     this.entityIds.splice(index, 1);
-    const componentData = new Array<Component>() as InstanceListFromTypes<T>;
+    const componentData = new Array<
+      GenericComponent<any>
+    >() as InstanceListFromTypes<T>;
     this.components.forEach((componentArray, componentIndex) => {
       componentData[componentIndex] = componentArray.splice(index, 1)[0];
     });
@@ -122,7 +127,7 @@ export class Archetype<
     return this.entityImpostor;
   }
 
-  hasAll = (types: ComponentType[]) => {
+  hasAll = (types: ComponentType<any>[]) => {
     const masked = types
       .reduce((m, T) => {
         m[T.id] = '1';
@@ -132,18 +137,18 @@ export class Archetype<
     return this.id === masked;
   };
 
-  hasSome = (types: ComponentType[]) => {
+  hasSome = (types: ComponentType<any>[]) => {
     for (var T of types) {
       if (this.id[T.id] === '1') return true;
     }
     return false;
   };
 
-  includes = (Type: ComponentType) => {
+  includes = (Type: ComponentType<any>) => {
     return this.id[Type.id] === '1';
   };
 
-  omits = (Type: ComponentType) => {
+  omits = (Type: ComponentType<any>) => {
     return !this.includes(Type);
   };
 
@@ -155,7 +160,9 @@ export class Archetype<
     return this.entityIds;
   }
 
-  private _tmpComponentList: InstanceListFromTypes<T> = new Array<Component>() as InstanceListFromTypes<T>;
+  private _tmpComponentList: InstanceListFromTypes<T> = new Array<
+    GenericComponent<any>
+  >() as InstanceListFromTypes<T>;
   private getComponentList = (
     entityIndex: number,
   ): InstanceListFromTypes<T> => {

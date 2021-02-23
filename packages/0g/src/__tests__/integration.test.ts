@@ -1,4 +1,4 @@
-import { Component } from '../components';
+import { Component } from '../Component';
 import { makeEffect } from '../Effect';
 import { EntityImpostor } from '../EntityImpostor';
 import { changed, not } from '../filters';

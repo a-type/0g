@@ -1,4 +1,4 @@
-import { Component, ComponentType } from './components';
+import { ComponentType } from './Component';
 
 export type Has<Comp extends ComponentType<any>> = {
   Component: Comp;
@@ -47,19 +47,11 @@ export type Filter<Comp extends ComponentType<any>> =
   | Has<Comp>
   | Changed<Comp>;
 
-export type ComponentForFilter<Fil extends Filter<any>> = Fil extends Not<
-  infer C
->
-  ? C
-  : Fil extends Component
-  ? Component
-  : never;
-
 export const isFilter = (thing: any): thing is Filter<any> =>
   thing.__isFilter === true;
 
-export const isNotFilter = (fil: Filter<any>): fil is Not<ComponentType> =>
+export const isNotFilter = (fil: Filter<any>): fil is Not<ComponentType<any>> =>
   fil.kind === 'not';
 
-export const isHasFilter = (fil: Filter<any>): fil is Has<ComponentType> =>
+export const isHasFilter = (fil: Filter<any>): fil is Has<ComponentType<any>> =>
   fil.kind === 'has';

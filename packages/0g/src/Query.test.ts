@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 import { ArchetypeManager } from './ArchetypeManager';
-import { Component } from './components';
+import { GenericComponent } from './Component';
 import { not, Not } from './filters';
 import { Game } from './Game';
 import { Query } from './Query';
@@ -22,7 +22,7 @@ describe('Query', () => {
   let game: Game = null as any;
 
   // bootstrapping
-  function addEntity(eid: number, components: Component[]) {
+  function addEntity(eid: number, components: GenericComponent<any>[]) {
     game.archetypeManager.createEntity(eid);
     components.forEach((comp) => {
       game.archetypeManager.addComponent(eid, comp);

@@ -1,4 +1,4 @@
-import { Component } from '../components';
+import { Component } from '../Component';
 
 export class ComponentA extends Component({
   value: 10,

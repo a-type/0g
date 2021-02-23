@@ -2,7 +2,7 @@ import {
   GenericComponent,
   ComponentType,
   ComponentInstanceFor,
-} from './components';
+} from './Component';
 
 export class EntityImpostor<QueriedComponents extends ComponentType<any>> {
   private _id = 0;
