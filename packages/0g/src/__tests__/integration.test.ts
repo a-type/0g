@@ -9,13 +9,13 @@ import { makeSystem } from '../System';
 const delta = 16 + 2 / 3;
 
 describe('integration tests', () => {
-  class OutputComponent extends Component({
+  class OutputComponent extends Component(() => ({
     removablePresent: false,
-  }) {}
+  })) {}
 
-  class RemovableComponent extends Component({
+  class RemovableComponent extends Component(() => ({
     stepsSinceAdded: 0,
-  }) {}
+  })) {}
 
   const stepsTillToggle = 3;
 
@@ -44,28 +44,19 @@ describe('integration tests', () => {
     },
   );
 
-  const IncrementRemoveTimerSystem = makeSystem(
-    [RemovableComponent],
-    (query) => {
-      let ent;
-      for (ent of query) {
-        logger.debug('Incrementing stepsSinceAdded');
-        ent.get(RemovableComponent).update((comp) => {
-          comp.stepsSinceAdded++;
-        });
-      }
-    },
-  );
+  const IncrementRemoveTimerSystem = makeSystem([RemovableComponent], (ent) => {
+    logger.debug('Incrementing stepsSinceAdded');
+    ent.get(RemovableComponent).update((comp) => {
+      comp.stepsSinceAdded++;
+    });
+  });
 
   const RemoveSystem = makeSystem(
     [changed(RemovableComponent)],
-    (query, game) => {
-      let ent;
-      for (ent of query) {
-        if (ent.get(RemovableComponent).stepsSinceAdded >= stepsTillToggle) {
-          logger.debug('Removing RemovableComponent');
-          game.remove(ent.id, RemovableComponent);
-        }
+    (ent, game) => {
+      if (ent.get(RemovableComponent).stepsSinceAdded >= stepsTillToggle) {
+        logger.debug('Removing RemovableComponent');
+        game.remove(ent.id, RemovableComponent);
       }
     },
   );

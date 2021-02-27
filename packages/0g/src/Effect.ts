@@ -3,7 +3,7 @@ import { QueryComponentFilter } from './Query';
 import { EntityImpostorFor } from './QueryIterator';
 
 type CleanupFn = () => void | Promise<void>;
-type CleanupResult = Promise<CleanupFn> | CleanupFn | void;
+type CleanupResult = Promise<CleanupFn | void> | CleanupFn | void;
 
 export function makeEffect<Filter extends QueryComponentFilter>(
   filter: Filter,
@@ -22,7 +22,7 @@ export function makeEffect<Filter extends QueryComponentFilter>(
       }
       const result = effect(entity, game);
       if (result instanceof Promise) {
-        cleanups[entityId] = () => result.then((clean) => clean());
+        cleanups[entityId] = () => result.then((clean) => clean && clean());
       } else if (result) {
         cleanups[entityId] = result;
       } else {

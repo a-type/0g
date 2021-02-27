@@ -1,4 +1,4 @@
-import { Game, not, System } from '0g';
+import { not, makeSystem, makeEffect, changed, Game, compose } from '0g';
 import {
   b2Body,
   b2BodyType,
@@ -15,7 +15,7 @@ import { createCapsule } from './utils';
 function assignBodyConfig(
   body: b2Body,
   config: components.BodyConfig,
-  id: string
+  id: number
 ) {
   const {
     // TODO: verify assumptions about defaults
@@ -36,7 +36,7 @@ function assignBodyConfig(
   return body;
 }
 
-function createFixtureDef(config: components.BodyConfig, id: string) {
+function createFixtureDef(config: components.BodyConfig, id: number) {
   const { density, restitution, friction, shape } = config;
 
   const fix = new b2FixtureDef();
@@ -84,160 +84,154 @@ function applyFixtures(body: b2Body, fix: b2FixtureDef) {
   body.CreateFixture(fix);
 }
 
-export class PhysicsWorld extends System {
-  newWorlds = this.trackingQuery([
-    components.WorldConfig,
-    not(components.World),
-  ]);
-  worlds = this.query([components.World]);
-  bodies = this.query([components.Body, components.Transform]);
-  bodiesWithContacts = this.query([
-    components.Contacts,
-    components.ContactsCache,
-  ]);
-  newBodies = this.query([
-    components.BodyConfig,
-    components.Transform,
-    not(components.Body),
-  ]);
-  oldBodies = this.query([components.Body, not(components.BodyConfig)]);
+const ManageWorldsEffect = makeEffect(
+  [components.WorldConfig],
+  (entity, game) => {
+    const config = entity.get(components.WorldConfig);
+    const world = new b2World(config.gravity);
+    game.resourceManager.resolve('physicsWorld', world);
+    const contactListener = new ContactListener();
+    world.SetContactListener(contactListener);
+    game.resourceManager.resolve('physicsContacts', contactListener);
 
-  // TODO: multi world support? right now all bodies are added to first world.
-  private get defaultWorldEntity() {
-    return this.worlds.entities[0];
+    return () => {
+      game.resourceManager.remove('physicsWorld');
+      game.resourceManager.remove('physicsContacts');
+    };
   }
-  private get defaultWorld() {
-    return this.defaultWorldEntity?.get(components.World);
-  }
+);
 
-  initWorlds = this.step(this.newWorlds, (worldEntity) => {
-    const worldConfig = worldEntity.get(components.WorldConfig);
-    const w = new b2World(worldConfig.gravity);
-    const c = new ContactListener();
-    w.SetContactListener(c);
-    worldEntity.add(components.World, {
-      value: w,
-      contacts: c,
-    });
-  });
+const ManageBodiesEffect = makeEffect(
+  [components.BodyConfig, components.Transform],
+  async (entity, game) => {
+    const bodyConfig = entity.get(components.BodyConfig);
+    const transform = entity.get(components.Transform);
+    const world = await game.resourceManager.load<b2World>('physicsWorld');
 
-  initBodies = this.step(this.newBodies, (bodyEntity) => {
-    if (!this.defaultWorld) {
-      // TODO: overkill?
-      console.warn(`No physics world when initializing ${bodyEntity.id}`);
-      return;
-    }
-
-    const bodyConfig = bodyEntity.get(components.BodyConfig);
-    const transform = bodyEntity.get(components.Transform);
-
-    const b = this.defaultWorld.value.CreateBody();
+    const b = world.CreateBody();
     const { x, y, angle } = transform;
     b.SetAngle(angle);
     b.SetPositionXY(x, y);
 
-    assignBodyConfig(b, bodyConfig, bodyEntity.id);
-    applyFixtures(b, createFixtureDef(bodyConfig, bodyEntity.id));
+    assignBodyConfig(b, bodyConfig, entity.id);
+    applyFixtures(b, createFixtureDef(bodyConfig, entity.id));
 
-    bodyEntity.add(components.Body, {
-      value: b,
-    });
+    game.add(entity.id, components.Body, { value: b });
 
-    // subscribe contacts if present
-    const contacts = bodyEntity.maybeGet(components.Contacts);
-    if (contacts) {
-      bodyEntity.add(components.ContactsCache);
-      const contactsCache = bodyEntity.get(components.ContactsCache);
-      this.defaultWorld.contacts.subscribe(bodyEntity.id, contactsCache);
-    }
-  });
+    return () => {
+      world.DestroyBody(b);
+      game.remove(entity.id, components.Body);
+    };
+  }
+);
 
-  updateBodies = this.watch(this.bodies, [components.BodyConfig], (entity) => {
-    const bodyConfig = entity.get(components.BodyConfig);
-    const body = entity.get(components.Body);
+const ManageContactsCacheEffect = makeEffect(
+  [components.Contacts],
+  (entity, game) => {
+    game.add(entity.id, components.ContactsCache);
 
-    assignBodyConfig(body.value, bodyConfig, entity.id);
-    applyFixtures(body.value, createFixtureDef(bodyConfig, entity.id));
-  });
+    return () => {
+      game.remove(entity.id, components.ContactsCache);
+    };
+  }
+);
 
-  teardownBodies = this.step(this.oldBodies, (bodyEntity) => {
-    if (!this.defaultWorld) return;
-    const body = bodyEntity.get(components.Body);
-    this.defaultWorld.value.DestroyBody(body.value);
-    this.defaultWorld.contacts.unsubscribe(bodyEntity.id);
-  });
+const SubscribeContactsCacheEffect = makeEffect(
+  [components.ContactsCache],
+  async (entity, game) => {
+    const contactsCache = entity.get(components.ContactsCache);
 
-  resetContacts = this.step(this.bodiesWithContacts, (bodyEntity) => {
-    const contacts = bodyEntity.get(components.Contacts);
-
-    contacts.set({
-      began: [],
-      ended: [],
-    });
-  });
-
-  stepWorlds = this.step(this.worlds, (worldEntity) => {
-    const world = worldEntity.get(components.World);
-    const worldConfig = worldEntity.get(components.WorldConfig);
-    world.value.Step(
-      1 / 60.0,
-      worldConfig.velocityIterations,
-      worldConfig.positionIterations
+    const contactListener = await game.resourceManager.load<ContactListener>(
+      'physicsContacts'
     );
+
+    contactListener.subscribe(entity.id, contactsCache);
+
+    return () => {
+      contactListener.unsubscribe(entity.id);
+    };
+  }
+);
+
+const UpdateBodiesSystem = makeSystem(
+  [changed(components.BodyConfig), components.Body],
+  (ent) => {
+    const body = ent.get(components.Body);
+    const config = ent.get(components.BodyConfig);
+
+    assignBodyConfig(body.value, config, ent.id);
+    applyFixtures(body.value, createFixtureDef(config, ent.id));
+    body.updated = true;
+  }
+);
+
+const ResetContactsSystem = makeSystem([components.Contacts], (ent) => {
+  const contacts = ent.get(components.Contacts);
+  contacts.began.length = 0;
+  contacts.ended.length = 0;
+  contacts.updated = true;
+});
+
+const StepWorldRunner = (game: Game) => {
+  let simulate: () => void;
+  game.resourceManager.load<b2World>('physicsWorld').then((world) => {
+    simulate = () => {
+      world.Step(1 / 60.0, 8, 3);
+    };
+    game.on('step', simulate);
   });
 
-  updateTransforms = this.step(this.bodies, (bodyEntity) => {
-    const transform = bodyEntity.get(components.Transform);
-    const body = bodyEntity.get(components.Body);
+  return () => {
+    game.off('step', simulate);
+  };
+};
+
+const UpdateTransformsSystem = makeSystem(
+  [components.Body, components.Transform],
+  (ent) => {
+    const body = ent.get(components.Body);
 
     const pos = body.value.GetPosition();
 
-    transform.set({
-      x: pos.x,
-      y: pos.y,
-      angle: body.value.GetAngle(),
+    ent.get(components.Transform).update((transform) => {
+      transform.x = pos.x;
+      transform.y = pos.y;
+      transform.angle = body.value.GetAngle();
     });
-  });
+  }
+);
 
-  // update contacts
-  updateContacts = this.step(this.bodiesWithContacts, (bodyEntity) => {
-    const cached = bodyEntity.getWritable(components.ContactsCache);
-    const contacts = bodyEntity.getWritable(components.Contacts);
+const UpdateContactsSystem = makeSystem(
+  [changed(components.ContactsCache), components.Contacts],
+  (ent) => {
+    const cache = ent.get(components.ContactsCache);
+    const contacts = ent.get(components.Contacts);
 
     let c: EntityContact;
-    for (c of cached.began.values()) {
+    for (c of cache.began.values()) {
       contacts.began.push(c);
       contacts.current.push(c);
-      cached.began.delete(c);
     }
-
-    for (c of cached.ended.values()) {
-      contacts.current = contacts.current.filter((v) => v.id !== c.id);
+    for (c of cache.ended.values()) {
+      contacts.current.splice(contacts.current.indexOf(c), 1);
       contacts.ended.push(c);
-      cached.ended.delete(c);
     }
-  });
-}
 
-const WORLD_KEY = 'physicsWorld';
-const CONTACTS_KEY = 'physicsContacts';
+    contacts.updated = true;
 
-export class PhysicsWorldInitSystem extends System {
-  worlds = this.trackingQuery([components.WorldConfig]);
+    cache.began.clear();
+    cache.ended.clear();
+  }
+);
 
-  run = this.register(() => {
-    let entity;
-    if (this.worlds.removedIds.length) {
-      this.game.stateManager.removeGlobal(WORLD_KEY);
-      this.game.stateManager.removeGlobal(CONTACTS_KEY);
-    }
-    for (entity of this.worlds.added) {
-      const config = entity.get(components.WorldConfig);
-      const w = new b2World(config.gravity);
-      const c = new ContactListener();
-      w.SetContactListener(c);
-      this.game.stateManager.resolveGlobal(WORLD_KEY, w);
-      this.game.stateManager.resolveGlobal(CONTACTS_KEY, c);
-    }
-  }, 'preStep');
-}
+export const systems = compose(
+  ManageWorldsEffect,
+  ManageBodiesEffect,
+  ManageContactsCacheEffect,
+  SubscribeContactsCacheEffect,
+  UpdateBodiesSystem,
+  ResetContactsSystem,
+  StepWorldRunner,
+  UpdateTransformsSystem,
+  UpdateContactsSystem
+);

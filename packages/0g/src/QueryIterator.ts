@@ -1,25 +1,38 @@
 import { ComponentType } from './Component';
 import { EntityImpostor } from './EntityImpostor';
-import { Changed, Filter } from './filters';
+import { Changed, Filter, not, Not } from './filters';
 import { Game } from './Game';
 import { Query, QueryComponentFilter } from './Query';
 
-type ComponentTypesFromQueryDef<Def extends QueryComponentFilter> = {
-  [K in keyof Def]: Def[K] extends Filter<infer C>
-    ? C
-    : Def[K] extends ComponentType<any>
-    ? Def[K]
-    : never;
-}[0];
+type FilterNots<
+  CompUnion extends Filter<ComponentType<any>> | ComponentType<any>
+> = CompUnion extends Not<any> ? never : CompUnion;
+
+type OnlyNots<
+  CompUnion extends Filter<ComponentType<any>> | ComponentType<any>
+> = CompUnion extends Not<infer C> ? C : never;
+
+type UnwrapFilters<
+  CompUnion extends Filter<ComponentType<any>> | ComponentType<any>
+> = CompUnion extends Filter<infer C> ? C : CompUnion;
+
+type DefiniteComponentsFromFilter<
+  Fil extends QueryComponentFilter
+> = UnwrapFilters<FilterNots<Fil[number]>>;
+
+type OmittedComponentsFromFilter<Fil extends QueryComponentFilter> = OnlyNots<
+  Fil[number]
+>;
 
 export type EntityImpostorFor<Q extends QueryComponentFilter> = EntityImpostor<
-  ComponentTypesFromQueryDef<Q>
+  DefiniteComponentsFromFilter<Q>,
+  OmittedComponentsFromFilter<Q>
 >;
 
 export class QueryIterator<Def extends QueryComponentFilter>
   implements Iterator<EntityImpostorFor<Def>> {
   private archetypeIndex = 0;
-  private archetypeIterator: Iterator<EntityImpostor<any>> | null = null;
+  private archetypeIterator: Iterator<EntityImpostor<any, any>> | null = null;
   private result: IteratorResult<EntityImpostorFor<Def>> = {
     done: true,
     value: null as any,

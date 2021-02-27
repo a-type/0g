@@ -55,3 +55,7 @@ export const isNotFilter = (fil: Filter<any>): fil is Not<ComponentType<any>> =>
 
 export const isHasFilter = (fil: Filter<any>): fil is Has<ComponentType<any>> =>
   fil.kind === 'has';
+
+export const isChangedFilter = (
+  fil: Filter<any>,
+): fil is Changed<ComponentType<any>> => fil.kind === 'changed';

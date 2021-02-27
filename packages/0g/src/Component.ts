@@ -27,7 +27,11 @@ function defaultSerialize<Comp>(instance: Comp) {
       typeof descriptor?.set === 'function'
     ) {
       gettersAndSetters[key] = descriptor;
-    } else if (descriptor.value) {
+    } else if (
+      descriptor.enumerable &&
+      descriptor.value &&
+      !(typeof descriptor.value === 'function')
+    ) {
       data[key] = descriptor.value;
     }
   });
@@ -59,11 +63,15 @@ export type ComponentInstance<T> = Poolable &
 export type BaseComponentType<T> = {
   new (): ComponentInstance<T>;
   id: number;
-  defaults: T;
+  defaults: () => T;
   initialize: ComponentInitializeFn<T>;
 };
 
-function BaseComponent<T>({ defaults }: { defaults: T }): BaseComponentType<T> {
+function BaseComponent<T>({
+  defaults,
+}: {
+  defaults: () => T;
+}): BaseComponentType<T> {
   return class BaseComponent implements Poolable {
     static id = 0;
     static defaults = defaults;
@@ -75,13 +83,13 @@ function BaseComponent<T>({ defaults }: { defaults: T }): BaseComponentType<T> {
     type = Object.getPrototypeOf(this).constructor.id;
 
     constructor() {
-      Object.assign(this, defaults);
+      Object.assign(this, defaults());
     }
 
     [COMPONENT_CHANGE_HANDLE]: (self: T) => void;
 
     reset = () => {
-      Object.getPrototypeOf(this).constructor.initialize(this, defaults, 0);
+      Object.getPrototypeOf(this).constructor.initialize(this, defaults(), 0);
     };
 
     /**
@@ -128,7 +136,7 @@ export type ComponentType<T> =
   | UnserializedComponentType<T>;
 
 export function Component<T>(
-  defaults: T,
+  defaults: () => T,
   {
     serialize = defaultSerialize,
     deserialize = defaultDeserialize,
@@ -144,7 +152,7 @@ export function Component<T>(
   return Type;
 }
 
-export function State<T>(defaults: T) {
+export function State<T>(defaults: () => T) {
   const Type = BaseComponent<T>({ defaults }) as UnserializedComponentType<T>;
   Type.serialized = false;
   return Type;

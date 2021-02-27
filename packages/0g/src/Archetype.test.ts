@@ -2,9 +2,9 @@ import { Archetype } from './Archetype';
 import { Component } from './Component';
 import { EntityImpostor } from './EntityImpostor';
 
-class A extends Component({}) {}
-class B extends Component({}) {}
-class C extends Component({}) {}
+class A extends Component(() => ({})) {}
+class B extends Component(() => ({})) {}
+class C extends Component(() => ({})) {}
 
 A.id = 0;
 B.id = 1;

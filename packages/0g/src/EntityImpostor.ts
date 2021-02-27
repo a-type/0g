@@ -1,10 +1,9 @@
-import {
-  ComponentInstance,
-  ComponentType,
-  ComponentInstanceFor,
-} from './Component';
+import { ComponentInstance, ComponentType } from './Component';
 
-export class EntityImpostor<QueriedComponents extends ComponentType<any>> {
+export class EntityImpostor<
+  DefiniteComponents extends ComponentType<any>,
+  OmittedComponents extends ComponentType<any> = never
+> {
   private _id = 0;
   // TODO: make array
   readonly components = new Map<number, ComponentInstance<any>>();
@@ -24,8 +23,8 @@ export class EntityImpostor<QueriedComponents extends ComponentType<any>> {
     });
   };
 
-  get = <T extends QueriedComponents>(Type: T): ComponentInstanceFor<T> => {
-    return this.components.get(Type.id)! as ComponentInstanceFor<T>;
+  get = <T extends DefiniteComponents>(Type: T): InstanceType<T> => {
+    return this.components.get(Type.id)! as InstanceType<T>;
   };
 
   maybeGet = <T extends ComponentInstance<any>>(

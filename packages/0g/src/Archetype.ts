@@ -5,6 +5,7 @@ import {
   ComponentInstance,
 } from './Component';
 import { EntityImpostor } from './EntityImpostor';
+import { EntityImpostorFor } from './QueryIterator';
 
 type InstanceListFromTypes<T extends Array<ComponentType<any>>> = {
   [K in keyof T]: T[K] extends ComponentType<any>
@@ -33,7 +34,10 @@ export class Archetype<
   private components: Array<Array<ComponentInstance<any>>>;
   /** Maps entity ID -> index in component arrays */
   private entityIndexLookup = new Array<number | undefined>();
-  private entityImpostor = new EntityImpostor<ComponentInstanceFor<T[0]>>();
+  private entityImpostor = new EntityImpostor<
+    ComponentInstanceFor<T[number]>,
+    never
+  >();
 
   constructor(public id: string) {
     super();
@@ -52,7 +56,7 @@ export class Archetype<
       value: this.entityImpostor,
     };
     return {
-      next(): IteratorResult<EntityImpostor<InstanceListFromTypes<T>[0]>> {
+      next(): IteratorResult<EntityImpostorFor<T>> {
         if (entityIndex === self.entityIds.length) {
           entityIndex = 0;
           result.done = true;
@@ -70,7 +74,7 @@ export class Archetype<
         entityIndex++;
         return result;
       },
-    } as Iterator<EntityImpostor<InstanceListFromTypes<T>[0]>>;
+    } as Iterator<EntityImpostorFor<T>>;
   })();
 
   [Symbol.iterator]() {
