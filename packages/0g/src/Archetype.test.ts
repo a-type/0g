@@ -49,9 +49,23 @@ describe('Archetypes', () => {
 
     arch.removeEntity(entities[1][1]);
 
-    const iterated = new Array<Entity<any>>();
     for (const item of arch) {
       expect(item.id).not.toEqual(5);
     }
+  });
+
+  it('keeps entity locations consistent after removal', () => {
+    const arch = new Archetype<[typeof A, typeof B, typeof C]>('111');
+
+    entities.forEach(([components, id]) => {
+      const entity = new Entity();
+      entity.__set(id, components);
+      arch.addEntity(entity);
+    });
+
+    arch.removeEntity(entities[0][1]);
+
+    expect(arch.getEntity(entities[1][1]).id).toEqual(entities[1][1]);
+    expect(arch.getEntity(entities[2][1]).id).toEqual(entities[2][1]);
   });
 });
