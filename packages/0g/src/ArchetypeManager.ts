@@ -1,7 +1,6 @@
 import { EventEmitter } from 'events';
 import { Archetype } from './Archetype';
 import {
-  Component,
   ComponentInstanceFor,
   ComponentType,
   ComponentInstance,
@@ -58,21 +57,11 @@ export class ArchetypeManager extends EventEmitter {
   createEntity(entityId: number) {
     logger.debug(`Creating entity ${entityId}`);
     this.entityLookup[entityId] = this.emptyId;
-    this.getOrCreate(this.emptyId).addEntity(entityId, []);
+    // allocate an Entity
+    const entity = this.game.entityPool.acquire();
+    entity.__set(entityId, []);
+    this.getOrCreate(this.emptyId).addEntity(entity);
     this.emit('entityCreated', entityId);
-  }
-
-  private getInsertionIndex(
-    instanceList: ComponentInstance<any>[],
-    instance: ComponentInstance<any>,
-  ) {
-    let insertionIndex = instanceList.findIndex((i) => i.type > instance.type);
-    if (insertionIndex === -1) {
-      insertionIndex = instanceList.length;
-    } else {
-      insertionIndex -= 1;
-    }
-    return insertionIndex;
   }
 
   addComponent<T extends ComponentType<any>>(
@@ -89,13 +78,8 @@ export class ArchetypeManager extends EventEmitter {
     const oldArchetype = this.getOrCreate(oldArchetypeId);
 
     // remove data from old archetype
-    const instanceList = oldArchetype.removeEntity(entityId);
-    // add new instance to instance list - must be inserted in order
-    instanceList.splice(
-      this.getInsertionIndex(instanceList, instance),
-      0,
-      instance,
-    );
+    const entity = oldArchetype.removeEntity(entityId);
+    entity.__addComponent(instance);
 
     const newArchetypeId = (this.entityLookup[entityId] = this.flipBit(
       oldArchetypeId,
@@ -103,7 +87,7 @@ export class ArchetypeManager extends EventEmitter {
     ));
     const archetype = this.getOrCreate(newArchetypeId);
     // copy entity from old to new
-    archetype.addEntity(entityId, instanceList);
+    archetype.addEntity(entity);
     logger.debug(`Entity ${entityId} moved to archetype ${newArchetypeId}`);
     this.emit('entityComponentAdded', entityId, instance);
   }
@@ -118,30 +102,19 @@ export class ArchetypeManager extends EventEmitter {
     }
     const oldArchetype = this.getOrCreate(oldArchetypeId);
 
-    const instanceList = oldArchetype.removeEntity(entityId);
-    const [removedInstance] = instanceList.splice(
-      instanceList.findIndex((i) => i.type === componentType),
-      1,
-    );
+    const entity = oldArchetype.removeEntity(entityId);
+    const removed = entity.__removeComponent(componentType);
 
     const newArchetypeId = (this.entityLookup[entityId] = this.flipBit(
       oldArchetypeId,
       componentType,
     ));
     const archetype = this.getOrCreate(newArchetypeId);
-    archetype.addEntity(entityId, instanceList);
+    archetype.addEntity(entity);
     logger.debug(`Entity ${entityId} moved to archetype ${newArchetypeId}`);
     this.emit('entityComponentRemoved', entityId, componentType);
 
-    return removedInstance;
-  }
-
-  getEntity(entityId: number) {
-    const archetypeId = this.entityLookup[entityId];
-    if (archetypeId === undefined) {
-      return null;
-    }
-    return this.archetypes[archetypeId].getEntity(entityId);
+    return removed;
   }
 
   destroyEntity(entityId: number) {
@@ -154,22 +127,28 @@ export class ArchetypeManager extends EventEmitter {
     }
     this.entityLookup[entityId] = undefined;
     const archetype = this.archetypes[archetypeId];
-    const instances = archetype.removeEntity(entityId);
+    const entity = archetype.removeEntity(entityId);
     this.emit('entityDestroyed', entityId);
-    return instances;
+    return entity;
+  }
+
+  getEntity(entityId: number) {
+    const archetypeId = this.entityLookup[entityId];
+    if (archetypeId === undefined) {
+      throw new Error(`Could not find Archetype for Entity ${entityId}`);
+    }
+    const archetype = this.archetypes[archetypeId];
+    return archetype.getEntity(entityId);
   }
 
   private getOrCreate(id: string) {
     let archetype = this.archetypes[id];
     if (!archetype) {
       archetype = this.archetypes[id] = new Archetype(id);
+      logger.debug(`New Archetype ${id} created`);
       this.emit('archetypeCreated', archetype);
     }
     return archetype;
-  }
-
-  private getId(Types: ComponentType<any>[]) {
-    return Types.map((T) => T.id).reduce(this.flipBit, this.emptyId);
   }
 
   private flipBit(id: string, typeId: number) {

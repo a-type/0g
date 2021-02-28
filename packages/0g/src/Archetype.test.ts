@@ -1,6 +1,6 @@
 import { Archetype } from './Archetype';
 import { Component } from './Component';
-import { EntityImpostor } from './EntityImpostor';
+import { Entity } from './Entity';
 
 class A extends Component(() => ({})) {}
 class B extends Component(() => ({})) {}
@@ -20,7 +20,11 @@ describe('Archetypes', () => {
   it('stores and iterates entities', () => {
     const arch = new Archetype<[typeof A, typeof B, typeof C]>('111');
 
-    entities.forEach(([components, id]) => arch.addEntity(id, components));
+    entities.forEach(([components, id]) => {
+      const entity = new Entity();
+      entity.__set(id, components);
+      arch.addEntity(entity);
+    });
 
     // ordering is not guaranteed on the iteration, so just storing in
     // an intermediate array
@@ -37,11 +41,15 @@ describe('Archetypes', () => {
   it('removes entities', () => {
     const arch = new Archetype<[typeof A, typeof B, typeof C]>('111');
 
-    entities.forEach(([components, id]) => arch.addEntity(id, components));
+    entities.forEach(([components, id]) => {
+      const entity = new Entity();
+      entity.__set(id, components);
+      arch.addEntity(entity);
+    });
 
     arch.removeEntity(entities[1][1]);
 
-    const iterated = new Array<EntityImpostor<any>>();
+    const iterated = new Array<Entity<any>>();
     for (const item of arch) {
       expect(item.id).not.toEqual(5);
     }

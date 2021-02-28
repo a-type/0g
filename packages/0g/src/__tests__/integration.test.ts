@@ -1,6 +1,6 @@
 import { Component } from '../Component';
 import { makeEffect } from '../Effect';
-import { EntityImpostor } from '../EntityImpostor';
+import { Entity } from '../Entity';
 import { changed, not } from '../filters';
 import { Game } from '../Game';
 import { logger } from '../logger';
@@ -48,6 +48,7 @@ describe('integration tests', () => {
     logger.debug('Incrementing stepsSinceAdded');
     ent.get(RemovableComponent).update((comp) => {
       comp.stepsSinceAdded++;
+      logger.debug(`stepsSinceAdded: ${comp.stepsSinceAdded}`);
     });
   });
 
@@ -78,7 +79,7 @@ describe('integration tests', () => {
     logger.debug('Step 1');
     game.step(delta);
 
-    let entity: EntityImpostor<typeof OutputComponent> = game.get(a)!;
+    let entity: Entity<typeof OutputComponent> = game.get(a)!;
 
     expect(entity.maybeGet(OutputComponent)).not.toBe(null);
     expect(entity.get(OutputComponent).removablePresent).toBe(false);

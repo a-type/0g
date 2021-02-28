@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 import { ArchetypeManager } from './ArchetypeManager';
 import { ComponentInstance } from './Component';
+import { Entity } from './Entity';
 import { not, Not } from './filters';
 import { Game } from './Game';
 import { Query } from './Query';
@@ -36,9 +37,21 @@ describe('Query', () => {
           length: 10,
         },
       },
+      entityPool: {
+        acquire() {
+          return new Entity();
+        },
+        release() {},
+      },
     } as any);
     game = new EventEmitter() as any;
     (game as any).archetypeManager = archetypeManager;
+    (game as any).entityPool = {
+      acquire() {
+        return new Entity();
+      },
+      release() {},
+    };
 
     // bootstrap some testing archetypes
     addEntity(withA, [new ComponentA()]);

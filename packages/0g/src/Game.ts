@@ -1,17 +1,14 @@
 import { EventEmitter } from 'events';
 import * as input from './input';
 import { QueryManager } from './QueryManager';
-import {
-  ComponentInstanceFor,
-  ComponentType,
-  ComponentInstance,
-} from './Component';
+import { ComponentType, ComponentInstance } from './Component';
 import { ComponentManager } from './ComponentManager';
 import { IdManager } from './IdManager';
 import { ArchetypeManager } from './ArchetypeManager';
 import { Operation, OperationQueue } from './operations';
-import { EntityImpostor } from './EntityImpostor';
+import { Entity } from './Entity';
 import { ResourceManager } from './resources/ResourceManager';
+import { ObjectPool } from './internal/objectPool';
 
 export type GameConstants = {
   maxComponentId: number;
@@ -43,6 +40,7 @@ export class Game extends EventEmitter {
   private _componentManager: ComponentManager;
   private _resourceManager = new ResourceManager();
   private _runnableCleanups: (() => void)[];
+  private _entityPool = new ObjectPool(() => new Entity());
 
   // TODO: configurable?
   private _phases = ['preStep', 'step', 'postStep'] as const;
@@ -99,6 +97,9 @@ export class Game extends EventEmitter {
   get resourceManager() {
     return this._resourceManager;
   }
+  get entityPool() {
+    return this._entityPool;
+  }
 
   create = () => {
     const id = this.idManager.get();
@@ -137,7 +138,7 @@ export class Game extends EventEmitter {
     });
   };
 
-  get = (entityId: number): EntityImpostor<any> | null => {
+  get = (entityId: number): Entity<any> | null => {
     return this.archetypeManager.getEntity(entityId);
   };
 
@@ -182,10 +183,9 @@ export class Game extends EventEmitter {
         this.archetypeManager.createEntity(operation.entityId);
         break;
       case 'destroyEntity':
-        const instances = this.archetypeManager.destroyEntity(
-          operation.entityId,
-        );
-        instances.forEach(this.componentManager.release);
+        const entity = this.archetypeManager.destroyEntity(operation.entityId);
+        entity.components.forEach(this.componentManager.release);
+        this.entityPool.release(entity);
         break;
     }
   };

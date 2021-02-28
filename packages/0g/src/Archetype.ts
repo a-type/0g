@@ -1,20 +1,10 @@
 import { EventEmitter } from 'events';
-import {
-  ComponentInstanceFor,
-  ComponentType,
-  ComponentInstance,
-} from './Component';
-import { EntityImpostor } from './EntityImpostor';
-import { EntityImpostorFor } from './QueryIterator';
-
-type InstanceListFromTypes<T extends Array<ComponentType<any>>> = {
-  [K in keyof T]: T[K] extends ComponentType<any>
-    ? ComponentInstanceFor<T[K]>
-    : never;
-};
+import { ComponentType } from './Component';
+import { Entity } from './Entity';
+import { Game } from './Game';
 
 export interface ArchetypeEvents {
-  entityAdded(entityId: number): any;
+  entityAdded(entity: Entity): any;
   entityRemoved(entityId: number): any;
 }
 
@@ -27,73 +17,42 @@ export declare interface Archetype {
   ): boolean;
 }
 
+/**
+ * Archetype is a group of Entities which share a common component signature.
+ * Archetypes are the storage system for Entities; each Entity traces back to an Archetype's
+ * entities array. When Entity components change, they are moved from Archetype to Archetype.
+ * Grouping in this way is a helpful shortcut to fulfilling Query filter requirements,
+ * as we only need to map a small number of Archetypes -> Query, versus iterating over
+ * and checking every Entity in the system at init and then on every change.
+ */
 export class Archetype<
   T extends ComponentType<any>[] = ComponentType<any>[]
 > extends EventEmitter {
-  private entityIds = new Array<number>();
-  private components: Array<Array<ComponentInstance<any>>>;
-  /** Maps entity ID -> index in component arrays */
+  private entities = new Array<Entity<T[number]>>();
+  /** Maps entity ID -> index in entity array */
   private entityIndexLookup = new Array<number | undefined>();
-  private entityImpostor = new EntityImpostor<
-    ComponentInstanceFor<T[number]>,
-    never
-  >();
 
   constructor(public id: string) {
     super();
-    // initialize component storage arrays
-    const numTypes = this.countOnes(id);
-    this.components = new Array<Array<ComponentInstance<any>>>(numTypes)
-      .fill([])
-      .map(() => new Array<ComponentInstance<any>>());
   }
 
-  private iterator = (() => {
-    const self = this;
-    let entityIndex = 0;
-    const result = {
-      done: false,
-      value: this.entityImpostor,
-    };
-    return {
-      next(): IteratorResult<EntityImpostorFor<T>> {
-        if (entityIndex === self.entityIds.length) {
-          entityIndex = 0;
-          result.done = true;
-          return result;
-        } else {
-          result.done = false;
-        }
-        const entityId = self.entityIds[entityIndex];
-        result.value.__set(
-          entityId,
-          self.components.map(
-            (l) => l[entityIndex],
-          ) as InstanceListFromTypes<T>,
-        );
-        entityIndex++;
-        return result;
-      },
-    } as Iterator<EntityImpostorFor<T>>;
-  })();
-
+  /**
+   * Archetype is iterable; iterating it will iterate over its stored
+   * Entities.
+   */
   [Symbol.iterator]() {
-    return this.iterator;
+    return this.entities[Symbol.iterator]();
   }
 
-  // TODO: FIX INDEX LOGIC IN THESE TWO
-  addEntity(entityId: number, componentInstances: InstanceListFromTypes<T>) {
+  addEntity(entity: Entity) {
     // this is the index ("column") of this entity in the table
-    const index = this.entityIds.length;
+    const index = this.entities.length;
     // for lookup later when presented with an entityId
-    this.entityIndexLookup[entityId] = index;
+    this.entityIndexLookup[entity.id] = index;
 
     // add entity data to the column of all data arrays
-    this.entityIds[index] = entityId;
-    this.components.forEach((componentArray, componentIndex) => {
-      componentArray[index] = componentInstances[componentIndex];
-    });
-    this.emit('entityAdded', entityId);
+    this.entities[index] = entity;
+    this.emit('entityAdded', entity);
   }
 
   /**
@@ -109,26 +68,27 @@ export class Archetype<
     }
     this.entityIndexLookup[entityId] = undefined;
 
-    this.entityIds.splice(index, 1);
-    const componentData = new Array<
-      ComponentInstance<any>
-    >() as InstanceListFromTypes<T>;
-    this.components.forEach((componentArray, componentIndex) => {
-      componentData[componentIndex] = componentArray.splice(index, 1)[0];
-    });
+    const [entity] = this.entities.splice(index, 1);
+    // FIXME: improve this!!! Maybe look into a linked list like that one blog post...
+    // decrement all entity index lookups that fall after this index
+    for (let i = 0; i < this.entityIndexLookup.length; i++) {
+      if (this.entityIndexLookup[i] && this.entityIndexLookup[i]! > index) {
+        this.entityIndexLookup[i]!--;
+      }
+    }
+
     this.emit('entityRemoved', entityId);
-    return componentData;
+    return entity;
   }
 
   getEntity(entityId: number) {
-    const entityIndex = this.entityIndexLookup[entityId];
-
-    if (entityIndex === undefined) {
-      return null;
+    const index = this.entityIndexLookup[entityId];
+    if (index === undefined) {
+      throw new Error(
+        `Could not find entity ${entityId} in archetype ${this.id}`,
+      );
     }
-
-    this.entityImpostor.__set(entityId, this.getComponentList(entityIndex));
-    return this.entityImpostor;
+    return this.entities[index];
   }
 
   hasAll = (types: ComponentType<any>[]) => {
@@ -156,40 +116,7 @@ export class Archetype<
     return !this.includes(Type);
   };
 
-  cleanup = () => {
-    // TODO: remove if unused
-  };
-
-  get entities() {
-    return this.entityIds;
-  }
-
-  private _tmpComponentList: InstanceListFromTypes<T> = new Array<
-    ComponentInstance<any>
-  >() as InstanceListFromTypes<T>;
-  private getComponentList = (
-    entityIndex: number,
-  ): InstanceListFromTypes<T> => {
-    this._tmpComponentList.length = 0;
-    let i = 0;
-    for (const list of this.components) {
-      this._tmpComponentList[i] = list[entityIndex];
-      i++;
-    }
-    return this._tmpComponentList;
-  };
-
-  private countOnes(id: string) {
-    let count = 0;
-    for (let i of id) {
-      if (i === '1') count++;
-    }
-    return count;
-  }
-
   toString() {
     return this.id;
   }
 }
-
-// TODO split to file

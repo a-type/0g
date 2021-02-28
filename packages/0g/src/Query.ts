@@ -5,6 +5,7 @@ import { Poolable } from './internal/objectPool';
 import { Archetype } from './Archetype';
 import { Filter, isFilter, has } from './filters';
 import { EntityImpostorFor, QueryIterator } from './QueryIterator';
+import { logger } from './logger';
 
 export type QueryComponentFilter = Array<
   Filter<ComponentType<any>> | ComponentType<any>
@@ -65,6 +66,7 @@ export class Query<
   };
 
   initialize(def: FilterDef) {
+    logger.debug(`Initializing Query ${this.toString()}`);
     this.filter = this.processDef(def);
 
     Object.values(this.game.archetypeManager.archetypes).forEach(
@@ -104,6 +106,7 @@ export class Query<
     }
 
     this.archetypes.push(archetype);
+    logger.debug(`Query ${this.toString()} added Archetype ${archetype.id}`);
     archetype.on('entityRemoved', this.handleEntityRemoved);
     archetype.on('entityAdded', this.handleEntityAdded);
   };
@@ -121,8 +124,9 @@ export class Query<
     return this.iterator;
   }
 
-  private handleEntityAdded = (entityId: number) => {
-    this.addToList(entityId);
+  private handleEntityAdded = (entity: EntityImpostorFor<FilterDef>) => {
+    logger.debug(`Entity ${entity.id} added to query ${this.toString()}`);
+    this.addToList(entity.id);
   };
 
   private handleEntityRemoved = (entityId: number) => {
@@ -130,7 +134,14 @@ export class Query<
   };
 
   toString() {
-    return JSON.stringify(this.filter);
+    return this.filter
+      .map((filterItem) => {
+        if (isFilter(filterItem)) {
+          return filterItem.toString();
+        }
+        return (filterItem as any).name;
+      })
+      .join(',');
   }
 
   get archetypeIds() {

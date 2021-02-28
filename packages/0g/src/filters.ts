@@ -4,6 +4,7 @@ export type Has<Comp extends ComponentType<any>> = {
   Component: Comp;
   kind: 'has';
   __isFilter: true;
+  toString(): string;
 };
 
 export const has = <Comp extends ComponentType<any>>(
@@ -12,12 +13,16 @@ export const has = <Comp extends ComponentType<any>>(
   Component,
   kind: 'has',
   __isFilter: true,
+  toString() {
+    return `has(${Component.name})`;
+  },
 });
 
 export type Not<Comp extends ComponentType<any>> = {
   Component: Comp;
   kind: 'not';
   __isFilter: true;
+  toString(): string;
 };
 
 export const not = <Comp extends ComponentType<any>>(
@@ -26,12 +31,16 @@ export const not = <Comp extends ComponentType<any>>(
   Component,
   kind: 'not',
   __isFilter: true,
+  toString() {
+    return `not(${Component.name})`;
+  },
 });
 
 export type Changed<Comp extends ComponentType<any>> = {
   Component: Comp;
   kind: 'changed';
   __isFilter: true;
+  toString(): string;
 };
 
 export const changed = <Comp extends ComponentType<any>>(
@@ -40,6 +49,9 @@ export const changed = <Comp extends ComponentType<any>>(
   Component,
   kind: 'changed',
   __isFilter: true,
+  toString() {
+    return `changed(${Component.name})`;
+  },
 });
 
 export type Filter<Comp extends ComponentType<any>> =

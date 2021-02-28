@@ -14,7 +14,7 @@ export function makeEffect<Filter extends QueryComponentFilter>(
     const cleanups = new Array<CleanupFn>();
 
     async function onEntityAdded(entityId: number) {
-      const entity = game.archetypeManager.getEntity(entityId);
+      const entity = game.get(entityId);
       if (!entity) {
         throw new Error(
           `Effect triggered for entity ${entityId}, but it was not found`,
@@ -22,7 +22,10 @@ export function makeEffect<Filter extends QueryComponentFilter>(
       }
       const result = effect(entity, game);
       if (result instanceof Promise) {
-        cleanups[entityId] = () => result.then((clean) => clean && clean());
+        cleanups[entityId] = () =>
+          result.then((clean) => {
+            clean && clean();
+          });
       } else if (result) {
         cleanups[entityId] = result;
       } else {
