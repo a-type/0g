@@ -1,6 +1,6 @@
 {
   "name": "@0g/editor",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Runtime editor for 0g games",
   "main": "dist/index.js",
   "module": "./dist-esm/index.js",
@@ -13,8 +13,8 @@
   "author": "Grant Forrest <gaforres@gmail.com>",
   "license": "MIT",
   "peerDependencies": {
-    "0g": "0.0.5",
-    "@0g/react": "0.0.5",
+    "0g": "0.0.6",
+    "@0g/react": "0.0.6",
     "react": "^17.0.0",
     "react-dom": "^17.0.0"
   },
