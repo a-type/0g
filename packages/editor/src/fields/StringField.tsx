@@ -11,7 +11,8 @@ export function StringField({ store, name }: StringFieldProps) {
   const ref = React.useRef<HTMLInputElement>(null);
   const onChange = React.useCallback(
     (ev: React.ChangeEvent<HTMLInputElement>) => {
-      store.set({ [name]: ev.target.value });
+      (store as any)[name] = ev.target.value;
+      store.updated = true;
     },
     [store, name],
   );

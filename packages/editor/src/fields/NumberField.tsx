@@ -17,7 +17,8 @@ export function NumberField({ store, name }: NumberFieldProps) {
   const ref = React.useRef<HTMLSpanElement>(null);
   const onChange = React.useCallback(
     (ev: React.ChangeEvent<HTMLInputElement>) => {
-      store.set({ [name]: ev.target.value });
+      (store as any)[name] = ev.target.value;
+      store.updated = true;
     },
     [store, name],
   );
