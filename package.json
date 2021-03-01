@@ -1,7 +1,7 @@
 {
   "name": "@0g/root",
   "private": true,
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "",
   "workspaces": {
     "packages": [
