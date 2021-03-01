@@ -1,58 +1,22 @@
-import { Entity } from './Entity';
 import { Game } from './Game';
-import { logger } from './logger';
-import { Query, QueryDef } from './Query';
+import { ObjectPool } from './internal/objectPool';
+import { Query, QueryComponentFilter } from './Query';
 
+// TODO: reuse queries with identical definitions!
 export class QueryManager {
-  private queryCache: Record<string, Query<any>> = {};
+  private pool: ObjectPool<Query<any>>;
 
-  constructor(private __game: Game) {}
-
-  create<Def extends QueryDef>(userDef: Partial<Def>) {
-    const def = {
-      all: [],
-      none: [],
-      ...userDef,
-    };
-    const key = Query.defToKey(def);
-    if (!this.queryCache[key]) {
-      this.queryCache[key] = new Query(def);
-    }
-
-    // evaluate all existing entities
-    this.__game.entities.entityList.forEach((entity) => {
-      this.queryCache[key].evaluate(entity);
-    });
-
-    return this.queryCache[key]!;
+  constructor(private game: Game) {
+    this.pool = new ObjectPool<Query<any>>(() => new Query(this.game));
   }
 
-  onEntityCreated = (entity: Entity) => {
-    // FIXME: perf?
-    for (const query of Object.values(this.queryCache)) {
-      query.evaluate(entity);
-    }
-  };
+  create<Def extends QueryComponentFilter>(userDef: Def) {
+    const query = this.pool.acquire();
+    query.initialize(userDef);
+    return query as Query<Def>;
+  }
 
-  onEntityDestroyed = (entity: Entity) => {
-    // FIXME: perf?
-    for (const query of Object.values(this.queryCache)) {
-      // FIXME: not working
-      // if (entity.__queries.has(query)) {
-      query.remove(entity);
-      // }
-    }
-  };
-
-  onEntityStoresChanged = (entity: Entity) => {
-    logger.debug(`Entity stores changed: ${entity.id}`);
-    // FIXME: perf?
-    for (const query of Object.values(this.queryCache)) {
-      query.evaluate(entity);
-    }
-  };
-
-  get queryCount() {
-    return Object.keys(this.queryCache).length;
+  release(query: Query<any>) {
+    this.pool.release(query);
   }
 }

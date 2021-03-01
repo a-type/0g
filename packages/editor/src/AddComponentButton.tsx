@@ -1,5 +1,5 @@
 import { ComponentType } from '0g';
-import { useGame } from '0g-react';
+import { useGame } from '@0g/react';
 import * as React from 'react';
 import {
   MenuArrow,
@@ -10,13 +10,12 @@ import {
   MenuTrigger,
 } from './components/Menu';
 
-export type AddComponentButtonProps = { entityId: string };
+export type AddComponentButtonProps = { entityId: number };
 
 export function AddComponentButton({ entityId }: AddComponentButtonProps) {
   const game = useGame();
-  const entity = game.get(entityId);
-  const addComponent = (component: ComponentType) => {
-    entity.add(component);
+  const addComponent = (C: ComponentType<any>) => {
+    game.add(entityId, new C());
   };
 
   return (
@@ -24,12 +23,9 @@ export function AddComponentButton({ entityId }: AddComponentButtonProps) {
       <MenuTrigger>Add Component</MenuTrigger>
       <MenuContent>
         <MenuLabel>Component Type</MenuLabel>
-        {Object.keys(game.componentTypes).map((componentName) => (
-          <MenuItem
-            key={componentName}
-            onClick={() => addComponent(game.componentTypes[componentName])}
-          >
-            {componentName}
+        {game.componentManager.componentTypes.map((Type) => (
+          <MenuItem key={Type.id} onClick={() => addComponent(Type)}>
+            {Type.name}
           </MenuItem>
         ))}
         <MenuArrow />

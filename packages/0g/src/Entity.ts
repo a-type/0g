@@ -1,108 +1,78 @@
+import { ComponentInstance, ComponentType } from './Component';
 import { Poolable } from './internal/objectPool';
-import { Query } from './Query';
-import {
-  ComponentType,
-  ComponentInstance,
-  ComponentInstanceFor,
-} from './components';
-import { Game } from './Game';
 
-export class Entity implements Poolable {
-  __data = new Map<ComponentType, ComponentInstance>();
-  __queries = new Set<Query<any>>();
-  __game: Game = null as any;
-  __stores: ComponentType[] = [];
-  __alive = true;
+// Utility type: it unwraps a ComponentType to an instance, making it nullable
+// if the type is not accounted for in the Entity definition, or "never" if the type
+// is specifically omitted - otherwise it is non-nullable.
+type DefinedInstance<
+  Present extends ComponentType<any>,
+  Omitted extends ComponentType<any>,
+  Type extends ComponentType<any>
+> = Type extends Present
+  ? InstanceType<Type>
+  : Type extends Omitted
+  ? never
+  : InstanceType<Type> | null;
 
-  id: string = 'unallocated';
+export class Entity<
+  DefiniteComponents extends ComponentType<any> = ComponentType<any>,
+  OmittedComponents extends ComponentType<any> = any
+> implements Poolable {
+  private _id = 0;
+  // TODO: make array
+  readonly components = new Map<number, ComponentInstance<any>>();
 
-  init(id: string, specs: ComponentType[]) {
-    this.__stores = specs;
-    this.id = id;
-    specs.forEach((spec) => {
-      this.add(spec);
+  get id() {
+    return this._id;
+  }
+
+  // TODO: hide these behind Symbols?
+  __set = (
+    entityId: number,
+    components: ComponentInstance<any>[] | Readonly<ComponentInstance<any>[]>,
+  ) => {
+    this._id = entityId;
+    this.components.clear();
+    components.forEach((comp) => {
+      this.components.set(comp.type, comp);
     });
-  }
+  };
 
-  /**
-   * Gets a Store instance of the provided type from the entity,
-   * throwing if that store does not exist. The returned value is
-   * readonly! Use the .set method to modify properties, or use
-   * .getWritable instead if you want to assign directly. Use
-   * .maybeGet if you're ok with a null value instead of throwing
-   * for nonexistent stores.
-   */
-  get<Spec extends ComponentType>(spec: Spec) {
-    const val = this.maybeGet(spec);
-    if (!val) {
-      throw new Error(`${spec.name} not present on entity ${this.id}`);
-    }
-    return val;
-  }
+  __addComponent = (instance: ComponentInstance<any>) => {
+    this.components.set(instance.type, instance);
+  };
 
-  maybeGet<Spec extends ComponentType>(spec: Spec) {
-    const val = this.getOrNull(spec);
-    if (!val) return null;
-    return val as Readonly<ComponentInstanceFor<Spec>>;
-  }
+  __removeComponent = (typeId: number) => {
+    const instance = this.components.get(typeId);
+    this.components.delete(typeId);
+    return instance;
+  };
 
-  /**
-   * Gets a Store of the given type from the entity which is
-   * directly writable. If this getter is used, it is assumed that
-   * the store will be modified, and any watchers will be updated next frame.
-   * This getter throws if the store is not present. Use .maybeGetWritable
-   * instead if you would rather get a null value.
-   */
-  getWritable<Spec extends ComponentType>(spec: Spec) {
-    const val = this.maybeGetWritable(spec);
-    if (!val) {
-      throw new Error(`${spec.name} not present on entity ${this.id}`);
-    }
-    return val;
-  }
+  get = <T extends ComponentType<any>>(
+    Type: T,
+  ): DefinedInstance<DefiniteComponents, OmittedComponents, T> => {
+    return (this.components.get(Type.id) ?? null) as DefinedInstance<
+      DefiniteComponents,
+      OmittedComponents,
+      T
+    >;
+  };
 
-  maybeGetWritable<Spec extends ComponentType>(spec: Spec) {
-    const val = this.getOrNull(spec);
-    if (!val) return null;
-    // mark the store preemptively as written to
-    val.mark();
-    return val;
-  }
-
-  private getOrNull<Spec extends ComponentType>(
-    spec: Spec,
-  ): ComponentInstanceFor<Spec> | null {
-    const val = this.__data.get(spec) as ComponentInstanceFor<Spec>;
-    return val || null;
-  }
-
-  add<Spec extends ComponentType>(
-    spec: Spec,
-    initial?: Partial<ComponentInstanceFor<Spec>>,
-  ) {
-    this.__game.entities.addStoreToEntity(this, spec, initial);
-    this.__stores.push(spec);
-    return this;
-  }
-
-  remove(spec: ComponentType) {
-    this.__game.entities.removeStoreFromEntity(this, spec);
-    return this;
-  }
+  maybeGet = <T extends ComponentInstance<any>>(
+    Type: ComponentType<T>,
+  ): T | null => {
+    return (this.components.get(Type.id) ?? null) as T | null;
+  };
 
   reset() {
-    this.__data.forEach((data, spec) => {
-      this.__game.stores.release(data);
-    });
-    this.__data.clear();
-    this.__stores = [];
-    this.__queries = new Set();
+    this.components.clear();
+    this._id = 0;
   }
 
-  get specs() {
-    return {
-      queries: Array.from(this.__queries.values()).map((q) => q.key),
-      stores: this.__stores.map((spec) => spec.name),
-    };
+  clone(other: Entity<any>) {
+    other.components.forEach((value, key) => {
+      this.components.set(key, value);
+    });
+    this._id = other.id;
   }
 }

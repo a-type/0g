@@ -1,12 +1,11 @@
 {
   "name": "website",
-  "version": "0.0.4",
+  "version": "0.0.6",
   "private": true,
   "dependencies": {
     "0g": "link:../0g",
-    "0g-box2d": "link:../box2d",
-    "0g-editor": "link:../editor",
-    "0g-react": "link:../react",
+    "@0g/editor": "link:../editor",
+    "@0g/react": "link:../react",
     "@craco/craco": "^6.0.0",
     "@emotion/react": "^11.1.2",
     "@emotion/styled": "^11.0.0",

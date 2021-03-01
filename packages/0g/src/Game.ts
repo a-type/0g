@@ -1,91 +1,86 @@
 import { EventEmitter } from 'events';
 import * as input from './input';
-import { EntityManager } from './EntityManager';
 import { QueryManager } from './QueryManager';
-import { Component, ComponentType } from './components';
+import { ComponentType, ComponentInstance } from './Component';
 import { ComponentManager } from './ComponentManager';
-import { System, SystemSpec } from './System';
+import { IdManager } from './IdManager';
+import { ArchetypeManager } from './ArchetypeManager';
+import { Operation, OperationQueue } from './operations';
+import { Entity } from './Entity';
+import { ResourceManager } from './resources/ResourceManager';
+import { ObjectPool } from './internal/objectPool';
 
-export type GamePlayState = 'paused' | 'running';
+export type GameConstants = {
+  maxComponentId: number;
+  maxEntities: number;
+};
+
+export interface GameEvents {
+  preStep(): any;
+  step(): any;
+  postStep(): any;
+  stepComplete(): any;
+  preApplyOperations(): any;
+}
 
 export declare interface Game {
-  on(event: 'preStep', callback: () => any): this;
-  on(event: 'step', callback: () => any): this;
-  on(event: 'postStep', callback: () => any): this;
-  on(event: 'playStateChanged', callback: (state: GamePlayState) => void): this;
-  off(event: 'preStep', callback: () => any): this;
-  off(event: 'step', callback: () => any): this;
-  off(event: 'postStep', callback: () => any): this;
-  off(
-    event: 'playStateChanged',
-    callback: (state: GamePlayState) => void,
-  ): this;
+  on<U extends keyof GameEvents>(event: U, callback: GameEvents[U]): this;
+  off<U extends keyof GameEvents>(event: U, callback: GameEvents[U]): this;
+  emit<U extends keyof GameEvents>(
+    event: U,
+    ...args: Parameters<GameEvents[U]>
+  ): boolean;
 }
 
 export class Game extends EventEmitter {
-  private _entityManager = new EntityManager(this);
-  private _componentTypes: Record<string, ComponentType>;
-  private _systems: SystemSpec[];
-  private _systemInstances: System[];
-  private _queryManager = new QueryManager(this);
-  private _storeManager = new ComponentManager(this);
+  private _queryManager: QueryManager;
+  private _idManager = new IdManager();
+  private _archetypeManager: ArchetypeManager;
+  private _operationQueue: OperationQueue = [];
+  private _componentManager: ComponentManager;
+  private _resourceManager = new ResourceManager();
+  private _runnableCleanups: (() => void)[];
+  private _entityPool = new ObjectPool(() => new Entity());
 
-  private _raf: (cb: FrameRequestCallback) => number;
-  private _cancelRaf: (handle: number) => void;
+  // TODO: configurable?
+  private _phases = ['preStep', 'step', 'postStep'] as const;
 
-  _playState: GamePlayState;
-
-  private _lastFrameTime: DOMHighResTimeStamp | null = null;
   private _delta = 0;
   private _time = 0;
-  private _frameHandle = 0;
 
   globals: Map<string, any>;
 
+  private _constants: GameConstants = {
+    maxComponentId: 256,
+    maxEntities: 2 ** 16,
+  };
+
   constructor({
     components,
-    requestFrame = requestAnimationFrame.bind(window),
-    cancelFrame = cancelAnimationFrame.bind(window),
-    initialPlayState: initialState = 'paused',
     systems = [],
     globals = new Map(),
   }: {
-    components: Record<string, ComponentType>;
-    requestFrame?: (callback: FrameRequestCallback) => number;
-    cancelFrame?: (frameHandle: number) => void;
-    initialPlayState?: GamePlayState;
-    systems?: SystemSpec[];
+    components: ComponentType<any>[];
+    systems?: ((game: Game) => () => void)[];
     globals?: Map<string, any>;
   }) {
     super();
     this.setMaxListeners(Infinity);
-    this._componentTypes = components;
-    this._systems = systems;
-    this._systemInstances = systems.map((Sys) => new Sys(this));
-    this._raf = requestFrame;
-    this._cancelRaf = cancelFrame;
-    this._playState = initialState;
+    this._componentManager = new ComponentManager(components, this);
+    this._queryManager = new QueryManager(this);
+    this._archetypeManager = new ArchetypeManager(this);
+    this._runnableCleanups = systems.map((sys) => sys(this));
     this.globals = globals;
-    this.initializeStores();
-    if (this._playState === 'running') {
-      this.resume();
-    }
   }
 
-  get entities() {
-    return this._entityManager;
+  get idManager() {
+    return this._idManager;
   }
-  get componentTypes() {
-    return this._componentTypes;
+  get componentManager() {
+    return this._componentManager;
   }
-  get systems() {
-    return this._systems;
-  }
-  get playState() {
-    return this._playState;
-  }
-  get isPaused() {
-    return this._playState === 'paused';
+  get archetypeManager() {
+    return this._archetypeManager;
   }
   get delta() {
     return this._delta;
@@ -93,64 +88,58 @@ export class Game extends EventEmitter {
   get time() {
     return this._time;
   }
-  get queries() {
+  get queryManager() {
     return this._queryManager;
   }
-  get stores() {
-    return this._storeManager;
+  get constants() {
+    return this._constants;
+  }
+  get resourceManager() {
+    return this._resourceManager;
+  }
+  get entityPool() {
+    return this._entityPool;
   }
 
-  get = (id: string) => {
-    return this.entities.entities[id] ?? null;
-  };
-  create = (ownId: string | null = null) => {
-    return this._entityManager.create(ownId);
-  };
-  destroy = (id: string) => {
-    return this._entityManager.destroy(id);
-  };
-
-  /** Resumes a paused game. Functionally equivalent to .play() */
-  resume = () => {
-    this._playState = 'running';
-    this._lastFrameTime = null;
-    this.runFrame(performance.now());
-    this.emit('playStateChanged', this._playState);
-  };
-  /**
-   * Start the built-in frame loop. This is the simplest way
-   * to get a game playing, but you can manually step the game
-   * using the .step(delta) method instead if you want to
-   * coordinate with a different animation frame loop (such as
-   * a WebXR session or Three.JS clock)
-   */
-  play = this.resume;
-
-  /**
-   * Pauses the built-in game loop. Will not have any effect
-   * if you manually step the game using .step(delta).
-   */
-  pause = () => {
-    this._playState = 'paused';
-    // TODO: does this make sense?
-    // this._cancelRaf(this._frameHandle);
-    this.emit('playStateChanged', this._playState);
+  create = () => {
+    const id = this.idManager.get();
+    this._operationQueue.push({
+      op: 'createEntity',
+      entityId: id,
+    });
+    return id;
   };
 
-  loadScene = (serialized: { id: string; data: Record<string, any> }[]) => {
-    for (const entry of serialized) {
-      const spec = Object.keys(entry.data).map(
-        (storeKind) => this._componentTypes[storeKind]!,
-      );
-      const entity = this.create(entry.id);
-      for (const store of spec) {
-        entity.add(store, entry.data[store.name]);
-      }
-    }
+  destroy = (id: number) => {
+    this._operationQueue.push({
+      op: 'destroyEntity',
+      entityId: id,
+    });
   };
 
-  saveScene = () => {
-    return this._entityManager.serialize();
+  add = <ComponentShape>(
+    entityId: number,
+    Type: ComponentType<ComponentShape>,
+    initial?: Partial<ComponentShape>,
+  ) => {
+    this._operationQueue.push({
+      op: 'addComponent',
+      entityId,
+      componentId: Type.id,
+      initialValues: initial,
+    });
+  };
+
+  remove = <T extends ComponentType<any>>(entityId: number, Type: T) => {
+    this._operationQueue.push({
+      op: 'removeComponent',
+      entityId,
+      componentId: Type.id,
+    });
+  };
+
+  get = (entityId: number): Entity<any> | null => {
+    return this.archetypeManager.getEntity(entityId);
   };
 
   /**
@@ -159,44 +148,47 @@ export class Game extends EventEmitter {
    */
   step = (delta: number) => {
     this._delta = delta;
-    this.emit('preStep');
-    this.emit('step');
-    this.emit('postStep');
+    this._phases.forEach((phase) => {
+      this.emit(phase);
+    });
+    this.emit('preApplyOperations');
+    this.flushOperations();
+    this.emit('stepComplete');
+  };
+
+  private flushOperations = () => {
+    while (this._operationQueue.length) {
+      this.applyOperation(this._operationQueue.shift()!);
+    }
+  };
+
+  private applyOperation = (operation: Operation) => {
+    let instance: ComponentInstance<any>;
+    switch (operation.op) {
+      case 'addComponent':
+        instance = this.componentManager.acquire(
+          operation.componentId,
+          operation.initialValues,
+        );
+        this.archetypeManager.addComponent(operation.entityId, instance);
+        break;
+      case 'removeComponent':
+        instance = this.archetypeManager.removeComponent(
+          operation.entityId,
+          operation.componentId,
+        );
+        this.componentManager.release(instance);
+        break;
+      case 'createEntity':
+        this.archetypeManager.createEntity(operation.entityId);
+        break;
+      case 'destroyEntity':
+        const entity = this.archetypeManager.destroyEntity(operation.entityId);
+        entity.components.forEach(this.componentManager.release);
+        this.entityPool.release(entity);
+        break;
+    }
   };
 
   input = input;
-
-  private runFrame = (time: DOMHighResTimeStamp) => {
-    if (this._playState === 'running')
-      this._frameHandle = this._raf(this.runFrame);
-
-    this._time = time;
-    this._delta =
-      this._lastFrameTime != null ? time - this._lastFrameTime : 16 + 2 / 3;
-
-    this.step(this._delta);
-  };
-
-  /**
-   * Writes all the default values of each kind of Store
-   * to a static property on the constructor
-   */
-  private initializeStores = () => {
-    const builtins = Component.builtinKeys;
-    Object.values(this._componentTypes).forEach((Comp) => {
-      const instance = new Comp();
-      (Comp as {
-        new (): any;
-        defaultValues: any;
-      }).defaultValues = Object.entries(instance).reduce(
-        (acc, [key, value]) => {
-          if (!builtins.includes(key)) {
-            acc[key] = value;
-          }
-          return acc;
-        },
-        {} as any,
-      );
-    });
-  };
 }

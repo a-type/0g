@@ -1,19 +1,15 @@
 import * as React from 'react';
-import { BricksGame } from '../demos/bricks/BricksGame';
 
 export function HomePage() {
   return (
     <article>
-      <div
+      <h1
         css={(theme) => ({
-          flexDirection: 'column',
-          alignItems: 'center',
-          width: '100vw',
-          height: '80vh',
+          fontFamily: theme.fonts.heading,
         })}
       >
-        <BricksGame />
-      </div>
+        0G
+      </h1>
       <section css={(theme) => ({ padding: theme.space[2] })}>
         <p>Stuff about library goes here</p>
       </section>

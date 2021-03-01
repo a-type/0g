@@ -4,14 +4,14 @@ import { NumberField } from './NumberField';
 import { StringField } from './StringField';
 
 export type AutoFieldProps = {
-  store: ComponentInstance;
+  store: ComponentInstance<unknown>;
   name: string;
 };
 
 type SupportedTypes = 'string' | 'number';
 
 function getType(
-  store: ComponentInstance,
+  store: ComponentInstance<unknown>,
   name: string,
 ): SupportedTypes | null {
   // get the constructor

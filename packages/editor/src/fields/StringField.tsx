@@ -2,7 +2,7 @@ import * as React from 'react';
 import { useId } from '../hooks/useId';
 import { Field, FieldLabel, FieldInput } from '../components/Field';
 import { ComponentFieldProps } from './types';
-import { useWatch } from '0g-react';
+import { useWatch } from '@0g/react';
 
 export type StringFieldProps = ComponentFieldProps;
 
@@ -11,7 +11,8 @@ export function StringField({ store, name }: StringFieldProps) {
   const ref = React.useRef<HTMLInputElement>(null);
   const onChange = React.useCallback(
     (ev: React.ChangeEvent<HTMLInputElement>) => {
-      store.set({ [name]: ev.target.value });
+      (store as any)[name] = ev.target.value;
+      store.updated = true;
     },
     [store, name],
   );

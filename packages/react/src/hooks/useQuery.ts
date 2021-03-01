@@ -1,11 +1,11 @@
 import { useLayoutEffect, useState } from 'react';
-import { QueryDef } from '0g';
+import { QueryComponentFilter } from '0g';
 import { useGame } from './useGame';
 
-export function useQuery(queryDef: QueryDef) {
+export function useQuery(queryDef: QueryComponentFilter) {
   const game = useGame();
   // stored as a static reference.
-  const [query] = useState(() => game.queries.create(queryDef));
+  const [query] = useState(() => game.queryManager.create(queryDef));
   const [_, setForceUpdate] = useState(Math.random());
 
   useLayoutEffect(() => {
@@ -22,5 +22,5 @@ export function useQuery(queryDef: QueryDef) {
     };
   }, [query]);
 
-  return query;
+  return query.entities;
 }
