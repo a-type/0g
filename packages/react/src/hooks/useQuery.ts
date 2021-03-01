@@ -1,11 +1,11 @@
 import { useLayoutEffect, useState } from 'react';
-import { UserQueryDef } from '0g';
+import { QueryComponentFilter } from '0g';
 import { useGame } from './useGame';
 
-export function useQuery(queryDef: UserQueryDef) {
+export function useQuery(queryDef: QueryComponentFilter) {
   const game = useGame();
   // stored as a static reference.
-  const [query] = useState(() => game.queryManager.createTracking(queryDef));
+  const [query] = useState(() => game.queryManager.create(queryDef));
   const [_, setForceUpdate] = useState(Math.random());
 
   useLayoutEffect(() => {
@@ -13,10 +13,12 @@ export function useQuery(queryDef: UserQueryDef) {
       setForceUpdate(Math.random());
     }
 
-    query.on('change', onEntitiesChanged);
+    query.on('entityAdded', onEntitiesChanged);
+    query.on('entityRemoved', onEntitiesChanged);
 
     return () => {
-      query.off('change', onEntitiesChanged);
+      query.off('entityAdded', onEntitiesChanged);
+      query.off('entityRemoved', onEntitiesChanged);
     };
   }, [query]);
 

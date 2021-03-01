@@ -1,15 +1,13 @@
-import { Component, ComponentInstance } from '0g';
+import { ComponentInstance } from '0g';
 import * as React from 'react';
 import { ComponentField } from './fields/ComponentField';
 
-function extractProps(component: ComponentInstance) {
-  return Object.entries(component).filter(
-    (entry) => !Component.builtinKeys.includes(entry[0]),
-  );
+function extractProps(component: ComponentInstance<unknown>) {
+  return Object.entries(Object.getPrototypeOf(component).constructor.defaults);
 }
 
 export type ComponentEditorProps = {
-  component: ComponentInstance;
+  component: ComponentInstance<any>;
 };
 
 export function ComponentEditor({ component: store }: ComponentEditorProps) {

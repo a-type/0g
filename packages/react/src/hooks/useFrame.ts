@@ -1,7 +1,6 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
-import { Query, UserQueryDef, QueryIteratorFn } from '0g';
+import { Query, QueryComponentFilter, QueryIteratorFn } from '0g';
 import { useGame } from './useGame';
-import { EntityImpostor } from '0g/dist-esm/EntityImpostor';
 
 /**
  * Runs a callback every game step
@@ -29,13 +28,14 @@ export function useFrame(callback: () => void) {
  * Iterates over a query result entity list every
  * game step
  */
-export function useQueryFrame<Q extends Query>(
+export function useQueryFrame<Q extends Query<QueryComponentFilter>>(
   input: Q,
   callback: QueryIteratorFn<Q>,
 ) {
   useFrame(() => {
     for (const ent of input) {
-      callback(ent);
+      // FIXME:
+      callback(ent as any);
     }
   });
 }

@@ -84,7 +84,6 @@ describe('Query', () => {
     for (const ent of query) {
       expect(ent.get(ComponentA)).not.toBe(null);
       expect(ent.get(ComponentB)).toBe(null);
-      expect(ent.get(ComponentC)).toBe(null);
     }
   });
 

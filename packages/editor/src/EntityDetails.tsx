@@ -6,7 +6,7 @@ import { PanelHeader } from './components/Panel';
 import { useForceUpdate } from './hooks/useForceUpdate';
 import { ComponentEditor } from './ComponentEditor';
 import { useStore } from './useStore';
-import { Component } from '0g';
+import { ComponentInstance } from '0g';
 
 export type EntityDetailsProps = {
   children?: React.ReactNode;
@@ -18,7 +18,9 @@ export function EntityDetails({}: EntityDetailsProps) {
   const entityId = useStore((s) => s.selectedEntityId);
   const game = useGame();
 
-  const [components, setComponents] = React.useState(new Array<Component>());
+  const [components, setComponents] = React.useState(
+    new Array<ComponentInstance<unknown>>(),
+  );
 
   // rerender if stores change
   React.useEffect(() => {
@@ -27,7 +29,7 @@ export function EntityDetails({}: EntityDetailsProps) {
     const ent = game.get(entityId);
     setComponents(Array.from(ent?.components.values() ?? []));
 
-    function onAddComponent(id: number, component: Component) {
+    function onAddComponent(id: number, component: ComponentInstance<unknown>) {
       if (id !== entityId) return;
       setComponents((cur) => {
         cur[component.type] = component;

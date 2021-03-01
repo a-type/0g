@@ -51,7 +51,7 @@ export class Entity<
   get = <T extends ComponentType<any>>(
     Type: T,
   ): DefinedInstance<DefiniteComponents, OmittedComponents, T> => {
-    return this.components.get(Type.id)! as DefinedInstance<
+    return (this.components.get(Type.id) ?? null) as DefinedInstance<
       DefiniteComponents,
       OmittedComponents,
       T

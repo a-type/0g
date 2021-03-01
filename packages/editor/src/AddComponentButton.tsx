@@ -14,8 +14,8 @@ export type AddComponentButtonProps = { entityId: number };
 
 export function AddComponentButton({ entityId }: AddComponentButtonProps) {
   const game = useGame();
-  const addComponent = (C: ComponentType) => {
-    game.archetypeManager.addComponent(entityId, new C());
+  const addComponent = (C: ComponentType<any>) => {
+    game.add(entityId, new C());
   };
 
   return (
