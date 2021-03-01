@@ -16,7 +16,7 @@ type DefinedInstance<
 
 export class Entity<
   DefiniteComponents extends ComponentType<any> = ComponentType<any>,
-  OmittedComponents extends ComponentType<any> = never
+  OmittedComponents extends ComponentType<any> = any
 > implements Poolable {
   private _id = 0;
   // TODO: make array
@@ -48,8 +48,14 @@ export class Entity<
     return instance;
   };
 
-  get = <T extends DefiniteComponents>(Type: T): InstanceType<T> => {
-    return this.components.get(Type.id)! as InstanceType<T>;
+  get = <T extends ComponentType<any>>(
+    Type: T,
+  ): DefinedInstance<DefiniteComponents, OmittedComponents, T> => {
+    return this.components.get(Type.id)! as DefinedInstance<
+      DefiniteComponents,
+      OmittedComponents,
+      T
+    >;
   };
 
   maybeGet = <T extends ComponentInstance<any>>(

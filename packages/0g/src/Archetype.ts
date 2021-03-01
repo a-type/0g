@@ -1,10 +1,9 @@
 import { EventEmitter } from 'events';
 import { ComponentType } from './Component';
 import { Entity } from './Entity';
-import { Game } from './Game';
 
 export interface ArchetypeEvents {
-  entityAdded(entity: Entity): any;
+  entityAdded(entity: Entity<any, any>): any;
   entityRemoved(entityId: number): any;
 }
 
@@ -28,7 +27,7 @@ export declare interface Archetype {
 export class Archetype<
   T extends ComponentType<any>[] = ComponentType<any>[]
 > extends EventEmitter {
-  private entities = new Array<Entity<T[number]>>();
+  private entities = new Array<Entity<T[number], any>>();
   /** Maps entity ID -> index in entity array */
   private entityIndexLookup = new Array<number | undefined>();
 
@@ -44,7 +43,7 @@ export class Archetype<
     return this.entities[Symbol.iterator]();
   }
 
-  addEntity(entity: Entity) {
+  addEntity(entity: Entity<any, any>) {
     // this is the index ("column") of this entity in the table
     const index = this.entities.length;
     // for lookup later when presented with an entityId

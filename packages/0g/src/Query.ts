@@ -6,6 +6,7 @@ import { Archetype } from './Archetype';
 import { Filter, isFilter, has } from './filters';
 import { EntityImpostorFor, QueryIterator } from './QueryIterator';
 import { logger } from './logger';
+import { Entity } from './Entity';
 
 export type QueryComponentFilter = Array<
   Filter<ComponentType<any>> | ComponentType<any>
@@ -16,15 +17,15 @@ export interface QueryEvents {
   entityRemoved(entityId: number): void;
 }
 
-type ExtractQueryDef<Q extends Query> = Q extends Query<infer Def>
+type ExtractQueryDef<Q extends Query<any>> = Q extends Query<infer Def>
   ? Def
   : never;
 
-export type QueryIteratorFn<Q extends Query, Returns = void> = {
+export type QueryIteratorFn<Q extends Query<any>, Returns = void> = {
   (ent: EntityImpostorFor<ExtractQueryDef<Q>>): Returns;
 };
 
-export declare interface Query {
+export declare interface Query<FilterDef extends QueryComponentFilter> {
   on<U extends keyof QueryEvents>(ev: U, cb: QueryEvents[U]): this;
   off<U extends keyof QueryEvents>(ev: U, cb: QueryEvents[U]): this;
   emit<U extends keyof QueryEvents>(
@@ -33,9 +34,7 @@ export declare interface Query {
   ): boolean;
 }
 
-export class Query<
-    FilterDef extends QueryComponentFilter = QueryComponentFilter
-  >
+export class Query<FilterDef extends QueryComponentFilter>
   extends EventEmitter
   implements Poolable {
   public filter: Filter<ComponentType<any>>[] = [];
@@ -51,7 +50,7 @@ export class Query<
   constructor(private game: Game) {
     super();
     this.addedIterable = {
-      [Symbol.iterator]: () => new AddedIterator(game, this),
+      [Symbol.iterator]: () => new AddedIterator<FilterDef>(game, this),
     };
     // when do we reset the frame-specific tracking?
     // right before we populate new values from this frame's operations.
@@ -124,7 +123,7 @@ export class Query<
     return this.iterator;
   }
 
-  private handleEntityAdded = (entity: EntityImpostorFor<FilterDef>) => {
+  private handleEntityAdded = (entity: Entity) => {
     logger.debug(`Entity ${entity.id} added to query ${this.toString()}`);
     this.addToList(entity.id);
   };
@@ -216,7 +215,7 @@ class AddedIterator<Def extends QueryComponentFilter>
     done: true,
     value: null as any,
   };
-  constructor(private game: Game, private query: Query) {}
+  constructor(private game: Game, private query: Query<any>) {}
 
   next() {
     if (this.index >= this.query.addedIds.length) {

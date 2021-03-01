@@ -4,10 +4,10 @@ import { Query, QueryComponentFilter } from './Query';
 
 // TODO: reuse queries with identical definitions!
 export class QueryManager {
-  private pool: ObjectPool<Query>;
+  private pool: ObjectPool<Query<any>>;
 
   constructor(private game: Game) {
-    this.pool = new ObjectPool<Query>(() => new Query(this.game));
+    this.pool = new ObjectPool<Query<any>>(() => new Query(this.game));
   }
 
   create<Def extends QueryComponentFilter>(userDef: Def) {
@@ -16,7 +16,7 @@ export class QueryManager {
     return query as Query<Def>;
   }
 
-  release(query: Query) {
+  release(query: Query<any>) {
     this.pool.release(query);
   }
 }

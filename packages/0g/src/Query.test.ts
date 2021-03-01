@@ -83,7 +83,8 @@ describe('Query', () => {
     expect(query.archetypeIds).toEqual(['01000000000', '01001000000']);
     for (const ent of query) {
       expect(ent.get(ComponentA)).not.toBe(null);
-      expect(ent.maybeGet(ComponentB)).toBe(null);
+      expect(ent.get(ComponentB)).toBe(null);
+      expect(ent.get(ComponentC)).toBe(null);
     }
   });
 
@@ -166,7 +167,7 @@ describe('Query', () => {
   });
 
   describe('events', () => {
-    let query: Query;
+    let query: Query<any>;
     const onAdded = jest.fn();
     const onRemoved = jest.fn();
 
