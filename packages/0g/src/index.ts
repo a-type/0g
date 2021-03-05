@@ -1,3 +1,5 @@
+import { AssetLoader } from './Assets';
+
 export * from './Game';
 export * from './Query';
 export * from './Component';
@@ -6,6 +8,10 @@ export * from './filters';
 export * from './Effect';
 export * from './compose';
 
-export interface GameResources {
+export interface Globals {
   [key: string]: any;
+}
+
+export interface AssetLoaders {
+  [key: string]: AssetLoader;
 }

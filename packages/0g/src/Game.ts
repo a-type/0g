@@ -6,10 +6,12 @@ import { IdManager } from './IdManager';
 import { ArchetypeManager } from './ArchetypeManager';
 import { Operation, OperationQueue } from './operations';
 import { Entity } from './Entity';
-import { ResourceManager } from './ResourceManager';
+import { Resources } from './Resources';
 import { ObjectPool } from './internal/objectPool';
 import { logger } from './logger';
 import { RemovedList } from './RemovedList';
+import { AssetLoaders, Globals } from '.';
+import { Assets } from './Assets';
 
 export type GameConstants = {
   maxComponentId: number;
@@ -40,18 +42,17 @@ export class Game extends EventEmitter {
   private _archetypeManager: ArchetypeManager;
   private _operationQueue: OperationQueue = [];
   private _componentManager: ComponentManager;
-  private _resourceManager = new ResourceManager();
+  private _globals = new Resources<Globals>();
   private _runnableCleanups: (() => void)[];
   private _entityPool = new ObjectPool(() => new Entity());
   private _removedList = new RemovedList();
+  private _assets: Assets<AssetLoaders>;
 
   // TODO: configurable?
   private _phases = ['preStep', 'step', 'postStep'] as const;
 
   private _delta = 0;
   private _time = 0;
-
-  globals: Map<string, any>;
 
   private _constants: GameConstants = {
     maxComponentId: 256,
@@ -61,19 +62,19 @@ export class Game extends EventEmitter {
   constructor({
     components,
     systems = [],
-    globals = new Map(),
+    assetLoaders = {},
   }: {
     components: ComponentType<any>[];
     systems?: ((game: Game) => () => void)[];
-    globals?: Map<string, any>;
+    assetLoaders?: AssetLoaders;
   }) {
     super();
     this.setMaxListeners(Infinity);
     this._componentManager = new ComponentManager(components, this);
+    this._assets = new Assets(assetLoaders);
     this._queryManager = new QueryManager(this);
     this._archetypeManager = new ArchetypeManager(this);
     this._runnableCleanups = systems.map((sys) => sys(this));
-    this.globals = globals;
   }
 
   get idManager() {
@@ -97,8 +98,11 @@ export class Game extends EventEmitter {
   get constants() {
     return this._constants;
   }
-  get resourceManager() {
-    return this._resourceManager;
+  get globals() {
+    return this._globals;
+  }
+  get assets() {
+    return this._assets;
   }
   get entityPool() {
     return this._entityPool;

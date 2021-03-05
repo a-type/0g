@@ -18,113 +18,20 @@ Of course, React adds additional overhead and can require a lot of imperative ba
 
 For more details, take a look at the [`@0g/react`](https://github.com/a-type/0g/tree/master/packages/react) package after you've read up on the basics of `0G`.
 
-## Show me a Game
-
-```tsx
-class Transform extends Component {
-  x = 0;
-  y = 0;
-  randomJump() {
-    this.set({
-      x: Math.random() * window.innerWidth,
-      y: Math.random() * window.innerHeight,
-    });
-  }
-}
-
-class ButtonTag extends Component {}
-
-class Button extends StateComponent {
-  element: HTMLButtonElement | null = null;
-  lastJump: number;
-}
-
-class Score extends Component {
-  points = 0;
-  increment() {
-    this.set({ points: this.points + 1 });
-  }
-}
-
-class ButtonMover extends System {
-  // new buttons that don't have a Button store connected yet
-  newButtons = this.query({
-    all: [ButtonTag, Transform],
-    none: [Button],
-  });
-  // buttons that have been initialized
-  buttons = this.query({
-    all: [ButtonTag, Button, Transform],
-  });
-  // reference the player to increment component
-  players = this.query({
-    all: [Score],
-  });
-
-  setup = this.frame(this.newButtons, (entity) => {
-    const element = document.createElement('button');
-    element.innerText = 'Click!';
-    element.style.position = 'absolute';
-    element.addEventListener('click', () => {
-      this.players.forEach((playerEntity) => {
-        playerEntity.get(Score).increment();
-      });
-      entity.get(Transform).randomJump();
-      entity.get(Button).set({ lastJump: Date.now() });
-    });
-    document.bodyElement.appendChild(element);
-    entity.add(Button, {
-      element,
-    });
-  });
-
-  run = this.frame(this.buttons, (entity) => {
-    const buttonStore = entity.get(Button);
-    if (Date.now() - buttonStore.lastJump > 3000) {
-      buttonStore.lastJump = Date.now();
-      entity.get(Transform).randomJump();
-    }
-    // update button positions
-    const transform = entity.get(Transform);
-    buttonStore.element.style.left = transform.x;
-    buttonStore.element.style.top = transform.y;
-  });
-}
-
-class ScoreRenderer extends System {
-  players = this.query({
-    all: [Score],
-  });
-
-  scoreElement = document.getElementById('scoreDisplay');
-
-  update = this.watch(this.players, [Score], (entity) => {
-    this.scoreElement.innerText = entity.get(Score).points;
-  });
-}
-
-const game = new Game({
-  components: { Transform, ButtonTag, Button, Score },
-  systems: [ButtonMover],
-});
-
-game.create('player').add(Score);
-
-game.create('button').add(Transform).add(ButtonTag);
-```
-
 ## Docs
 
-### ECS-based Architecture
+`0G` has an "ECS inspired" architecture. It's probably not accurate to call it an ECS - it doesn't follow all the rules, and in particular it doesn't maintain the kinds of performance optimizations which form a core part of what "ECS" means (Components in `0G` are objects, not raw data - so JavaScript can't optimize their memory locations like you could in a lower-level implementation).
 
-#### Components
+If you're familiar with ECS, some of these concepts should also feel familiar - but be sure to read on for details about the specifics of `0G`'s usage and patterns!
+
+### Components
 
 ```tsx
-class Transform extends Component {
-  x = 0;
-  y = 0;
-  angle = 0;
-
+class Transform extends Component({
+  x: 0,
+  y: 0,
+  angle: 0,
+}) {
   get position() {
     return {
       x: this.x,
@@ -132,68 +39,220 @@ class Transform extends Component {
     };
   }
 }
+
+class Rigidbody extends State({
+  value: new PhysicsLibrary.Rigidbody(),
+}) {}
 ```
 
 To start modeling your game behavior, you'll probably first begin defining Components.
 
-"Components" replace ECS "Components" naming (disambiguating the term from React Components). Components are where your game state lives. The purpose of the rest of your code is either to group, change, or render Components.
+Components are where your game state lives. The purpose of the rest of your code is either to group, change, or render Components.
 
 Components come in two flavors:
 
-- _Persistent_ : Serializeable and runtime-editable<sup>1</sup>, this data forms the loadable "scene."
+- _Component_ (persistent): Serializeable and runtime-editable<sup>1</sup>, this data forms the loadable "scene."
   - Example: Store the configuration of a physics rigidbody for each character
-- _State_: Store any data you want. Usually these stores are derived from persistent stores at initialization time.
+- _State_ (ephemeral): Store any data you want. Usually these components are derived from persistent Components at initialization time.
   - Example: Store the runtime rigidbody created by the physics system at runtime
 
 <sup><sup>1</sup> Runtime editing is not yet supported... except in the devtools console.</sup>
 
-#### Entities
+You'll notice the syntax for defining a Component is a bit odd. A Component, like `Transform` above, is a class constructor which inherits from a class generated by calling the function `Component` (or `State`).
+
+This unique syntax allows `0G` to correctly type all the data in your Components thoughout your game and provide advanced DX.
+
+To the `Component/State` function, we pass the default values. The object we pass to this function will define what data is serialized in a `Component`.
+
+In our actual class body, we can define additional properties or methods to improve the usage of our Component. I like to put computed data in properties here to reduce duplicated stored state and make things simpler in my game logic.
+
+#### Component Change Tracking
+
+`0G` can track changes you make to Components when you update it in certain ways. While not often needed, this can help to optimize certain parts of your game which might only need to run when a Component changes.
+
+To inform `0G` that your component data has changed, you can do one of two things:
+
+1. Set `.updated = true` on your component
+2. Make your changes within an `.update(comp => { comp.foo = 'bar'; })` block
+
+Most of the time, 1 is sufficient and straightforward.
+
+When you tell `0G` a Component has been updated, anything 'listening' for changes won't be informed immediately. The new updated flag state will be cached until the next frame.
+
+### Entities
 
 ```tsx
 const transform = entity.get(stores.Transform);
 transform.x = 100;
 ```
 
-As in classic ECS, Entities are identifiers for groupings of Components. Each Entity has an ID. In `0G`, an Entity object provides some convenience tools for retrieving, updating, and adding Components to itself.
+As in classic ECS, Entities are identifiers for groupings of Components. Each Entity has an ID. In `0G`, an Entity object provides some convenience tools for retrieving its components, with full TypeScript support.
 
-#### Queries
+There are a few ways to "get" Entities in `0G`. The most common is to get them from a Query (see below). Sometimes, you may know an Entity's ID and want to grab it directly. For that you can use `Game.get`:
+
+```ts
+const ent = game.get(23);
+```
+
+When you use a Query to find Entities, the resulting Entities will be fully typed with guarantees on known Components the Entity must possess. When you get an Entity directly from the game, all Components are considered nullable and you'll need to test to see if they are present before referencing them.
+
+```ts
+const ent = game.get(23);
+const transform = ent.get(Transform);
+// null safety is required - Transform may not exist on entity 23
+const x = transform?.x ?? 0;
+```
+
+There may be more to say about Entities, but it's better to see them in the context of Queries and Systems.
+
+### Queries
 
 ```tsx
-bodies = this.query({
-  all: [stores.Body, stores.Transform],
-  none: [stores.OmitPhysics],
-});
+[Player, changed(Transform), not(Body)];
 ```
 
 It's important, as a game developer, to find Entities in the game and iterate over them. Generally you want to find Entities by certain criteria. In `0G` the primary criteria is which Components they have associated.
 
 Queries are managed by the game, and they monitor changes to Entities and select which Entities match your criteria. For example, you could have a Query which selects all Entities that have a `Transform` and `Body` store to do physics calculations.
 
-#### Systems
+In practice, you'll usually define Queries by creating an array of Component constructors and Filters when constructing a System or Effect.
+
+#### Query Filters
+
+There are a number of filters available on `0G` you can use to select Entities:
+
+- `not(Component)`: The Entity does not have `Component` associated with it
+- `any(ComponentA, ComponentB)`: The Entity has at least one of the listed Components associated with it
+- `changed(Component)`: The query will only include an Entity if the specified Component changed last frame
+- `has(Component)`: The Entity has this Component. Implied if you just pass in `Component` directly
+
+`changed` is probably the most interesting. It relates to the change tracking mentioned above in the Components section. An Entity will only appear in a Query with a `changed` filter if the Component specified by that filter was flagged as changed last frame - either `.updated = true` was called, or a change was made via `.update(...)`.
+
+### Systems
 
 ```tsx
-class DemoMove extends System {
-  movable = this.query({
-    all: [stores.Transform],
-  });
+const demoMove = makeSystem([Transform], (entity, game) => {
+  const transform = entity.get(Transform);
+  // see the Resources section
+  const keyboard = game.resourceManager.immediate('keyboard');
+  if (keyboard.getKeyPressed('ArrowLeft')) {
+    transform.x -= 5;
+  } else if (keyboard.getKeyPressed('ArrowRight')) {
+    transform.x += 5;
+  }
+});
+```
 
-  run = this.frame(this.movable, (entity) => {
-    const transform = entity.getWritable(stores.Transform);
-    if (this.game.input.keyboard.getKeyPressed('ArrowLeft')) {
-      transform.x -= 5;
-    } else if (this.game.input.keyboard.getKeyPressed('ArrowRight')) {
-      transform.x += 5;
-    }
-  });
+Systems are where your game logic lives. They utilize Queries to access Entities in the game which meet certain constraints. Using those Queries, they can iterate over matching entities each frame, performing logic.
+
+A System has a Query definition (an array of Component constructors and Filters), and a callback. The callback is passed an Entity which matches the Query, and the Game itself.
+
+Inside the callback, reference the Entity's Components to gather data about it, and modify them to change the game state. You can also utilize `game` to add new Components, remove Components, create new Entities, etc.
+
+### Effects
+
+```ts
+const manageModel = makeEffect([ModelSource], async (entity, game) => {
+  const { src } = entity.get(ModelSource);
+  const vertices = await game.resourceManager.load(src);
+  const modelGeometry = new ThreeDLibrary.Geometry({ vertices });
+  game.add(entity.id, Mesh, { geometry: modelGeometry });
+
+  return () => {
+    game.remove(entity.id, Mesh);
+    modelGeometry.dispose();
+  };
+});
+```
+
+Effects are specialized Systems which give you a convenient way to express side-effects and asynchronous logic as part of your game.
+
+An effect specifies a Query and a callback. The callback receives an Entity which matches the Query, and the Game (like Systems).
+
+However, unlike Systems, the callback is only called once - when the Entity first matches the provided Query. The callback can also be `async` and await long-running tasks like asset loading.
+
+The callback can also return a new function. This returned function will be run during "cleanup" - when the Entity in question is first removed from the Query.
+
+Effects are great for modeling dependent state! Dependent state takes a form like "Any Entity with a BodyConfig component should also get a Body." These relationships are easy to express by defining the appropriate Query and writing a callback to create and assign the related Component, then unassign it when the Entity no longer satisfies the Query.
+
+### Resources
+
+The Game has some tools to help you manage shared global state and asset loading and management.
+
+#### Globals
+
+Globals are a big key-value store of anything you might need to reference from all over your game. Good candidates for global state are a Three.JS scene, a physics simulation, or smaller one-off state items like timers which might be awkward and heavy to implement with Components.
+
+More than just a dumb key-value, though, Globals allows you to `await` the presence of an expected global value. This is useful in Effects! For example, perhaps you want to have an Entity which controls the physics simulation on a per-scene basis. This Entity would then load the global physics simulation at some unspecified time - perhaps on the first frame, perhaps later. All Entities with physics objects associated with them would need to wait for this simulation to be bootstrapped - then will have to `await` it!
+
+```ts
+const manageSimulation = makeEffect(
+  [PhysicsWorldConfig],
+  async (entity, game) => {
+    const config = entity.get(PhysicsWorldConfig);
+    game.globals.resolve('physicsWorld', new PhysicsLibrary.World(config));
+    return () => {
+      game.globals.remove('physicsWorld');
+    };
+  },
+);
+
+const manageBody = makeEffect([BodyConfig], async (entity, game) => {
+  const simulation = await game.globals.load('physicsWorld');
+  // now the world has been loaded and we can create the Body
+  const body = simulation.createBody();
+  game.add(entity.id, Body, { value: body });
+  return () => {
+    simulation.destroyBody(body);
+    game.remove(entity.id, Body);
+  };
+});
+```
+
+Waiting for globals is a simple but powerful way to encode these kinds of dependencies in your Effects. You're also free to implement more than one way to define a global without changing the rest of the game logic which relies on it.
+
+#### Assets
+
+Assets are similar to Globals, but rather than resolving them manually, you provide specific named asset loaders up-front to your Game. For example, you might have an asset loader that loads `.OBJ` files.
+
+When an Asset is awaited for the first time, your loader kicks in and loads it for you, resolving the promise when loading is complete.
+
+Assets are cached once they're loaded the first time. Any subsequent waits on an asset will resolve immediately with the cached value.
+
+```ts
+const manageModel = makeEffect([ModelSource], async (entity, game) => {
+  const { src } = entity.get(ModelSource);
+  const vertices = await game.assets.load('.obj', src);
+  const modelGeometry = new ThreeDLibrary.Geometry({ vertices });
+  game.add(entity.id, Mesh, { geometry: modelGeometry });
+
+  return () => {
+    game.remove(entity.id, Mesh);
+    modelGeometry.dispose();
+  };
+});
+```
+
+#### Typings for Resources
+
+While `0G` can infer a lot of typings for you, globals are harder to do well.
+
+To achieve type-safety for Globals and Assets, you can manually define their shape by using `declare` in your game code to extend the interfaces which `0G` uses to define them:
+
+```ts
+import { AssetLoader } from '0g';
+
+declare package '0g' {
+  interface Globals {
+    physicsWorld: PhysicsEngine.Simulation;
+    scene: ThreeJS.Scene;
+  }
+
+  interface AssetLoaders {
+    '.obj': AssetLoader<Float32Array>;
+    '.jpg': AssetLoader<Image>;
+  }
 }
 ```
 
-Systems are where your game logic lives. They utilize Queries to access Entities in the game which meet certain constraints. Using those Queries, they can iterate over matching entities each frame, or monitor specific Components for changes.
-
-##### Using Systems to Render
-
-Systems are also how you render your game. `0G` supports flexible approaches to rendering.
-
-For Vanilla JS, you might want to use State Components (non-persistent) to initialize and store a renderable object, like a Pixi `Sprite` or a ThreeJS `Mesh`. The System can update the renderable each frame like any other data.
-
-If you want to use React to render a game, you can utilize the [`@0g/react`](https://github.com/a-type/0g/tree/master/packages/react) package to actually write Systems as React Components. The package provides the hooks you'll need to accomplish the same behavior as class-based Systems.
+With these type definitions in place, hopefully you'll see stricter type-checking for references to Globals or Assets.
