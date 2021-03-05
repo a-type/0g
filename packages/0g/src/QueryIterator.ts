@@ -1,12 +1,16 @@
 import { ComponentType } from './Component';
 import { Entity } from './Entity';
-import { Changed, Filter, not, Not } from './filters';
+import { Any, Changed, Filter, not, Not } from './filters';
 import { Game } from './Game';
 import { Query, QueryComponentFilter } from './Query';
 
 type FilterNots<
   CompUnion extends Filter<ComponentType<any>> | ComponentType<any>
 > = CompUnion extends Not<any> ? never : CompUnion;
+
+type UnwrapAnys<
+  CompUnion extends Filter<ComponentType<any>> | ComponentType<any>
+> = CompUnion extends Any<any> ? never : CompUnion;
 
 type OnlyNots<
   CompUnion extends Filter<ComponentType<any>> | ComponentType<any>
@@ -18,7 +22,7 @@ type UnwrapFilters<
 
 type DefiniteComponentsFromFilter<
   Fil extends QueryComponentFilter
-> = UnwrapFilters<FilterNots<Fil[number]>>;
+> = UnwrapFilters<UnwrapAnys<FilterNots<Fil[number]>>>;
 
 type OmittedComponentsFromFilter<Fil extends QueryComponentFilter> = OnlyNots<
   Fil[number]

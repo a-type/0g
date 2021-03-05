@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { SpaceGameRoot } from '../demos/space/SpaceGameRoot';
 
 export function HomePage() {
   return (
@@ -13,6 +14,7 @@ export function HomePage() {
       <section css={(theme) => ({ padding: theme.space[2] })}>
         <p>Stuff about library goes here</p>
       </section>
+      <SpaceGameRoot />
     </article>
   );
 }

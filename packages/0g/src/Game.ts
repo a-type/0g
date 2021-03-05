@@ -1,5 +1,4 @@
 import { EventEmitter } from 'events';
-import * as input from './input';
 import { QueryManager } from './QueryManager';
 import { ComponentType, ComponentInstance } from './Component';
 import { ComponentManager } from './ComponentManager';
@@ -9,6 +8,7 @@ import { Operation, OperationQueue } from './operations';
 import { Entity } from './Entity';
 import { ResourceManager } from './resources/ResourceManager';
 import { ObjectPool } from './internal/objectPool';
+import { logger } from './logger';
 
 export type GameConstants = {
   maxComponentId: number;
@@ -125,7 +125,7 @@ export class Game extends EventEmitter {
     this._operationQueue.push({
       op: 'addComponent',
       entityId,
-      componentId: Type.id,
+      componentType: Type.id,
       initialValues: initial,
     });
   };
@@ -134,7 +134,7 @@ export class Game extends EventEmitter {
     this._operationQueue.push({
       op: 'removeComponent',
       entityId,
-      componentId: Type.id,
+      componentType: Type.id,
     });
   };
 
@@ -156,6 +156,10 @@ export class Game extends EventEmitter {
     this.emit('stepComplete');
   };
 
+  enqueueOperation = (operation: Operation) => {
+    this._operationQueue.push(operation);
+  };
+
   private flushOperations = () => {
     while (this._operationQueue.length) {
       this.applyOperation(this._operationQueue.shift()!);
@@ -166,16 +170,20 @@ export class Game extends EventEmitter {
     let instance: ComponentInstance<any>;
     switch (operation.op) {
       case 'addComponent':
+        if (operation.entityId === 0) break;
+
         instance = this.componentManager.acquire(
-          operation.componentId,
+          operation.componentType,
           operation.initialValues,
         );
         this.archetypeManager.addComponent(operation.entityId, instance);
         break;
       case 'removeComponent':
+        if (operation.entityId === 0) break;
+
         instance = this.archetypeManager.removeComponent(
           operation.entityId,
-          operation.componentId,
+          operation.componentType,
         );
         this.componentManager.release(instance);
         break;
@@ -183,12 +191,15 @@ export class Game extends EventEmitter {
         this.archetypeManager.createEntity(operation.entityId);
         break;
       case 'destroyEntity':
+        if (operation.entityId === 0) break;
+
         const entity = this.archetypeManager.destroyEntity(operation.entityId);
         entity.components.forEach(this.componentManager.release);
         this.entityPool.release(entity);
         break;
+      case 'markChanged':
+        this.componentManager.markChanged(operation.componentId);
+        break;
     }
   };
-
-  input = input;
 }

@@ -2,11 +2,7 @@ const doLog = (
   level: 'info' | 'warn' | 'error' | 'debug' | 'log',
   ...messages: unknown[]
 ) => {
-  // always log in dev, and allow setting a flag to log in prod
-  if (
-    process.env.NODE_ENV !== 'production' ||
-    localStorage.getItem('DEBUG') === 'true'
-  ) {
+  if (localStorage.getItem('DEBUG') === 'true' || (window as any).DEBUG) {
     console[level](...messages);
   }
 };

@@ -33,6 +33,7 @@ export class Archetype<
 
   constructor(public id: string) {
     super();
+    this.setMaxListeners(10000000);
   }
 
   /**

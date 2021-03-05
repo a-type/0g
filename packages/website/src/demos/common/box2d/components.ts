@@ -31,6 +31,7 @@ export class BodyConfig extends Component(() => ({
   fixedRotation: false,
   angularDamping: 0,
   linearDamping: 0,
+  sensor: false,
 })) {}
 
 export class Body extends State(() => ({
@@ -49,9 +50,11 @@ export class ContactsCache extends State(() => ({
 })) {
   onBeginContact(contact: EntityContact) {
     this.began.add(contact);
+    this.updated = true;
   }
   onEndContact(contact: EntityContact) {
     this.ended.add(contact);
+    this.updated = true;
   }
 }
 

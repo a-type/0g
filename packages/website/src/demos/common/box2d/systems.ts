@@ -1,4 +1,4 @@
-import { not, makeSystem, makeEffect, changed, Game, compose } from '0g';
+import { makeSystem, makeEffect, changed, Game, compose } from '0g';
 import {
   b2Body,
   b2BodyType,
@@ -11,6 +11,13 @@ import {
 import { ContactListener, EntityContact } from './ContactListener';
 import * as components from './components';
 import { createCapsule } from './utils';
+
+declare module '0g' {
+  interface GameResources {
+    physicsWorld: b2World;
+    physicsContacts: ContactListener;
+  }
+}
 
 function assignBodyConfig(
   body: b2Body,
@@ -37,13 +44,14 @@ function assignBodyConfig(
 }
 
 function createFixtureDef(config: components.BodyConfig, id: number) {
-  const { density, restitution, friction, shape } = config;
+  const { density, restitution, friction, shape, sensor } = config;
 
   const fix = new b2FixtureDef();
   fix.density = density;
   fix.restitution = restitution;
   fix.friction = friction;
   fix.userData = { entityId: id };
+  fix.isSensor = sensor;
 
   let p: b2PolygonShape;
   switch (shape.shape) {
@@ -84,7 +92,7 @@ function applyFixtures(body: b2Body, fix: b2FixtureDef) {
   body.CreateFixture(fix);
 }
 
-const ManageWorldsEffect = makeEffect(
+const manageWorldsEffect = makeEffect(
   [components.WorldConfig],
   (entity, game) => {
     const config = entity.get(components.WorldConfig);
@@ -101,12 +109,12 @@ const ManageWorldsEffect = makeEffect(
   }
 );
 
-const ManageBodiesEffect = makeEffect(
+const manageBodiesEffect = makeEffect(
   [components.BodyConfig, components.Transform],
   async (entity, game) => {
     const bodyConfig = entity.get(components.BodyConfig);
     const transform = entity.get(components.Transform);
-    const world = await game.resourceManager.load<b2World>('physicsWorld');
+    const world = await game.resourceManager.load('physicsWorld');
 
     const b = world.CreateBody();
     const { x, y, angle } = transform;
@@ -125,7 +133,7 @@ const ManageBodiesEffect = makeEffect(
   }
 );
 
-const ManageContactsCacheEffect = makeEffect(
+const manageContactsCacheEffect = makeEffect(
   [components.Contacts],
   (entity, game) => {
     game.add(entity.id, components.ContactsCache);
@@ -136,14 +144,12 @@ const ManageContactsCacheEffect = makeEffect(
   }
 );
 
-const SubscribeContactsCacheEffect = makeEffect(
+const subscribeContactsCacheEffect = makeEffect(
   [components.ContactsCache],
   async (entity, game) => {
     const contactsCache = entity.get(components.ContactsCache);
 
-    const contactListener = await game.resourceManager.load<ContactListener>(
-      'physicsContacts'
-    );
+    const contactListener = await game.resourceManager.load('physicsContacts');
 
     contactListener.subscribe(entity.id, contactsCache);
 
@@ -153,7 +159,7 @@ const SubscribeContactsCacheEffect = makeEffect(
   }
 );
 
-const UpdateBodiesSystem = makeSystem(
+const updateBodiesSystem = makeSystem(
   [changed(components.BodyConfig), components.Body],
   (ent) => {
     const body = ent.get(components.Body);
@@ -165,16 +171,16 @@ const UpdateBodiesSystem = makeSystem(
   }
 );
 
-const ResetContactsSystem = makeSystem([components.Contacts], (ent) => {
+const resetContactsSystem = makeSystem([components.Contacts], (ent) => {
   const contacts = ent.get(components.Contacts);
   contacts.began.length = 0;
   contacts.ended.length = 0;
   contacts.updated = true;
 });
 
-const StepWorldRunner = (game: Game) => {
+const stepWorldRunner = (game: Game) => {
   let simulate: () => void;
-  game.resourceManager.load<b2World>('physicsWorld').then((world) => {
+  game.resourceManager.load('physicsWorld').then((world) => {
     simulate = () => {
       world.Step(1 / 60.0, 8, 3);
     };
@@ -186,7 +192,7 @@ const StepWorldRunner = (game: Game) => {
   };
 };
 
-const UpdateTransformsSystem = makeSystem(
+const updateTransformsSystem = makeSystem(
   [components.Body, components.Transform],
   (ent) => {
     const body = ent.get(components.Body);
@@ -201,7 +207,7 @@ const UpdateTransformsSystem = makeSystem(
   }
 );
 
-const UpdateContactsSystem = makeSystem(
+const updateContactsSystem = makeSystem(
   [changed(components.ContactsCache), components.Contacts],
   (ent) => {
     const cache = ent.get(components.ContactsCache);
@@ -225,13 +231,13 @@ const UpdateContactsSystem = makeSystem(
 );
 
 export const systems = compose(
-  ManageWorldsEffect,
-  ManageBodiesEffect,
-  ManageContactsCacheEffect,
-  SubscribeContactsCacheEffect,
-  UpdateBodiesSystem,
-  ResetContactsSystem,
-  StepWorldRunner,
-  UpdateTransformsSystem,
-  UpdateContactsSystem
+  manageWorldsEffect,
+  manageBodiesEffect,
+  manageContactsCacheEffect,
+  subscribeContactsCacheEffect,
+  updateBodiesSystem,
+  resetContactsSystem,
+  stepWorldRunner,
+  updateTransformsSystem,
+  updateContactsSystem
 );

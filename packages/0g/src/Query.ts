@@ -100,6 +100,8 @@ export class Query<FilterDef extends QueryComponentFilter>
         case 'changed':
           match = archetype.includes(filter.Component);
           break;
+        case 'any':
+          match = filter.Components.some((Comp) => archetype.includes(Comp));
       }
       if (!match) return;
     }
@@ -124,7 +126,6 @@ export class Query<FilterDef extends QueryComponentFilter>
   }
 
   private handleEntityAdded = (entity: Entity) => {
-    logger.debug(`Entity ${entity.id} added to query ${this.toString()}`);
     this.addToList(entity.id);
   };
 
@@ -200,10 +201,12 @@ export class Query<FilterDef extends QueryComponentFilter>
   };
 
   private emitAdded = (entityId: number) => {
+    logger.debug(`Entity ${entityId} added to query ${this.toString()}`);
     this.emit('entityAdded', entityId);
   };
 
   private emitRemoved = (entityId: number) => {
+    logger.debug(`Entity ${entityId} removed from query ${this.toString()}`);
     this.emit('entityRemoved', entityId);
   };
 }

@@ -47,8 +47,13 @@ function defaultDeserialize<Comp>(
   return data as Comp;
 }
 
-function defaultInitialize<Comp>(target: any, overrides: Partial<Comp>) {
+function defaultInitialize<Comp>(
+  target: any,
+  overrides: Partial<Comp>,
+  id: number,
+) {
   Object.assign(target, overrides);
+  target.id = id;
 }
 
 export type ComponentInstance<T> = Poolable &
@@ -117,7 +122,7 @@ function BaseComponent<T>({
      * changed() filters in queries.
      */
     set updated(_: true) {
-      this[COMPONENT_CHANGE_HANDLE](this as any);
+      this[COMPONENT_CHANGE_HANDLE]?.(this as any);
     }
   } as any;
 }

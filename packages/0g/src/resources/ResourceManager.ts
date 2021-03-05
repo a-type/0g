@@ -1,5 +1,8 @@
 import { ObjectPool, Poolable } from '../internal/objectPool';
 
+import { GameResources } from '..';
+import { logger } from '../logger';
+
 class ResourceHandle<T = any> implements Poolable {
   private _promise: Promise<T>;
   private _resolve: (value: T) => void = () => {
@@ -25,7 +28,7 @@ class ResourceHandle<T = any> implements Poolable {
   }
 
   get promise(): Promise<T> {
-    return this.promise;
+    return this._promise;
   }
 
   reset = () => {
@@ -41,9 +44,9 @@ class ResourceHandle<T = any> implements Poolable {
 
 export class ResourceManager {
   private handlePool = new ObjectPool(() => new ResourceHandle());
-  private handles = new Map<string, ResourceHandle>();
+  private handles = new Map<string | number, ResourceHandle>();
 
-  private getOrCreateGlobalHandle = (key: string) => {
+  private getOrCreateGlobalHandle = (key: string | number) => {
     let handle = this.handles.get(key);
     if (!handle) {
       handle = this.handlePool.acquire();
@@ -52,19 +55,25 @@ export class ResourceManager {
     return handle;
   };
 
-  load = <T>(key: string) => {
-    return this.getOrCreateGlobalHandle(key).promise as Promise<T>;
+  load = <Key extends keyof GameResources>(key: Key) => {
+    return this.getOrCreateGlobalHandle(key).promise as Promise<
+      GameResources[Key]
+    >;
   };
 
-  resolve = <T>(key: string, value: T) => {
+  resolve = <Key extends keyof GameResources>(
+    key: Key,
+    value: GameResources[Key],
+  ) => {
     this.getOrCreateGlobalHandle(key).resolve(value);
+    logger.debug('Resolved resource', key);
   };
 
-  immediate = <T>(key: string) => {
-    return this.getOrCreateGlobalHandle(key).value as T | null;
+  immediate = <Key extends keyof GameResources>(key: Key) => {
+    return this.getOrCreateGlobalHandle(key).value as GameResources[Key] | null;
   };
 
-  remove = (key: string) => {
+  remove = (key: keyof GameResources) => {
     const value = this.handles.get(key);
     if (value) {
       this.handlePool.release(value);

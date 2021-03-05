@@ -1,14 +1,14 @@
 export interface AddComponentOperation {
   op: 'addComponent';
   entityId: number;
-  componentId: number;
+  componentType: number;
   initialValues: any;
 }
 
 export interface RemoveComponentOperation {
   op: 'removeComponent';
   entityId: number;
-  componentId: number;
+  componentType: number;
 }
 
 export interface DestroyEntityOperation {
@@ -21,10 +21,16 @@ export interface CreateEntityOperation {
   entityId: number;
 }
 
+export interface MarkChangedOperation {
+  op: 'markChanged';
+  componentId: number;
+}
+
 export type Operation =
   | AddComponentOperation
   | RemoveComponentOperation
   | DestroyEntityOperation
-  | CreateEntityOperation;
+  | CreateEntityOperation
+  | MarkChangedOperation;
 
 export type OperationQueue = Operation[];

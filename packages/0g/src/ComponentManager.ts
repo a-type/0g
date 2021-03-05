@@ -32,7 +32,7 @@ export class ComponentManager {
       initialValues,
       this.game.idManager.get(),
     );
-    component[COMPONENT_CHANGE_HANDLE] = this.markChanged;
+    component[COMPONENT_CHANGE_HANDLE] = this.onComponentChanged;
     return component;
   };
 
@@ -45,11 +45,22 @@ export class ComponentManager {
     return !!this.changed[componentInstanceId];
   };
 
-  private markChanged = (component: ComponentInstance<any>) => {
+  private onComponentChanged = (component: ComponentInstance<any>) => {
+    this.game.enqueueOperation({
+      op: 'markChanged',
+      componentId: component.id,
+    });
+  };
+
+  markChanged = (component: ComponentInstance<any>) => {
     this.changed[component.id] = true;
   };
 
   private resetChanged = () => {
     this.changed.length = 0;
+  };
+
+  getTypeName = (typeId: number) => {
+    return this.pools[typeId].ComponentType.name;
   };
 }

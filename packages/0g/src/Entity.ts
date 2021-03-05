@@ -22,8 +22,14 @@ export class Entity<
   // TODO: make array
   readonly components = new Map<number, ComponentInstance<any>>();
 
+  private _destroyed = true;
+
   get id() {
     return this._id;
+  }
+
+  get destroyed() {
+    return this._destroyed;
   }
 
   // TODO: hide these behind Symbols?
@@ -36,6 +42,7 @@ export class Entity<
     components.forEach((comp) => {
       this.components.set(comp.type, comp);
     });
+    this._destroyed = false;
   };
 
   __addComponent = (instance: ComponentInstance<any>) => {
@@ -51,11 +58,16 @@ export class Entity<
   get = <T extends ComponentType<any>>(
     Type: T,
   ): DefinedInstance<DefiniteComponents, OmittedComponents, T> => {
-    return (this.components.get(Type.id) ?? null) as DefinedInstance<
+    const instance = (this.components.get(Type.id) ?? null) as DefinedInstance<
       DefiniteComponents,
       OmittedComponents,
       T
     >;
+    console.assert(
+      !instance || instance.id !== 0,
+      `Entity tried to access recycled Component instance of type ${Type.name}`,
+    );
+    return instance;
   };
 
   maybeGet = <T extends ComponentInstance<any>>(
@@ -66,7 +78,9 @@ export class Entity<
 
   reset() {
     this.components.clear();
+    // disabled to diagnose issues...
     this._id = 0;
+    this._destroyed = true;
   }
 
   clone(other: Entity<any>) {

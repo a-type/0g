@@ -52,6 +52,7 @@ export class ArchetypeManager extends EventEmitter {
       .fill('0')
       .join('');
     this.archetypes[this.emptyId] = new Archetype(this.emptyId);
+    this.setMaxListeners(1000000);
   }
 
   createEntity(entityId: number) {
@@ -68,7 +69,11 @@ export class ArchetypeManager extends EventEmitter {
     entityId: number,
     instance: ComponentInstanceFor<T>,
   ) {
-    logger.debug(`Adding ${instance.type} to entity ${entityId}`);
+    logger.debug(
+      `Adding ${
+        Object.getPrototypeOf(instance).constructor.name
+      } to entity ${entityId}`,
+    );
     const oldArchetypeId = this.entityLookup[entityId];
     if (oldArchetypeId === undefined) {
       throw new Error(
@@ -93,11 +98,17 @@ export class ArchetypeManager extends EventEmitter {
   }
 
   removeComponent(entityId: number, componentType: number) {
-    logger.debug(`Removing ${componentType} from entity ${entityId}`);
+    logger.debug(
+      `Removing ${this.game.componentManager.getTypeName(
+        componentType,
+      )} from entity ${entityId}`,
+    );
     const oldArchetypeId = this.entityLookup[entityId];
     if (oldArchetypeId === undefined) {
       throw new Error(
-        `Tried to remove component ${componentType} from ${entityId}, but it was not found in the archetype registry`,
+        `Tried to remove component ${this.game.componentManager.getTypeName(
+          componentType,
+        )} from ${entityId}, but it was not found in the archetype registry`,
       );
     }
     const oldArchetype = this.getOrCreate(oldArchetypeId);
@@ -135,7 +146,8 @@ export class ArchetypeManager extends EventEmitter {
   getEntity(entityId: number) {
     const archetypeId = this.entityLookup[entityId];
     if (archetypeId === undefined) {
-      throw new Error(`Could not find Archetype for Entity ${entityId}`);
+      logger.debug(`Could not find Archetype for Entity ${entityId}`);
+      return null;
     }
     const archetype = this.archetypes[archetypeId];
     return archetype.getEntity(entityId);
