@@ -1,7 +1,7 @@
-import { ObjectPool, Poolable } from '../internal/objectPool';
+import { ObjectPool, Poolable } from './internal/objectPool';
 
-import { GameResources } from '..';
-import { logger } from '../logger';
+import { GameResources } from '.';
+import { logger } from './logger';
 
 class ResourceHandle<T = any> implements Poolable {
   private _promise: Promise<T>;

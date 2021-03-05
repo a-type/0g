@@ -6,7 +6,7 @@ import { IdManager } from './IdManager';
 import { ArchetypeManager } from './ArchetypeManager';
 import { Operation, OperationQueue } from './operations';
 import { Entity } from './Entity';
-import { ResourceManager } from './resources/ResourceManager';
+import { ResourceManager } from './ResourceManager';
 import { ObjectPool } from './internal/objectPool';
 import { logger } from './logger';
 import { RemovedList } from './RemovedList';
