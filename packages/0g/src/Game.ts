@@ -9,6 +9,7 @@ import { Entity } from './Entity';
 import { ResourceManager } from './resources/ResourceManager';
 import { ObjectPool } from './internal/objectPool';
 import { logger } from './logger';
+import { RemovedList } from './RemovedList';
 
 export type GameConstants = {
   maxComponentId: number;
@@ -21,6 +22,7 @@ export interface GameEvents {
   postStep(): any;
   stepComplete(): any;
   preApplyOperations(): any;
+  destroyEntities(): any;
 }
 
 export declare interface Game {
@@ -41,6 +43,7 @@ export class Game extends EventEmitter {
   private _resourceManager = new ResourceManager();
   private _runnableCleanups: (() => void)[];
   private _entityPool = new ObjectPool(() => new Entity());
+  private _removedList = new RemovedList();
 
   // TODO: configurable?
   private _phases = ['preStep', 'step', 'postStep'] as const;
@@ -151,6 +154,8 @@ export class Game extends EventEmitter {
     this._phases.forEach((phase) => {
       this.emit(phase);
     });
+    this.emit('destroyEntities');
+    this._removedList.flush(this.destroyEntity);
     this.emit('preApplyOperations');
     this.flushOperations();
     this.emit('stepComplete');
@@ -158,6 +163,13 @@ export class Game extends EventEmitter {
 
   enqueueOperation = (operation: Operation) => {
     this._operationQueue.push(operation);
+  };
+
+  private destroyEntity = (entityId: number) => {
+    this._operationQueue.push({
+      op: 'destroyEntity',
+      entityId,
+    });
   };
 
   private flushOperations = () => {
@@ -190,6 +202,10 @@ export class Game extends EventEmitter {
       case 'createEntity':
         this.archetypeManager.createEntity(operation.entityId);
         break;
+      case 'removeEntity':
+        if (operation.entityId === 0) break;
+
+        this._removedList.add(operation.entityId);
       case 'destroyEntity':
         if (operation.entityId === 0) break;
 
