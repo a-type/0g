@@ -16,14 +16,14 @@ const game = new Game({
   systems: [box2dSystems, systems],
 });
 
-game.resourceManager.resolve('keyboard', keyboard);
+game.globals.resolve('keyboard', keyboard);
 game.on('stepComplete', keyboard.frame);
-game.resourceManager.resolve('pointer', pointer);
+game.globals.resolve('pointer', pointer);
 game.on('stepComplete', pointer.frame);
 
 const root = createSVGElement('svg');
 root.setAttribute('viewBox', '0 0 100 100');
-game.resourceManager.resolve('root', root);
+game.globals.resolve('root', root);
 
 // setup initial game entities
 worldPrefab(game);

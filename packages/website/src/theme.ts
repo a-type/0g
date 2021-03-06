@@ -4,7 +4,7 @@ export const theme: Theme = {
   colors: {
     background: '#202020',
     text: '#fff',
-    gray: '#404060',
+    gray: '#606070',
     textInverse: '#202020',
     backgroundInverse: '#fff',
   },

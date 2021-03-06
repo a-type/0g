@@ -1,5 +1,4 @@
 import { any, changed, compose, makeEffect, makeSystem } from '0g';
-import { b2Manifold, b2WorldManifold } from '@flyover/box2d';
 import { vecNormalize, vecScale } from 'math2d';
 import { Body, Contacts, Transform } from '../common/box2d/components';
 import {
@@ -28,7 +27,7 @@ const createSpriteEffect = makeEffect([SpriteConfig], async (entity, game) => {
   );
   element.appendChild(pathEl);
 
-  const root = await game.resourceManager.load('root');
+  const root = await game.globals.load('root');
 
   root.appendChild(element);
 
@@ -87,7 +86,7 @@ const bulletInitialVelocityEffect = makeEffect(
 const playerMovementSystem = makeSystem(
   [Player, Body, Transform],
   (entity, game) => {
-    const keyboard = game.resourceManager.immediate('keyboard')!;
+    const keyboard = game.globals.immediate('keyboard')!;
 
     let rotation = 0;
     if (keyboard.getKeyPressed('a')) {
@@ -147,7 +146,7 @@ const damageCooldownSystem = makeSystem([Damageable], (entity) => {
 });
 
 const shootSystem = makeSystem([Player, Transform], (entity, game) => {
-  const keyboard = game.resourceManager.immediate('keyboard')!;
+  const keyboard = game.globals.immediate('keyboard')!;
 
   if (keyboard.getKeyDown(' ') || keyboard.getKeyDown('Control')) {
     const { x, y, angle } = entity.get(Transform);

@@ -97,14 +97,14 @@ const manageWorldsEffect = makeEffect(
   (entity, game) => {
     const config = entity.get(components.WorldConfig);
     const world = new b2World(config.gravity);
-    game.resourceManager.resolve('physicsWorld', world);
+    game.globals.resolve('physicsWorld', world);
     const contactListener = new ContactListener();
     world.SetContactListener(contactListener);
-    game.resourceManager.resolve('physicsContacts', contactListener);
+    game.globals.resolve('physicsContacts', contactListener);
 
     return () => {
-      game.resourceManager.remove('physicsWorld');
-      game.resourceManager.remove('physicsContacts');
+      game.globals.remove('physicsWorld');
+      game.globals.remove('physicsContacts');
     };
   }
 );
@@ -114,7 +114,7 @@ const manageBodiesEffect = makeEffect(
   async (entity, game) => {
     const bodyConfig = entity.get(components.BodyConfig);
     const transform = entity.get(components.Transform);
-    const world = await game.resourceManager.load('physicsWorld');
+    const world = await game.globals.load('physicsWorld');
 
     const b = world.CreateBody();
     const { x, y, angle } = transform;
@@ -149,7 +149,7 @@ const subscribeContactsCacheEffect = makeEffect(
   async (entity, game) => {
     const contactsCache = entity.get(components.ContactsCache);
 
-    const contactListener = await game.resourceManager.load('physicsContacts');
+    const contactListener = await game.globals.load('physicsContacts');
 
     contactListener.subscribe(entity.id, contactsCache);
 
@@ -180,7 +180,7 @@ const resetContactsSystem = makeSystem([components.Contacts], (ent) => {
 
 const stepWorldRunner = (game: Game) => {
   let simulate: () => void;
-  game.resourceManager.load('physicsWorld').then((world) => {
+  game.globals.load('physicsWorld').then((world) => {
     simulate = () => {
       world.Step(1 / 60.0, 8, 3);
     };

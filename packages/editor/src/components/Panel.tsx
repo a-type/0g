@@ -14,6 +14,7 @@ export const PanelSurface = styled('div', {
   right: 0,
   bottom: 0,
   pointerEvents: 'none',
+  overflow: 'hidden',
 });
 
 const PanelRoot = styled(animated.div, {

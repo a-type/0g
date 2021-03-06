@@ -1,4 +1,4 @@
-import { ObjectPool, Poolable } from './internal/objectPool';
+import { ObjectPool } from './internal/objectPool';
 import { logger } from './logger';
 import { ResourceHandle } from './ResourceHandle';
 

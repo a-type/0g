@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { Editor } from '@0g/editor';
 import { spaceGame, spaceGameRoot } from './spaceGame';
 
 export function SpaceGameRoot() {
@@ -26,10 +27,21 @@ export function SpaceGameRoot() {
   return (
     <div
       css={{
-        width: '60vmin',
-        height: '60vmin',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        width: '100%',
       }}
-      ref={ref}
-    />
+    >
+      <div
+        css={{
+          width: '80vmin',
+          height: '80vmin',
+          margin: 'auto',
+        }}
+        ref={ref}
+      />
+      <Editor game={spaceGame} />
+    </div>
   );
 }
