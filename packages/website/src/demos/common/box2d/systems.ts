@@ -101,20 +101,19 @@ const manageWorldsEffect = makeEffect(
     const contactListener = new ContactListener();
     world.SetContactListener(contactListener);
     game.globals.resolve('physicsContacts', contactListener);
-
-    return () => {
-      game.globals.remove('physicsWorld');
-      game.globals.remove('physicsContacts');
-    };
+  },
+  (_, game) => {
+    game.globals.remove('physicsWorld');
+    game.globals.remove('physicsContacts');
   }
 );
 
 const manageBodiesEffect = makeEffect(
   [components.BodyConfig, components.Transform],
-  async (entity, game) => {
+  function* (entity, game) {
     const bodyConfig = entity.get(components.BodyConfig);
     const transform = entity.get(components.Transform);
-    const world = await game.globals.load('physicsWorld');
+    const world = yield game.globals.load('physicsWorld');
 
     const b = world.CreateBody();
     const { x, y, angle } = transform;
@@ -125,11 +124,14 @@ const manageBodiesEffect = makeEffect(
     applyFixtures(b, createFixtureDef(bodyConfig, entity.id));
 
     game.add(entity.id, components.Body, { value: b });
-
-    return () => {
-      world.DestroyBody(b);
-      game.remove(entity.id, components.Body);
-    };
+  },
+  function* (entity, game) {
+    const body = entity.get(components.Body);
+    if (body?.value) {
+      const world = yield game.globals.load('physicsWorld');
+      world.DestroyBody(body.value);
+    }
+    game.remove(entity.id, components.Body);
   }
 );
 
@@ -137,25 +139,24 @@ const manageContactsCacheEffect = makeEffect(
   [components.Contacts],
   (entity, game) => {
     game.add(entity.id, components.ContactsCache);
-
-    return () => {
-      game.remove(entity.id, components.ContactsCache);
-    };
+  },
+  (entity, game) => {
+    game.remove(entity.id, components.ContactsCache);
   }
 );
 
 const subscribeContactsCacheEffect = makeEffect(
   [components.ContactsCache],
-  async (entity, game) => {
+  function* (entity, game) {
     const contactsCache = entity.get(components.ContactsCache);
 
-    const contactListener = await game.globals.load('physicsContacts');
+    const contactListener = yield game.globals.load('physicsContacts');
 
     contactListener.subscribe(entity.id, contactsCache);
-
-    return () => {
-      contactListener.unsubscribe(entity.id);
-    };
+  },
+  function* (entity, game) {
+    const contactListener = yield game.globals.load('physicsContacts');
+    contactListener.unsubscribe(entity.id);
   }
 );
 

@@ -105,11 +105,12 @@ export class ArchetypeManager extends EventEmitter {
     );
     const oldArchetypeId = this.entityLookup[entityId];
     if (oldArchetypeId === undefined) {
-      throw new Error(
+      logger.warn(
         `Tried to remove component ${this.game.componentManager.getTypeName(
           componentType,
         )} from ${entityId}, but it was not found in the archetype registry`,
       );
+      return;
     }
     const oldArchetype = this.getOrCreate(oldArchetypeId);
 

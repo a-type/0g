@@ -119,7 +119,7 @@ export class Game extends EventEmitter {
 
   destroy = (id: number) => {
     this._operationQueue.push({
-      op: 'destroyEntity',
+      op: 'removeEntity',
       entityId: id,
     });
   };
@@ -146,7 +146,10 @@ export class Game extends EventEmitter {
   };
 
   get = (entityId: number): Entity<any> | null => {
-    return this.archetypeManager.getEntity(entityId);
+    return (
+      this.archetypeManager.getEntity(entityId) ??
+      this._removedList.get(entityId)
+    );
   };
 
   /**
@@ -169,11 +172,11 @@ export class Game extends EventEmitter {
     this._operationQueue.push(operation);
   };
 
-  private destroyEntity = (entityId: number) => {
-    this._operationQueue.push({
-      op: 'destroyEntity',
-      entityId,
+  private destroyEntity = (entity: Entity) => {
+    entity.components.forEach((instance) => {
+      if (instance) this.componentManager.release(instance);
     });
+    this.entityPool.release(entity);
   };
 
   private flushOperations = () => {
@@ -184,6 +187,8 @@ export class Game extends EventEmitter {
 
   private applyOperation = (operation: Operation) => {
     let instance: ComponentInstance<any>;
+    let entity: Entity;
+
     switch (operation.op) {
       case 'addComponent':
         if (operation.entityId === 0) break;
@@ -201,7 +206,9 @@ export class Game extends EventEmitter {
           operation.entityId,
           operation.componentType,
         );
-        this.componentManager.release(instance);
+        if (instance) {
+          this.componentManager.release(instance);
+        }
         break;
       case 'createEntity':
         this.archetypeManager.createEntity(operation.entityId);
@@ -209,13 +216,9 @@ export class Game extends EventEmitter {
       case 'removeEntity':
         if (operation.entityId === 0) break;
 
-        this._removedList.add(operation.entityId);
-      case 'destroyEntity':
-        if (operation.entityId === 0) break;
+        entity = this.archetypeManager.destroyEntity(operation.entityId);
 
-        const entity = this.archetypeManager.destroyEntity(operation.entityId);
-        entity.components.forEach(this.componentManager.release);
-        this.entityPool.release(entity);
+        this._removedList.add(entity);
         break;
       case 'markChanged':
         this.componentManager.markChanged(operation.componentId);

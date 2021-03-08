@@ -36,6 +36,7 @@ describe('Query', () => {
         componentTypes: {
           length: 10,
         },
+        getTypeName: () => 'TEST MOCK',
       },
       entityPool: {
         acquire() {

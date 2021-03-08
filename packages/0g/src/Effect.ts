@@ -2,16 +2,21 @@ import { Game } from './Game';
 import { QueryComponentFilter } from './Query';
 import { EntityImpostorFor } from './QueryIterator';
 
-type CleanupFn = () => void | Promise<void>;
-type CleanupResult = Promise<CleanupFn | void> | CleanupFn | void;
-
 export function makeEffect<Filter extends QueryComponentFilter>(
   filter: Filter,
-  effect: (entity: EntityImpostorFor<Filter>, game: Game) => CleanupResult,
+  effect: (
+    entity: EntityImpostorFor<Filter>,
+    game: Game,
+    abortSignal: AbortSignal,
+  ) => Generator<any> | void,
+  cleanup?: (
+    entity: EntityImpostorFor<Filter>,
+    game: Game,
+  ) => Generator<any> | void,
 ) {
   return function (game: Game) {
     const query = game.queryManager.create(filter);
-    const cleanups = new Array<CleanupFn>();
+    const abortControllers = new Array<AbortController>();
 
     async function onEntityAdded(entityId: number) {
       const entity = game.get(entityId);
@@ -20,29 +25,60 @@ export function makeEffect<Filter extends QueryComponentFilter>(
           `Effect triggered for entity ${entityId}, but it was not found`,
         );
       }
-      const result = effect(entity, game);
-      if (result instanceof Promise) {
-        cleanups[entityId] = () =>
-          result.then((clean) => {
-            clean && clean();
-          });
-      } else if (result) {
-        cleanups[entityId] = result;
-      } else {
-        cleanups[entityId] = () => {};
+      const abortController = new AbortController();
+      abortControllers[entityId] = abortController;
+      const result = effect(entity, game, abortController.signal);
+      if (result) {
+        await pullCancelable(result, abortController.signal);
       }
     }
 
-    function onEntityRemoved(entityId: number) {
-      cleanups[entityId]();
+    async function onEntityRemoved(entityId: number) {
+      abortControllers[entityId]?.abort();
+      const entity = game.get(entityId);
+      if (!entity) {
+        throw new Error(
+          `Effect cleanup triggered for entity ${entityId}, but it was not found`,
+        );
+      }
+      const result = cleanup!(entity, game);
+      if (result) {
+        await pull(result);
+      }
     }
 
     query.on('entityAdded', onEntityAdded);
-    query.on('entityRemoved', onEntityRemoved);
+    if (cleanup) {
+      query.on('entityRemoved', onEntityRemoved);
+    }
 
     return () => {
       query.off('entityAdded', onEntityAdded);
-      query.off('entityRemoved', onEntityRemoved);
+      if (cleanup) {
+        query.off('entityRemoved', onEntityRemoved);
+      }
     };
   };
+}
+
+async function pull(generator: Generator<any>, input?: any) {
+  const { done, value } = generator.next(input);
+  let nextInput = value instanceof Promise ? await value : value;
+  if (!done) {
+    await pull(generator, nextInput);
+  }
+}
+
+async function pullCancelable(
+  generator: Generator<any>,
+  abortSignal: AbortSignal,
+  input?: any,
+) {
+  if (abortSignal.aborted) return;
+
+  const { done, value } = generator.next(input);
+  let nextInput = value instanceof Promise ? await value : value;
+  if (!done) {
+    await pullCancelable(generator, abortSignal, nextInput);
+  }
 }

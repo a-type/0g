@@ -12,16 +12,6 @@ export interface RemoveComponentOperation {
 }
 
 /**
- * At some (unguaranteed) time after a user removes
- * an Entity, it is recycled and all associated Components
- * which remain on it are removed and recycled as well.
- */
-export interface DestroyEntityOperation {
-  op: 'destroyEntity';
-  entityId: number;
-}
-
-/**
  * Before destroying an Entity, it is first removed
  * from its Archetype and any associated Queries. This
  * allows Effects to run cleanup.
@@ -45,7 +35,6 @@ export type Operation =
   | AddComponentOperation
   | RemoveComponentOperation
   | RemoveEntityOperation
-  | DestroyEntityOperation
   | CreateEntityOperation
   | MarkChangedOperation;
 
