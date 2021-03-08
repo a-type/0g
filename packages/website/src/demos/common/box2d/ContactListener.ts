@@ -20,7 +20,6 @@ function getOrCreatePair(contact: b2Contact) {
   const bData = contact.GetFixtureB().GetUserData() ?? {};
   const aId = (aData.entityId as number) || null;
   const bId = (bData.entityId as number) || null;
-  const key = `${aId}<->${bId}`;
 
   let pair = contactPairCache.get(contact);
   if (pair) {
@@ -44,12 +43,6 @@ function getOrCreatePair(contact: b2Contact) {
 }
 
 function cleanupPair(contact: b2Contact) {
-  const aData = contact.GetFixtureA().GetUserData() ?? {};
-  const bData = contact.GetFixtureB().GetUserData() ?? {};
-  const aId = (aData.entityId as string) || null;
-  const bId = (bData.entityId as string) || null;
-  const key = `${aId}<->${bId}`;
-
   const pair = contactPairCache.get(contact);
   if (pair) {
     contactPairCache.delete(contact);
