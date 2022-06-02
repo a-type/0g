@@ -18,6 +18,7 @@
     "@types/node": "^14.14.11",
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",
+    "cross-env": "^7.0.3",
     "math2d": "^3.0.0",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
@@ -29,7 +30,7 @@
   "scripts": {
     "start": "craco start",
     "dev": "craco start",
-    "build": "craco build",
+    "build": "cross-env SKIP_PREFLIGHT_CHECK=true craco build",
     "test": "craco test",
     "eject": "craco eject",
     "release": "echo \"no-op\""
