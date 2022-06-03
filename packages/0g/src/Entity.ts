@@ -40,13 +40,13 @@ export class Entity<
     this._id = entityId;
     this.components.clear();
     components.forEach((comp) => {
-      this.components.set(comp.type, comp);
+      this.components.set(comp.__type, comp);
     });
     this._destroyed = false;
   };
 
   __addComponent = (instance: ComponentInstance<any>) => {
-    this.components.set(instance.type, instance);
+    this.components.set(instance.__type, instance);
   };
 
   __removeComponent = (typeId: number) => {

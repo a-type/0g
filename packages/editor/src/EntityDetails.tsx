@@ -32,7 +32,7 @@ export function EntityDetails({}: EntityDetailsProps) {
     function onAddComponent(id: number, component: ComponentInstance<unknown>) {
       if (id !== entityId) return;
       setComponents((cur) => {
-        cur[component.type] = component;
+        cur[component.__type] = component;
         return cur;
       });
     }

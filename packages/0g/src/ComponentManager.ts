@@ -38,7 +38,7 @@ export class ComponentManager {
 
   release = (instance: ComponentInstance<any>) => {
     delete instance[COMPONENT_CHANGE_HANDLE];
-    return this.pools[instance.type].release(instance);
+    return this.pools[instance.__type].release(instance);
   };
 
   wasChangedLastFrame = (componentInstanceId: number) => {

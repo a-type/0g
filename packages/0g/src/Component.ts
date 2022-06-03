@@ -61,7 +61,7 @@ export type ComponentInstance<T> = Poolable &
     update: ComponentUpdateFn<T>;
     updated: boolean;
     id: number;
-    type: number;
+    __type: number;
     [COMPONENT_CHANGE_HANDLE]?: (self: T) => void;
   };
 
@@ -85,7 +85,7 @@ function BaseComponent<T>({
     > = defaultInitialize;
 
     id = 0;
-    type = Object.getPrototypeOf(this).constructor.id;
+    __type = Object.getPrototypeOf(this).constructor.id;
 
     constructor() {
       Object.assign(this, defaults());

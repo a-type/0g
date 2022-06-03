@@ -77,7 +77,7 @@ export class ArchetypeManager extends EventEmitter {
     const oldArchetypeId = this.entityLookup[entityId];
     if (oldArchetypeId === undefined) {
       throw new Error(
-        `Tried to add component ${instance.type} to ${entityId}, but it was not found in the archetype registry`,
+        `Tried to add component ${instance.__type} to ${entityId}, but it was not found in the archetype registry`,
       );
     }
     const oldArchetype = this.getOrCreate(oldArchetypeId);
@@ -88,7 +88,7 @@ export class ArchetypeManager extends EventEmitter {
 
     const newArchetypeId = (this.entityLookup[entityId] = this.flipBit(
       oldArchetypeId,
-      instance.type,
+      instance.__type,
     ));
     const archetype = this.getOrCreate(newArchetypeId);
     // copy entity from old to new
