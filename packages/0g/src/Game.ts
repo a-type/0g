@@ -12,6 +12,8 @@ import { logger } from './logger';
 import { RemovedList } from './RemovedList';
 import { AssetLoaders, Globals } from '.';
 import { Assets } from './Assets';
+import { Query, QueryComponentFilter } from './Query';
+import { EntityImpostorFor } from './QueryIterator';
 
 export type GameConstants = {
   maxComponentId: number;
@@ -108,6 +110,9 @@ export class Game extends EventEmitter {
     return this._entityPool;
   }
 
+  /**
+   * Allocates a new entity id and enqueues an operation to create the entity at the next opportunity.
+   */
   create = () => {
     const id = this.idManager.get();
     this._operationQueue.push({
@@ -117,6 +122,9 @@ export class Game extends EventEmitter {
     return id;
   };
 
+  /**
+   * Enqueues an entity to be destroyed at the next opportunity
+   */
   destroy = (id: number) => {
     this._operationQueue.push({
       op: 'removeEntity',
@@ -124,6 +132,9 @@ export class Game extends EventEmitter {
     });
   };
 
+  /**
+   * Add a component to an entity.
+   */
   add = <ComponentShape>(
     entityId: number,
     Type: ComponentType<ComponentShape>,
@@ -137,6 +148,9 @@ export class Game extends EventEmitter {
     });
   };
 
+  /**
+   * Remove a component by type from an entity
+   */
   remove = <T extends ComponentType<any>>(entityId: number, Type: T) => {
     this._operationQueue.push({
       op: 'removeComponent',
@@ -145,11 +159,28 @@ export class Game extends EventEmitter {
     });
   };
 
+  /**
+   * Get a single entity by its known ID
+   */
   get = (entityId: number): Entity<any> | null => {
     return (
       this.archetypeManager.getEntity(entityId) ??
       this._removedList.get(entityId)
     );
+  };
+
+  /**
+   * Run some logic for each entity that meets an ad-hoc query.
+   */
+  query = <Filter extends QueryComponentFilter>(
+    filter: Filter,
+    run: (entity: EntityImpostorFor<Filter>, game: this) => void,
+  ): void => {
+    const query = this._queryManager.create(filter);
+    let ent;
+    for (ent of query) {
+      run(ent, this);
+    }
   };
 
   /**
