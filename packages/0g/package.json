@@ -6,24 +6,24 @@
   "exports": {
     ".": {
       "development": "./src/index.ts",
-      "import": "./dist/esm/index.js",
-      "types": "./dist/esm/index.d.ts"
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
     },
     "./input": {
       "development": "./src/input/index.ts",
-      "import": "./dist/esm/input/index.js",
-      "types": "./dist/esm/input/index.d.ts"
+      "import": "./dist/input/index.js",
+      "types": "./dist/input/index.d.ts"
     }
   },
   "publishConfig": {
     "exports": {
       ".": {
-        "import": "./dist/esm/index.js",
-        "types": "./dist/esm/index.d.ts"
+        "import": "./dist/index.js",
+        "types": "./dist/index.d.ts"
       },
       "./input": {
-        "import": "./dist/esm/input/index.js",
-        "types": "./dist/esm/input/index.d.ts"
+        "import": "./dist/input/index.js",
+        "types": "./dist/input/index.d.ts"
       }
     },
     "access": "public"

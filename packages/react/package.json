@@ -6,15 +6,15 @@
   "exports": {
     ".": {
       "development": "./src/index.ts",
-      "import": "./dist/esm/index.js",
-      "types": "./dist/esm/index.d.ts"
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
     }
   },
   "publishConfig": {
     "exports": {
       ".": {
-        "import": "./dist/esm/index.js",
-        "types": "./dist/esm/index.d.ts"
+        "import": "./dist/index.js",
+        "types": "./dist/index.d.ts"
       }
     },
     "access": "public"

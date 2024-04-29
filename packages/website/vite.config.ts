@@ -9,7 +9,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
   optimizeDeps: {
-    exclude: [],
+    exclude: ['0g'],
     include: ['react/jsx-runtime', 'react', 'react-dom'],
   },
   resolve: {
@@ -23,7 +23,6 @@ export default defineConfig(({ mode }) => ({
   },
   server: {
     port: 4006,
-    strictPort: true,
   },
   build: {
     sourcemap: true,
