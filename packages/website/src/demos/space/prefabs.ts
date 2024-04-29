@@ -6,13 +6,13 @@ import {
   Damageable,
   Player,
   SpriteConfig,
-} from './components';
+} from './components.js';
 import {
   Transform,
   BodyConfig,
   Contacts,
   WorldConfig,
-} from '../common/box2d/components';
+} from '../common/box2d/components.js';
 
 export function playerPrefab(game: Game, { x, y }: { x: number; y: number }) {
   const id = game.create();
@@ -63,7 +63,7 @@ const asteroidSizes = [1, 3, 5];
 
 export function asteroidPrefab(
   game: Game,
-  { size, x, y }: { size: number; x: number; y: number }
+  { size, x, y }: { size: number; x: number; y: number },
 ) {
   const id = game.create();
   const variant = Math.floor(Math.random() * 3);
@@ -96,7 +96,7 @@ export function asteroidPrefab(
 
 export function bulletPrefab(
   game: Game,
-  { x, y, angle }: { x: number; y: number; angle: number }
+  { x, y, angle }: { x: number; y: number; angle: number },
 ) {
   const id = game.create();
   game.add(id, Bullet);

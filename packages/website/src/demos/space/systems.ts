@@ -13,38 +13,30 @@ import {
 import { asteroidPrefab, bulletPrefab } from './prefabs.js';
 import { createSVGElement } from './utils.js';
 
-const createSpriteEffect = makeEffect(
-  [SpriteConfig],
-  function* (entity, game) {
-    const element = createSVGElement('g');
-    const pathEl = createSVGElement('path');
-    const { path, stroke, dashGap } = entity.get(SpriteConfig);
-    pathEl.setAttribute('d', path);
-    pathEl.setAttribute('stroke', stroke);
-    pathEl.setAttribute('stroke-width', '1px');
-    pathEl.setAttribute('vector-effect', 'non-scaling-stroke');
-    pathEl.setAttribute(
-      'stroke-dasharray',
-      dashGap ? dashGap.toString() : 'none',
-    );
-    element.appendChild(pathEl);
+const createSpriteEffect = makeEffect([SpriteConfig], async (entity, game) => {
+  const element = createSVGElement('g');
+  const pathEl = createSVGElement('path');
+  const { path, stroke, dashGap } = entity.get(SpriteConfig);
+  pathEl.setAttribute('d', path);
+  pathEl.setAttribute('stroke', stroke);
+  pathEl.setAttribute('stroke-width', '1px');
+  pathEl.setAttribute('vector-effect', 'non-scaling-stroke');
+  pathEl.setAttribute(
+    'stroke-dasharray',
+    dashGap ? dashGap.toString() : 'none',
+  );
+  element.appendChild(pathEl);
 
-    const root = yield game.globals.load('root');
+  const root = await game.globals.load('root');
 
-    root.appendChild(element);
+  root.appendChild(element);
 
-    game.add(entity.id, Sprite, { element, path: pathEl });
-  },
-  function* (entity, game) {
-    const sprite = entity.get(Sprite);
-    if (sprite) {
-      const { element } = sprite;
-      const root = yield game.globals.load('root');
-      game.remove(entity.id, Sprite);
-      root.removeChild(element);
-    }
-  },
-);
+  game.add(entity.id, Sprite, { element, path: pathEl });
+  return () => {
+    game.remove(entity.id, Sprite);
+    root.removeChild(element);
+  };
+});
 
 const updateSpriteSystem = makeSystem(
   [changed(SpriteConfig), Sprite],

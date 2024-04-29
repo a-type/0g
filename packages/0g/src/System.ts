@@ -17,10 +17,6 @@ export function makeSystem<Filter extends QueryComponentFilter>(
       }
     }
 
-    game.on(phase, onPhase);
-
-    return () => {
-      game.off(phase, onPhase);
-    };
+    return game.subscribe(phase, onPhase);
   };
 }

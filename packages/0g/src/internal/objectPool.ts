@@ -54,4 +54,8 @@ export class ObjectPool<T extends Poolable> {
   get usedCount() {
     return this.count - this.free.length;
   }
+
+  destory = () => {
+    this.free.length = 0;
+  };
 }

@@ -1,4 +1,3 @@
-import { EventEmitter } from 'events';
 import { ComponentType } from './Component.js';
 import { Game } from './Game.js';
 import { Poolable } from './internal/objectPool.js';
@@ -7,15 +6,16 @@ import { Filter, isFilter, has } from './filters.js';
 import { EntityImpostorFor, QueryIterator } from './QueryIterator.js';
 import { logger } from './logger.js';
 import { Entity } from './Entity.js';
+import { EventSubscriber } from '@a-type/utils';
 
 export type QueryComponentFilter = Array<
   Filter<ComponentType<any>> | ComponentType<any>
 >;
 
-export interface QueryEvents {
+export type QueryEvents = {
   entityAdded(entityId: number): void;
   entityRemoved(entityId: number): void;
-}
+};
 
 type ExtractQueryDef<Q extends Query<any>> =
   Q extends Query<infer Def> ? Def : never;
@@ -24,17 +24,8 @@ export type QueryIteratorFn<Q extends Query<any>, Returns = void> = {
   (ent: EntityImpostorFor<ExtractQueryDef<Q>>): Returns;
 };
 
-export declare interface Query<FilterDef extends QueryComponentFilter> {
-  on<U extends keyof QueryEvents>(ev: U, cb: QueryEvents[U]): this;
-  off<U extends keyof QueryEvents>(ev: U, cb: QueryEvents[U]): this;
-  emit<U extends keyof QueryEvents>(
-    ev: U,
-    ...args: Parameters<QueryEvents[U]>
-  ): boolean;
-}
-
 export class Query<FilterDef extends QueryComponentFilter>
-  extends EventEmitter
+  extends EventSubscriber<QueryEvents>
   implements Poolable
 {
   public filter: Filter<ComponentType<any>>[] = [];
@@ -46,6 +37,8 @@ export class Query<FilterDef extends QueryComponentFilter>
   private addedIterable: {
     [Symbol.iterator]: () => AddedIterator<FilterDef>;
   };
+  private unsubscribes: (() => void)[] = [];
+  private unsubscribeArchetypes: (() => void) | undefined = undefined;
 
   constructor(private game: Game) {
     super();
@@ -54,10 +47,14 @@ export class Query<FilterDef extends QueryComponentFilter>
     };
     // when do we reset the frame-specific tracking?
     // right before we populate new values from this frame's operations.
-    game.on('preApplyOperations', this.resetStepTracking);
+    this.unsubscribes.push(
+      game.subscribe('preApplyOperations', this.resetStepTracking),
+    );
     // after we apply operations and register all changes for the frame,
     // we do processing of final add/remove list
-    game.on('stepComplete', this.processAddRemove);
+    this.unsubscribes.push(
+      game.subscribe('stepComplete', this.processAddRemove),
+    );
   }
 
   private processDef = (userDef: QueryComponentFilter) => {
@@ -71,7 +68,10 @@ export class Query<FilterDef extends QueryComponentFilter>
     Object.values(this.game.archetypeManager.archetypes).forEach(
       this.matchArchetype,
     );
-    this.game.archetypeManager.on('archetypeCreated', this.matchArchetype);
+    this.unsubscribeArchetypes = this.game.archetypeManager.subscribe(
+      'archetypeCreated',
+      this.matchArchetype,
+    );
 
     // reset all tracking arrays
     this.trackedEntities.length = 0;
@@ -108,14 +108,18 @@ export class Query<FilterDef extends QueryComponentFilter>
 
     this.archetypes.push(archetype);
     logger.debug(`Query ${this.toString()} added Archetype ${archetype.id}`);
-    archetype.on('entityRemoved', this.handleEntityRemoved);
-    archetype.on('entityAdded', this.handleEntityAdded);
+    this.unsubscribes.push(
+      archetype.subscribe('entityRemoved', this.handleEntityRemoved),
+    );
+    this.unsubscribes.push(
+      archetype.subscribe('entityAdded', this.handleEntityAdded),
+    );
   };
 
   reset = () => {
     this.archetypes.length = 0;
     this.filter = [];
-    this.game.archetypeManager.off('archetypeCreated', this.matchArchetype);
+    this.unsubscribeArchetypes?.();
   };
 
   // closure provides iterator properties
@@ -208,6 +212,12 @@ export class Query<FilterDef extends QueryComponentFilter>
   private emitRemoved = (entityId: number) => {
     logger.debug(`Entity ${entityId} removed from query ${this.toString()}`);
     this.emit('entityRemoved', entityId);
+  };
+
+  destroy = () => {
+    this.reset();
+    this.unsubscribes.forEach((unsub) => unsub());
+    this.unsubscribes.length = 0;
   };
 }
 

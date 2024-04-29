@@ -1,4 +1,3 @@
-import { EventEmitter } from 'events';
 import { ArchetypeManager } from './ArchetypeManager.js';
 import { ComponentInstance } from './Component.js';
 import { Entity } from './Entity.js';
@@ -12,6 +11,7 @@ import {
   ComponentD,
 } from './__tests__/componentFixtures.js';
 import { describe, it, beforeEach, expect, vi } from 'vitest';
+import { EventSubscriber } from '@a-type/utils';
 
 const withA = 100;
 const withAB = 101;
@@ -46,7 +46,7 @@ describe('Query', () => {
         release() {},
       },
     } as any);
-    game = new EventEmitter() as any;
+    game = new EventSubscriber() as any;
     (game as any).archetypeManager = archetypeManager;
     (game as any).entityPool = {
       acquire() {
@@ -110,8 +110,8 @@ describe('Query', () => {
     const onRemoved = vi.fn();
 
     const query = new Query<[typeof ComponentA]>(game);
-    query.on('entityAdded', onAdded);
-    query.on('entityRemoved', onRemoved);
+    query.subscribe('entityAdded', onAdded);
+    query.subscribe('entityRemoved', onRemoved);
     query.initialize([ComponentA]);
     expect(query.entities).toEqual([withA, withAB, withAD]);
     expect(query.addedIds).toEqual([withA, withAB, withAD]);
@@ -175,8 +175,8 @@ describe('Query', () => {
     beforeEach(() => {
       query = new Query<[typeof ComponentA]>(game);
       query.initialize([ComponentA]);
-      query.on('entityAdded', onAdded);
-      query.on('entityRemoved', onRemoved);
+      query.subscribe('entityAdded', onAdded);
+      query.subscribe('entityRemoved', onRemoved);
       game.emit('preApplyOperations');
     });
 

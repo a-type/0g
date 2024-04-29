@@ -13,6 +13,7 @@ import { Game } from './Game.js';
 export class ComponentManager {
   private pools = new Array<ComponentPool<any>>();
   private changed = new Array<boolean>();
+  private unsubscribes = new Array<() => void>();
 
   constructor(
     public componentTypes: ComponentType<any>[],
@@ -27,7 +28,9 @@ export class ComponentManager {
     });
 
     // TODO: right time to do this?
-    game.on('preApplyOperations', this.resetChanged);
+    this.unsubscribes.push(
+      game.subscribe('preApplyOperations', this.resetChanged),
+    );
   }
 
   acquire = (typeId: number, initialValues: any) => {
@@ -65,5 +68,10 @@ export class ComponentManager {
 
   getTypeName = (typeId: number) => {
     return this.pools[typeId].ComponentType.name;
+  };
+
+  destroy = () => {
+    this.unsubscribes.forEach((unsub) => unsub());
+    this.pools.forEach((pool) => pool.destroy());
   };
 }

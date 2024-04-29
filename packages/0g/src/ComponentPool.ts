@@ -25,4 +25,8 @@ export class ComponentPool<S> {
   get ComponentType() {
     return this.Type;
   }
+
+  destroy = () => {
+    this.pool.destory();
+  };
 }

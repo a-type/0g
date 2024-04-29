@@ -73,12 +73,12 @@ export class Pointer {
     return this._secondaryUp;
   }
 
-  frame() {
+  frame = () => {
     this._primaryDown = false;
     this._primaryUp = false;
     this._secondaryDown = false;
     this._secondaryUp = false;
-  }
+  };
 }
 
 export const pointer = new Pointer();

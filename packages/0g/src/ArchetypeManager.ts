@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events';
+import { EventSubscriber } from '@a-type/utils';
 import { Archetype } from './Archetype.js';
 import {
   ComponentInstanceFor,
@@ -8,7 +8,7 @@ import {
 import { Game } from './Game.js';
 import { logger } from './logger.js';
 
-export interface ArchetypeManagerEvents {
+export type ArchetypeManagerEvents = {
   archetypeCreated(archetype: Archetype): void;
   entityCreated(entityId: number): void;
   entityComponentAdded(
@@ -17,22 +17,9 @@ export interface ArchetypeManagerEvents {
   ): void;
   entityComponentRemoved(entityId: number, componentType: number): void;
   entityDestroyed(entityId: number): void;
-}
-export declare interface ArchetypeManager {
-  on<U extends keyof ArchetypeManagerEvents>(
-    ev: U,
-    cb: ArchetypeManagerEvents[U],
-  ): this;
-  off<U extends keyof ArchetypeManagerEvents>(
-    ev: U,
-    cb: ArchetypeManagerEvents[U],
-  ): this;
-  emit<U extends keyof ArchetypeManagerEvents>(
-    ev: U,
-    ...args: Parameters<ArchetypeManagerEvents[U]>
-  ): boolean;
-}
-export class ArchetypeManager extends EventEmitter {
+};
+
+export class ArchetypeManager extends EventSubscriber<ArchetypeManagerEvents> {
   // an all-0 bitstring the size of the number of Component types
   emptyId: string;
 
@@ -52,7 +39,6 @@ export class ArchetypeManager extends EventEmitter {
       .fill('0')
       .join('');
     this.archetypes[this.emptyId] = new Archetype(this.emptyId);
-    this.setMaxListeners(1000000);
   }
 
   createEntity(entityId: number) {

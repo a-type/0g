@@ -1,12 +1,11 @@
 import { Game } from '0g';
 import * as gameComponents from './components.js';
-import * as box2dComponents from '../common/box2d/components';
-import { systems as box2dSystems } from '../common/box2d/systems';
+import * as box2dComponents from '../common/box2d/components.js';
+import { systems as box2dSystems } from '../common/box2d/systems.js';
 import { systems } from './systems.js';
 import { createSVGElement } from './utils.js';
 import { asteroidPrefab, playerPrefab, worldPrefab } from './prefabs.js';
-import { Keyboard, keyboard } from '../common/input/keyboard';
-import { Pointer, pointer } from '../common/input/pointer';
+import { Keyboard, keyboard, Pointer, pointer } from '0g/input';
 
 const game = new Game({
   components: [
@@ -17,9 +16,9 @@ const game = new Game({
 });
 
 game.globals.resolve('keyboard', keyboard);
-game.on('stepComplete', keyboard.frame);
+game.subscribe('stepComplete', keyboard.frame);
 game.globals.resolve('pointer', pointer);
-game.on('stepComplete', pointer.frame);
+game.subscribe('stepComplete', pointer.frame);
 
 const root = createSVGElement('svg');
 root.setAttribute('viewBox', '0 0 100 100');

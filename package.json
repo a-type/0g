@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.7",
   "description": "",
+  "type": "module",
   "scripts": {
     "test": "turbo run test",
     "build": "turbo run build",

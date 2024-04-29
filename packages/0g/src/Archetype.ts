@@ -1,20 +1,11 @@
-import { EventEmitter } from 'events';
+import { EventSubscriber } from '@a-type/utils';
 import { ComponentType } from './Component.js';
 import { Entity } from './Entity.js';
 
-export interface ArchetypeEvents {
+export type ArchetypeEvents = {
   entityAdded(entity: Entity<any, any>): any;
   entityRemoved(entityId: number): any;
-}
-
-export declare interface Archetype {
-  on<U extends keyof ArchetypeEvents>(ev: U, cb: ArchetypeEvents[U]): this;
-  off<U extends keyof ArchetypeEvents>(ev: U, cb: ArchetypeEvents[U]): this;
-  emit<U extends keyof ArchetypeEvents>(
-    ev: U,
-    ...args: Parameters<ArchetypeEvents[U]>
-  ): boolean;
-}
+};
 
 /**
  * Archetype is a group of Entities which share a common component signature.
@@ -26,14 +17,13 @@ export declare interface Archetype {
  */
 export class Archetype<
   T extends ComponentType<any>[] = ComponentType<any>[],
-> extends EventEmitter {
+> extends EventSubscriber<ArchetypeEvents> {
   private entities = new Array<Entity<T[number], any>>();
   /** Maps entity ID -> index in entity array */
   private entityIndexLookup = new Array<number | undefined>();
 
   constructor(public id: string) {
     super();
-    this.setMaxListeners(10000000);
   }
 
   /**

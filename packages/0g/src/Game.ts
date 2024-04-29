@@ -1,4 +1,3 @@
-import { EventEmitter } from 'events';
 import { QueryManager } from './QueryManager.js';
 import { ComponentType, ComponentInstance } from './Component.js';
 import { ComponentManager } from './ComponentManager.js';
@@ -13,31 +12,23 @@ import { Assets } from './Assets.js';
 import { QueryComponentFilter } from './Query.js';
 import { EntityImpostorFor } from './QueryIterator.js';
 import type { AssetLoaders, Globals } from './index.js';
+import { EventSubscriber } from '@a-type/utils';
 
 export type GameConstants = {
   maxComponentId: number;
   maxEntities: number;
 };
 
-export interface GameEvents {
+export type GameEvents = {
   preStep(): any;
   step(): any;
   postStep(): any;
   stepComplete(): any;
   preApplyOperations(): any;
   destroyEntities(): any;
-}
+};
 
-export declare interface Game {
-  on<U extends keyof GameEvents>(event: U, callback: GameEvents[U]): this;
-  off<U extends keyof GameEvents>(event: U, callback: GameEvents[U]): this;
-  emit<U extends keyof GameEvents>(
-    event: U,
-    ...args: Parameters<GameEvents[U]>
-  ): boolean;
-}
-
-export class Game extends EventEmitter {
+export class Game extends EventSubscriber<GameEvents> {
   private _queryManager: QueryManager;
   private _idManager = new IdManager();
   private _archetypeManager: ArchetypeManager;
@@ -70,7 +61,6 @@ export class Game extends EventEmitter {
     assetLoaders?: AssetLoaders;
   }) {
     super();
-    this.setMaxListeners(Infinity);
     this._componentManager = new ComponentManager(components, this);
     this._assets = new Assets(assetLoaders);
     this._queryManager = new QueryManager(this);

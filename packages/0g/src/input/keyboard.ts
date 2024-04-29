@@ -1,19 +1,4 @@
-export type KeyboardKey =
-  | 'Alt'
-  | 'Control'
-  | 'Shift'
-  | 'Enter'
-  | 'Tab'
-  | ' '
-  | 'ArrowDown'
-  | 'ArrowLeft'
-  | 'ArrowUp'
-  | 'ArrowRight'
-  | 'Escape'
-  | 'w'
-  | 'a'
-  | 's'
-  | 'd';
+export type KeyboardKey = string;
 
 export class Keyboard {
   private keysPressed = new Set<string>();
@@ -26,6 +11,10 @@ export class Keyboard {
   }
 
   private handleKeyDown = (ev: KeyboardEvent) => {
+    if (ev.target === document.body) {
+      ev.preventDefault();
+    }
+
     const key = ev.key;
     // avoid key-repeat triggering?
     if (!this.keysPressed.has(key)) {
@@ -40,26 +29,26 @@ export class Keyboard {
     this.keysUp.add(key);
   };
 
-  getKeyPressed(key: KeyboardKey) {
+  getKeyPressed = (key: KeyboardKey) => {
     return this.keysPressed.has(key);
-  }
+  };
 
-  getKeyDown(key: KeyboardKey) {
+  getKeyDown = (key: KeyboardKey) => {
     return this.keysDown.has(key);
-  }
+  };
 
-  getKeyUp(key: KeyboardKey) {
+  getKeyUp = (key: KeyboardKey) => {
     return this.keysUp.has(key);
-  }
+  };
 
-  getAllPressedKeys() {
+  getAllPressedKeys = () => {
     return this.keysPressed;
-  }
+  };
 
-  frame() {
+  frame = () => {
     this.keysDown.clear();
     this.keysUp.clear();
-  }
+  };
 }
 
 export const keyboard = new Keyboard();

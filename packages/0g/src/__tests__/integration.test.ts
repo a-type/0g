@@ -22,23 +22,23 @@ describe('integration tests', () => {
 
   const SetFlagEffect = makeEffect(
     [RemovableComponent, OutputComponent],
-    function* (ent) {
+    function (ent) {
       logger.debug('Setting removablePresent: true');
       ent.get(OutputComponent).update((output) => {
         output.removablePresent = true;
       });
-    },
-    function* (ent) {
-      logger.debug('Setting removablePresent: false');
-      ent.get(OutputComponent).update((output) => {
-        output.removablePresent = false;
-      });
+      return () => {
+        logger.debug('Setting removablePresent: false');
+        ent.get(OutputComponent).update((output) => {
+          output.removablePresent = false;
+        });
+      };
     },
   );
 
   const ReAddRemovableEffect = makeEffect(
     [not(RemovableComponent)],
-    function* (ent, game) {
+    function (ent, game) {
       logger.debug('Adding RemovableComponent');
       game.add(ent.id, RemovableComponent);
     },
