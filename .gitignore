@@ -114,3 +114,4 @@ docs/
 .DS_Store
 
 .turbo
+.pnpm-store
