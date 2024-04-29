@@ -77,6 +77,10 @@ export class Entity<
     return (this.components.get(Type.id) ?? null) as T | null;
   };
 
+  has = <T extends ComponentType<any>>(Type: T): boolean => {
+    return this.components.has(Type.id);
+  };
+
   reset() {
     this.components.clear();
     // disabled to diagnose issues...
