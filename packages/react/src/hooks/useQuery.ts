@@ -13,12 +13,15 @@ export function useQuery(queryDef: QueryComponentFilter) {
       setForceUpdate(Math.random());
     }
 
-    query.on('entityAdded', onEntitiesChanged);
-    query.on('entityRemoved', onEntitiesChanged);
+    const cleanup = [
+      query.subscribe('entityAdded', onEntitiesChanged),
+      query.subscribe('entityRemoved', onEntitiesChanged),
+    ];
 
     return () => {
-      query.off('entityAdded', onEntitiesChanged);
-      query.off('entityRemoved', onEntitiesChanged);
+      for (const unsub of cleanup) {
+        unsub();
+      }
     };
   }, [query]);
 

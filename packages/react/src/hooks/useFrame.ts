@@ -14,13 +14,7 @@ export function useFrame(callback: () => void) {
   }, [callback]);
 
   useEffect(() => {
-    function run() {
-      ref.current();
-    }
-    game.on('step', run);
-    return () => {
-      game.off('step', run);
-    };
+    return game.subscribe('step', ref.current);
   }, [game, ref]);
 }
 
