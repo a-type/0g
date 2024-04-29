@@ -123,7 +123,7 @@ export class Query<FilterDef extends QueryComponentFilter>
   };
 
   // closure provides iterator properties
-  private iterator = new QueryIterator<FilterDef>(this, this.game);
+  iterator = new QueryIterator<FilterDef>(this, this.game);
 
   [Symbol.iterator]() {
     return this.iterator;

@@ -172,6 +172,20 @@ export class Game extends EventSubscriber<GameEvents> {
     }
   };
 
+  find = <Filter extends QueryComponentFilter>(
+    filter: Filter,
+  ): EntityImpostorFor<Filter>[] => {
+    const query = this._queryManager.create(filter);
+    return Array.from(query);
+  };
+
+  findFirst = <Filter extends QueryComponentFilter>(
+    filter: Filter,
+  ): EntityImpostorFor<Filter> | null => {
+    const query = this._queryManager.create(filter);
+    return query.iterator.next().value ?? null;
+  };
+
   /**
    * Manually step the game simulation forward. Provide a
    * delta (in ms) of time elapsed since last frame.
