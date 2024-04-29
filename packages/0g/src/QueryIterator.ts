@@ -1,28 +1,27 @@
-import { ComponentType } from './Component';
-import { Entity } from './Entity';
-import { Any, Changed, Filter, not, Not } from './filters';
-import { Game } from './Game';
-import { Query, QueryComponentFilter } from './Query';
+import { ComponentType } from './Component.js';
+import { Entity } from './Entity.js';
+import { Any, Changed, Filter, not, Not } from './filters.js';
+import { Game } from './Game.js';
+import { Query, QueryComponentFilter } from './Query.js';
 
 type FilterNots<
-  CompUnion extends Filter<ComponentType<any>> | ComponentType<any>
+  CompUnion extends Filter<ComponentType<any>> | ComponentType<any>,
 > = CompUnion extends Not<any> ? never : CompUnion;
 
 type UnwrapAnys<
-  CompUnion extends Filter<ComponentType<any>> | ComponentType<any>
+  CompUnion extends Filter<ComponentType<any>> | ComponentType<any>,
 > = CompUnion extends Any<any> ? never : CompUnion;
 
 type OnlyNots<
-  CompUnion extends Filter<ComponentType<any>> | ComponentType<any>
+  CompUnion extends Filter<ComponentType<any>> | ComponentType<any>,
 > = CompUnion extends Not<infer C> ? C : never;
 
 type UnwrapFilters<
-  CompUnion extends Filter<ComponentType<any>> | ComponentType<any>
+  CompUnion extends Filter<ComponentType<any>> | ComponentType<any>,
 > = CompUnion extends Filter<infer C> ? C : CompUnion;
 
-type DefiniteComponentsFromFilter<
-  Fil extends QueryComponentFilter
-> = UnwrapFilters<UnwrapAnys<FilterNots<Fil[number]>>>;
+type DefiniteComponentsFromFilter<Fil extends QueryComponentFilter> =
+  UnwrapFilters<UnwrapAnys<FilterNots<Fil[number]>>>;
 
 type OmittedComponentsFromFilter<Fil extends QueryComponentFilter> = OnlyNots<
   Fil[number]
@@ -34,7 +33,8 @@ export type EntityImpostorFor<Q extends QueryComponentFilter> = Entity<
 >;
 
 export class QueryIterator<Def extends QueryComponentFilter>
-  implements Iterator<EntityImpostorFor<Def>> {
+  implements Iterator<EntityImpostorFor<Def>>
+{
   private archetypeIndex = 0;
   private archetypeIterator: Iterator<Entity<any, any>> | null = null;
   private result: IteratorResult<EntityImpostorFor<Def>> = {
@@ -43,7 +43,10 @@ export class QueryIterator<Def extends QueryComponentFilter>
   };
   private changedFilters: Changed<any>[];
 
-  constructor(private query: Query<Def>, private game: Game) {
+  constructor(
+    private query: Query<Def>,
+    private game: Game,
+  ) {
     this.changedFilters = query.filter.filter(
       (f) => f.kind === 'changed',
     ) as Changed<any>[];
@@ -61,9 +64,8 @@ export class QueryIterator<Def extends QueryComponentFilter>
   next() {
     while (this.archetypeIndex < this.query.archetypes.length) {
       if (!this.archetypeIterator) {
-        this.archetypeIterator = this.query.archetypes[this.archetypeIndex][
-          Symbol.iterator
-        ]();
+        this.archetypeIterator =
+          this.query.archetypes[this.archetypeIndex][Symbol.iterator]();
       }
       this.result = this.archetypeIterator.next();
 

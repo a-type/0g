@@ -12,3 +12,79 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+article {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+h1 {
+  font-family: 'Major Mono Display', monospace;
+  font-size: 120px;
+}
+
+section {
+  max-width: 640px;
+}
+
+.hero > section {
+  padding: 2rem;
+  margin-top: 240px;
+  max-width: none;
+}
+
+.hero {
+  position: fixed;
+  left: 50%;
+  text-align: center;
+  color: #606070;
+  z-index: -1;
+  transform: translateX(-50%);
+}
+
+button {
+  background-color: #fff;
+  color: #202020;
+  padding-left: 3rem;
+  padding-right: 3rem;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 18px;
+  vertical-align: center;
+  text-align: center;
+  transition: 0.2s ease all;
+}
+button:active {
+  transform: scale(0.9);
+}
+button:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px #202020,
+    0 0 0 4px #fff;
+}
+
+header {
+  padding: 2rem;
+  align-items: center;
+}
+header > span {
+  font-family: 'Major Mono Display', monospace;
+  padding: 2rem;
+}
+
+.gameRoot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+.gameRoot > div {
+  width: 80vmin;
+  height: 80vmin;
+  margin: auto;
+}

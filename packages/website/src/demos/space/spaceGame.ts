@@ -1,10 +1,10 @@
 import { Game } from '0g';
-import * as gameComponents from './components';
+import * as gameComponents from './components.js';
 import * as box2dComponents from '../common/box2d/components';
 import { systems as box2dSystems } from '../common/box2d/systems';
-import { systems } from './systems';
-import { createSVGElement } from './utils';
-import { asteroidPrefab, playerPrefab, worldPrefab } from './prefabs';
+import { systems } from './systems.js';
+import { createSVGElement } from './utils.js';
+import { asteroidPrefab, playerPrefab, worldPrefab } from './prefabs.js';
 import { Keyboard, keyboard } from '../common/input/keyboard';
 import { Pointer, pointer } from '../common/input/pointer';
 

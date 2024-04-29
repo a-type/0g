@@ -1,4 +1,4 @@
-import { ComponentType } from './Component';
+import { ComponentType } from './Component.js';
 
 export type Has<Comp extends ComponentType<any>> = {
   Component: Comp;

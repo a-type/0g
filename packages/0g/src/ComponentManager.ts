@@ -1,10 +1,10 @@
-import { ComponentPool } from './ComponentPool';
+import { ComponentPool } from './ComponentPool.js';
 import {
   ComponentType,
   COMPONENT_CHANGE_HANDLE,
   ComponentInstance,
-} from './Component';
-import { Game } from './Game';
+} from './Component.js';
+import { Game } from './Game.js';
 
 /**
  * Manages pools of Components based on their Type, and
@@ -14,7 +14,10 @@ export class ComponentManager {
   private pools = new Array<ComponentPool<any>>();
   private changed = new Array<boolean>();
 
-  constructor(public componentTypes: ComponentType<any>[], private game: Game) {
+  constructor(
+    public componentTypes: ComponentType<any>[],
+    private game: Game,
+  ) {
     // initialize pools, one for each ComponentType by ID. ComponentType IDs are incrementing integers.
     Object.values(componentTypes).forEach((Type) => {
       // assign an ID

@@ -1,12 +1,12 @@
-import { AssetLoader } from './Assets';
+import { AssetLoader } from './Assets.js';
 
-export * from './Game';
-export * from './Query';
-export * from './Component';
-export * from './System';
-export * from './filters';
-export * from './Effect';
-export * from './compose';
+export * from './Game.js';
+export * from './Query.js';
+export * from './Component.js';
+export * from './System.js';
+export * from './filters.js';
+export * from './Effect.js';
+export * from './compose.js';
 
 export interface Globals {
   [key: string]: any;

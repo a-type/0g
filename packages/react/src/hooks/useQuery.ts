@@ -1,6 +1,6 @@
 import { useLayoutEffect, useState } from 'react';
 import { QueryComponentFilter } from '0g';
-import { useGame } from './useGame';
+import { useGame } from './useGame.js';
 
 export function useQuery(queryDef: QueryComponentFilter) {
   const game = useGame();

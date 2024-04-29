@@ -1,19 +1,18 @@
 import { EventEmitter } from 'events';
-import { QueryManager } from './QueryManager';
-import { ComponentType, ComponentInstance } from './Component';
-import { ComponentManager } from './ComponentManager';
-import { IdManager } from './IdManager';
-import { ArchetypeManager } from './ArchetypeManager';
-import { Operation, OperationQueue } from './operations';
-import { Entity } from './Entity';
-import { Resources } from './Resources';
-import { ObjectPool } from './internal/objectPool';
-import { logger } from './logger';
-import { RemovedList } from './RemovedList';
-import { AssetLoaders, Globals } from '.';
-import { Assets } from './Assets';
-import { Query, QueryComponentFilter } from './Query';
-import { EntityImpostorFor } from './QueryIterator';
+import { QueryManager } from './QueryManager.js';
+import { ComponentType, ComponentInstance } from './Component.js';
+import { ComponentManager } from './ComponentManager.js';
+import { IdManager } from './IdManager.js';
+import { ArchetypeManager } from './ArchetypeManager.js';
+import { Operation, OperationQueue } from './operations.js';
+import { Entity } from './Entity.js';
+import { Resources } from './Resources.js';
+import { ObjectPool } from './internal/objectPool.js';
+import { RemovedList } from './RemovedList.js';
+import { Assets } from './Assets.js';
+import { QueryComponentFilter } from './Query.js';
+import { EntityImpostorFor } from './QueryIterator.js';
+import type { AssetLoaders, Globals } from './index.js';
 
 export type GameConstants = {
   maxComponentId: number;

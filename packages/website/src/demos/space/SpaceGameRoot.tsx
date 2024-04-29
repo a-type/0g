@@ -1,6 +1,5 @@
 import * as React from 'react';
-import { Editor } from '@0g/editor';
-import { spaceGame, spaceGameRoot } from './spaceGame';
+import { spaceGame, spaceGameRoot } from './spaceGame.js';
 
 export function SpaceGameRoot() {
   const ref = React.useRef<HTMLDivElement>(null);
@@ -25,23 +24,8 @@ export function SpaceGameRoot() {
   }, [ref]);
 
   return (
-    <div
-      css={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        width: '100%',
-      }}
-    >
-      <div
-        css={{
-          width: '80vmin',
-          height: '80vmin',
-          margin: 'auto',
-        }}
-        ref={ref}
-      />
-      <Editor game={spaceGame} />
+    <div className="gameRoot">
+      <div ref={ref} />
     </div>
   );
 }

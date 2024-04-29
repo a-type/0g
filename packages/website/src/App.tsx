@@ -1,22 +1,12 @@
-import React from 'react';
-import { Route, Router } from 'wouter';
-import { Header } from './components/Header';
-import { HomePage } from './pages/HomePage';
-import { ThemeProvider } from '@emotion/react';
-import { theme } from './theme';
+import { Header } from './components/Header.js';
+import { HomePage } from './pages/HomePage.js';
 
 function App() {
   return (
-    <Router base={process.env.PUBLIC_URL}>
-      <ThemeProvider theme={theme}>
-        <div className="App">
-          <Header />
-          <Route path="/">
-            <HomePage />
-          </Route>
-        </div>
-      </ThemeProvider>
-    </Router>
+    <div className="App">
+      <Header />
+      <HomePage />
+    </div>
   );
 }
 

@@ -1,12 +1,9 @@
-import { ObjectPool } from './internal/objectPool';
-import { ResourceHandle } from './ResourceHandle';
+import { ObjectPool } from './internal/objectPool.js';
+import { ResourceHandle } from './ResourceHandle.js';
 
 export type AssetLoader<T = any> = (key: string) => Promise<T>;
-type InferAsset<Loader extends AssetLoader<any>> = Loader extends AssetLoader<
-  infer T
->
-  ? T
-  : never;
+type InferAsset<Loader extends AssetLoader<any>> =
+  Loader extends AssetLoader<infer T> ? T : never;
 
 export class Assets<Loaders extends Record<string, AssetLoader>> {
   private handlePool = new ObjectPool(() => new ResourceHandle());
@@ -36,5 +33,6 @@ export class Assets<Loaders extends Record<string, AssetLoader>> {
     return handle.value as InferAsset<Loaders[LoaderName]> | null;
   };
 
-  private getKey = (loader: keyof Loaders, key: string) => `${loader}:${key}`;
+  private getKey = (loader: keyof Loaders, key: string) =>
+    `${loader.toString()}:${key}`;
 }

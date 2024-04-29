@@ -1,12 +1,12 @@
 import { EventEmitter } from 'events';
-import { ComponentType } from './Component';
-import { Game } from './Game';
-import { Poolable } from './internal/objectPool';
-import { Archetype } from './Archetype';
-import { Filter, isFilter, has } from './filters';
-import { EntityImpostorFor, QueryIterator } from './QueryIterator';
-import { logger } from './logger';
-import { Entity } from './Entity';
+import { ComponentType } from './Component.js';
+import { Game } from './Game.js';
+import { Poolable } from './internal/objectPool.js';
+import { Archetype } from './Archetype.js';
+import { Filter, isFilter, has } from './filters.js';
+import { EntityImpostorFor, QueryIterator } from './QueryIterator.js';
+import { logger } from './logger.js';
+import { Entity } from './Entity.js';
 
 export type QueryComponentFilter = Array<
   Filter<ComponentType<any>> | ComponentType<any>
@@ -17,9 +17,8 @@ export interface QueryEvents {
   entityRemoved(entityId: number): void;
 }
 
-type ExtractQueryDef<Q extends Query<any>> = Q extends Query<infer Def>
-  ? Def
-  : never;
+type ExtractQueryDef<Q extends Query<any>> =
+  Q extends Query<infer Def> ? Def : never;
 
 export type QueryIteratorFn<Q extends Query<any>, Returns = void> = {
   (ent: EntityImpostorFor<ExtractQueryDef<Q>>): Returns;
@@ -36,7 +35,8 @@ export declare interface Query<FilterDef extends QueryComponentFilter> {
 
 export class Query<FilterDef extends QueryComponentFilter>
   extends EventEmitter
-  implements Poolable {
+  implements Poolable
+{
   public filter: Filter<ComponentType<any>>[] = [];
   readonly archetypes = new Array<Archetype>();
   private trackedEntities: number[] = [];
@@ -212,13 +212,17 @@ export class Query<FilterDef extends QueryComponentFilter>
 }
 
 class AddedIterator<Def extends QueryComponentFilter>
-  implements Iterator<EntityImpostorFor<Def>> {
+  implements Iterator<EntityImpostorFor<Def>>
+{
   private index = 0;
   private result: IteratorResult<EntityImpostorFor<Def>> = {
     done: true,
     value: null as any,
   };
-  constructor(private game: Game, private query: Query<any>) {}
+  constructor(
+    private game: Game,
+    private query: Query<any>,
+  ) {}
 
   next() {
     if (this.index >= this.query.addedIds.length) {

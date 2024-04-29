@@ -1,6 +1,7 @@
-import { Archetype } from './Archetype';
-import { Component } from './Component';
-import { Entity } from './Entity';
+import { Archetype } from './Archetype.js';
+import { Component } from './Component.js';
+import { Entity } from './Entity.js';
+import { describe, it, expect } from 'vitest';
 
 class A extends Component(() => ({})) {}
 class B extends Component(() => ({})) {}

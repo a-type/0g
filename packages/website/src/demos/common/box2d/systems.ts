@@ -8,9 +8,9 @@ import {
   b2PolygonShape,
   b2World,
 } from '@flyover/box2d';
-import { ContactListener, EntityContact } from './ContactListener';
-import * as components from './components';
-import { createCapsule } from './utils';
+import { ContactListener, EntityContact } from './ContactListener.js';
+import * as components from './components.js';
+import { createCapsule } from './utils.js';
 
 declare module '0g' {
   interface GameResources {
@@ -22,7 +22,7 @@ declare module '0g' {
 function assignBodyConfig(
   body: b2Body,
   config: components.BodyConfig,
-  id: number
+  id: number,
 ) {
   const {
     // TODO: verify assumptions about defaults
@@ -105,7 +105,7 @@ const manageWorldsEffect = makeEffect(
   (_, game) => {
     game.globals.remove('physicsWorld');
     game.globals.remove('physicsContacts');
-  }
+  },
 );
 
 const manageBodiesEffect = makeEffect(
@@ -132,7 +132,7 @@ const manageBodiesEffect = makeEffect(
       world.DestroyBody(body.value);
     }
     game.remove(entity.id, components.Body);
-  }
+  },
 );
 
 const manageContactsCacheEffect = makeEffect(
@@ -142,7 +142,7 @@ const manageContactsCacheEffect = makeEffect(
   },
   (entity, game) => {
     game.remove(entity.id, components.ContactsCache);
-  }
+  },
 );
 
 const subscribeContactsCacheEffect = makeEffect(
@@ -157,7 +157,7 @@ const subscribeContactsCacheEffect = makeEffect(
   function* (entity, game) {
     const contactListener = yield game.globals.load('physicsContacts');
     contactListener.unsubscribe(entity.id);
-  }
+  },
 );
 
 const updateBodiesSystem = makeSystem(
@@ -169,7 +169,7 @@ const updateBodiesSystem = makeSystem(
     assignBodyConfig(body.value, config, ent.id);
     applyFixtures(body.value, createFixtureDef(config, ent.id));
     body.updated = true;
-  }
+  },
 );
 
 const resetContactsSystem = makeSystem([components.Contacts], (ent) => {
@@ -205,7 +205,7 @@ const updateTransformsSystem = makeSystem(
       transform.y = pos.y;
       transform.angle = body.value.GetAngle();
     });
-  }
+  },
 );
 
 const updateContactsSystem = makeSystem(
@@ -228,7 +228,7 @@ const updateContactsSystem = makeSystem(
 
     cache.began.clear();
     cache.ended.clear();
-  }
+  },
 );
 
 export const systems = compose(
@@ -240,5 +240,5 @@ export const systems = compose(
   resetContactsSystem,
   stepWorldRunner,
   updateTransformsSystem,
-  updateContactsSystem
+  updateContactsSystem,
 );

@@ -1,11 +1,14 @@
-import { Game } from './Game';
-import { ObjectPool } from './internal/objectPool';
-import { ComponentInstance, ComponentType } from './Component';
+import { Game } from './Game.js';
+import { ObjectPool } from './internal/objectPool.js';
+import { ComponentInstance, ComponentType } from './Component.js';
 
 export class ComponentPool<S> {
   private pool: ObjectPool<ComponentInstance<S>>;
 
-  constructor(private Type: ComponentType<S>, private game: Game) {
+  constructor(
+    private Type: ComponentType<S>,
+    private game: Game,
+  ) {
     this.pool = new ObjectPool<ComponentInstance<S>>(() => new this.Type());
   }
 

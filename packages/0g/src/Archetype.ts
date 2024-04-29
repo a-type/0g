@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
-import { ComponentType } from './Component';
-import { Entity } from './Entity';
+import { ComponentType } from './Component.js';
+import { Entity } from './Entity.js';
 
 export interface ArchetypeEvents {
   entityAdded(entity: Entity<any, any>): any;
@@ -25,7 +25,7 @@ export declare interface Archetype {
  * and checking every Entity in the system at init and then on every change.
  */
 export class Archetype<
-  T extends ComponentType<any>[] = ComponentType<any>[]
+  T extends ComponentType<any>[] = ComponentType<any>[],
 > extends EventEmitter {
   private entities = new Array<Entity<T[number], any>>();
   /** Maps entity ID -> index in entity array */

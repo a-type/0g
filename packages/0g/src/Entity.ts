@@ -1,5 +1,5 @@
-import { ComponentInstance, ComponentType } from './Component';
-import { Poolable } from './internal/objectPool';
+import { ComponentInstance, ComponentType } from './Component.js';
+import { Poolable } from './internal/objectPool.js';
 
 // Utility type: it unwraps a ComponentType to an instance, making it nullable
 // if the type is not accounted for in the Entity definition, or "never" if the type
@@ -7,17 +7,18 @@ import { Poolable } from './internal/objectPool';
 type DefinedInstance<
   Present extends ComponentType<any>,
   Omitted extends ComponentType<any>,
-  Type extends ComponentType<any>
+  Type extends ComponentType<any>,
 > = Type extends Present
   ? InstanceType<Type>
   : Type extends Omitted
-  ? never
-  : InstanceType<Type> | null;
+    ? never
+    : InstanceType<Type> | null;
 
 export class Entity<
   DefiniteComponents extends ComponentType<any> = ComponentType<any>,
-  OmittedComponents extends ComponentType<any> = any
-> implements Poolable {
+  OmittedComponents extends ComponentType<any> = any,
+> implements Poolable
+{
   private _id = 0;
   // TODO: make array
   readonly components = new Map<number, ComponentInstance<any>>();

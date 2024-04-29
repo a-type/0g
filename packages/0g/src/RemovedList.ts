@@ -1,4 +1,4 @@
-import { Entity } from './Entity';
+import { Entity } from './Entity.js';
 
 /**
  * Manages "removed" Entities, stuck in limbo between being

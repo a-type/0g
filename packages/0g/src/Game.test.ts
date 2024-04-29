@@ -1,5 +1,6 @@
-import { Game } from './Game';
-import { Component } from './Component';
+import { Game } from './Game.js';
+import { Component } from './Component.js';
+import { describe, it, beforeEach, expect } from 'vitest';
 
 class A extends Component(() => ({})) {}
 class B extends Component(() => ({})) {}

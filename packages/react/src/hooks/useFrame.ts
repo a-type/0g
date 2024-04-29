@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { Query, QueryComponentFilter, QueryIteratorFn } from '0g';
-import { useGame } from './useGame';
+import { useGame } from './useGame.js';
 
 /**
  * Runs a callback every game step

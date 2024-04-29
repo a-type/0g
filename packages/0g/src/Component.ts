@@ -1,4 +1,4 @@
-import { Poolable } from './internal/objectPool';
+import { Poolable } from './internal/objectPool.js';
 
 export const COMPONENT_CHANGE_HANDLE = Symbol('Component change handle');
 
@@ -80,9 +80,8 @@ function BaseComponent<T>({
   return class BaseComponent implements Poolable {
     static id = 0;
     static defaults = defaults;
-    static initialize: ComponentInitializeFn<
-      ComponentInstance<T>
-    > = defaultInitialize;
+    static initialize: ComponentInitializeFn<ComponentInstance<T>> =
+      defaultInitialize;
 
     id = 0;
     __type = Object.getPrototypeOf(this).constructor.id;
@@ -91,7 +90,7 @@ function BaseComponent<T>({
       Object.assign(this, defaults());
     }
 
-    [COMPONENT_CHANGE_HANDLE]: (self: T) => void;
+    [COMPONENT_CHANGE_HANDLE]?: (self: T) => void;
 
     reset = () => {
       Object.getPrototypeOf(this).constructor.initialize(this, defaults(), 0);
@@ -163,6 +162,5 @@ export function State<T>(defaults: () => T) {
   return Type;
 }
 
-export type ComponentInstanceFor<
-  T extends ComponentType<any>
-> = T extends ComponentType<infer Shape> ? ComponentInstance<Shape> : never;
+export type ComponentInstanceFor<T extends ComponentType<any>> =
+  T extends ComponentType<infer Shape> ? ComponentInstance<Shape> : never;

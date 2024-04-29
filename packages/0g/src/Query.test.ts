@@ -1,16 +1,17 @@
 import { EventEmitter } from 'events';
-import { ArchetypeManager } from './ArchetypeManager';
-import { ComponentInstance } from './Component';
-import { Entity } from './Entity';
-import { not, Not } from './filters';
-import { Game } from './Game';
-import { Query } from './Query';
+import { ArchetypeManager } from './ArchetypeManager.js';
+import { ComponentInstance } from './Component.js';
+import { Entity } from './Entity.js';
+import { not, Not } from './filters.js';
+import { Game } from './Game.js';
+import { Query } from './Query.js';
 import {
   ComponentA,
   ComponentB,
   ComponentC,
   ComponentD,
-} from './__tests__/componentFixtures';
+} from './__tests__/componentFixtures.js';
+import { describe, it, beforeEach, expect, vi } from 'vitest';
 
 const withA = 100;
 const withAB = 101;
@@ -105,8 +106,8 @@ describe('Query', () => {
   });
 
   it('maintains a list of matching entities', () => {
-    const onAdded = jest.fn();
-    const onRemoved = jest.fn();
+    const onAdded = vi.fn();
+    const onRemoved = vi.fn();
 
     const query = new Query<[typeof ComponentA]>(game);
     query.on('entityAdded', onAdded);
@@ -168,8 +169,8 @@ describe('Query', () => {
 
   describe('events', () => {
     let query: Query<any>;
-    const onAdded = jest.fn();
-    const onRemoved = jest.fn();
+    const onAdded = vi.fn();
+    const onRemoved = vi.fn();
 
     beforeEach(() => {
       query = new Query<[typeof ComponentA]>(game);

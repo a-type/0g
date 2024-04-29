@@ -1,6 +1,6 @@
 import { ComponentInstance } from '0g';
-import { useFrame } from './useFrame';
-import { useGame } from './useGame';
+import { useFrame } from './useFrame.js';
+import { useGame } from './useGame.js';
 
 export function useWatch<C extends ComponentInstance<unknown>>(
   component: C,

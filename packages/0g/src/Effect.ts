@@ -1,6 +1,6 @@
-import { Game } from './Game';
-import { QueryComponentFilter } from './Query';
-import { EntityImpostorFor } from './QueryIterator';
+import { Game } from './Game.js';
+import { QueryComponentFilter } from './Query.js';
+import { EntityImpostorFor } from './QueryIterator.js';
 
 export function makeEffect<Filter extends QueryComponentFilter>(
   filter: Filter,

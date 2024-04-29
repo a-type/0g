@@ -1,6 +1,6 @@
 import { any, changed, compose, makeEffect, makeSystem } from '0g';
 import { vecNormalize, vecScale } from 'math2d';
-import { Body, Contacts, Transform } from '../common/box2d/components';
+import { Body, Contacts, Transform } from '../common/box2d/components.js';
 import {
   Asteroid,
   Bullet,
@@ -9,9 +9,9 @@ import {
   Player,
   Sprite,
   SpriteConfig,
-} from './components';
-import { asteroidPrefab, bulletPrefab } from './prefabs';
-import { createSVGElement } from './utils';
+} from './components.js';
+import { asteroidPrefab, bulletPrefab } from './prefabs.js';
+import { createSVGElement } from './utils.js';
 
 const createSpriteEffect = makeEffect(
   [SpriteConfig],
@@ -25,7 +25,7 @@ const createSpriteEffect = makeEffect(
     pathEl.setAttribute('vector-effect', 'non-scaling-stroke');
     pathEl.setAttribute(
       'stroke-dasharray',
-      dashGap ? dashGap.toString() : 'none'
+      dashGap ? dashGap.toString() : 'none',
     );
     element.appendChild(pathEl);
 
@@ -43,7 +43,7 @@ const createSpriteEffect = makeEffect(
       game.remove(entity.id, Sprite);
       root.removeChild(element);
     }
-  }
+  },
 );
 
 const updateSpriteSystem = makeSystem(
@@ -55,9 +55,9 @@ const updateSpriteSystem = makeSystem(
     pathEl.setAttribute('stroke', stroke);
     pathEl.setAttribute(
       'stroke-dasharray',
-      dashGap ? dashGap.toString() : 'none'
+      dashGap ? dashGap.toString() : 'none',
     );
-  }
+  },
 );
 
 const transformSpriteSystem = makeSystem(
@@ -67,9 +67,9 @@ const transformSpriteSystem = makeSystem(
     const { x, y, angle } = entity.get(Transform);
     element.setAttribute(
       'transform',
-      `translate(${x}, ${y}) rotate(${angle * (180 / Math.PI)})`
+      `translate(${x}, ${y}) rotate(${angle * (180 / Math.PI)})`,
     );
-  }
+  },
 );
 
 const asteroidInitialSpinEffect = makeEffect([Asteroid, Body], (entity) => {
@@ -85,9 +85,9 @@ const bulletInitialVelocityEffect = makeEffect(
     entity
       .get(Body)
       .value.ApplyLinearImpulseToCenter(
-        vecScale(forward, entity.get(Bullet).speed)
+        vecScale(forward, entity.get(Bullet).speed),
       );
-  }
+  },
 );
 
 const playerMovementSystem = makeSystem(
@@ -120,9 +120,9 @@ const playerMovementSystem = makeSystem(
     const forward = { x: Math.cos(angle), y: Math.sin(angle) };
     body.value.ApplyLinearImpulseToCenter(
       vecScale(forward, thrust * thrustForce),
-      true
+      true,
     );
-  }
+  },
 );
 
 const damageSystem = makeSystem(
@@ -145,7 +145,7 @@ const damageSystem = makeSystem(
     if (tookDamage) {
       damageable.addDamage();
     }
-  }
+  },
 );
 
 const damageCooldownSystem = makeSystem([Damageable], (entity) => {
@@ -168,7 +168,7 @@ const playerDestroySystem = makeSystem(
     if (damageable.dead) {
       game.destroy(entity.id);
     }
-  }
+  },
 );
 
 const asteroidDestroySystem = makeSystem(
@@ -192,7 +192,7 @@ const asteroidDestroySystem = makeSystem(
 
       game.destroy(entity.id);
     }
-  }
+  },
 );
 
 const bulletDestroySystem = makeSystem(
@@ -208,7 +208,7 @@ const bulletDestroySystem = makeSystem(
 
       game.destroy(entity.id);
     }
-  }
+  },
 );
 
 const asteroidRecoilSystem = makeSystem(
@@ -241,10 +241,10 @@ const asteroidRecoilSystem = makeSystem(
       const body = entity.get(Body);
       body.value.ApplyLinearImpulseToCenter(
         vecScale(normal, body.value.GetMass()),
-        true
+        true,
       );
     }
-  }
+  },
 );
 
 const damageVisualizerSystem = makeSystem(
@@ -254,7 +254,7 @@ const damageVisualizerSystem = makeSystem(
     const gap =
       health === maxHealth ? 0 : Math.round((health / maxHealth) * 10);
     entity.get(SpriteConfig).update((self) => (self.dashGap = gap));
-  }
+  },
 );
 
 const cleanupBulletsSystem = makeSystem(
@@ -264,7 +264,7 @@ const cleanupBulletsSystem = makeSystem(
     if (x < -10 || x > 110 || y < -10 || y > 110) {
       game.destroy(entity.id);
     }
-  }
+  },
 );
 
 function wrap(v: number, buffer = 2) {
@@ -282,7 +282,7 @@ const wrapObjectsSystem = makeSystem(
       const body = entity.get(Body);
       body.value.SetPositionXY(wrappedX, wrappedY);
     }
-  }
+  },
 );
 
 export const systems = compose(
@@ -301,5 +301,5 @@ export const systems = compose(
   damageVisualizerSystem,
   cleanupBulletsSystem,
   wrapObjectsSystem,
-  asteroidRecoilSystem
+  asteroidRecoilSystem,
 );

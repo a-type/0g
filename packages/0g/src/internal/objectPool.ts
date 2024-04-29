@@ -1,4 +1,4 @@
-import { logger } from '../logger';
+import { logger } from '../logger.js';
 
 export interface Poolable {
   reset?(): void;
@@ -8,7 +8,10 @@ export class ObjectPool<T extends Poolable> {
   private free = new Array<T>();
   private count = 0;
 
-  constructor(private factory: () => T, initialSize: number = 1) {
+  constructor(
+    private factory: () => T,
+    initialSize: number = 1,
+  ) {
     this.expand(initialSize);
   }
 

@@ -1,12 +1,12 @@
 import { EventEmitter } from 'events';
-import { Archetype } from './Archetype';
+import { Archetype } from './Archetype.js';
 import {
   ComponentInstanceFor,
   ComponentType,
   ComponentInstance,
-} from './Component';
-import { Game } from './Game';
-import { logger } from './logger';
+} from './Component.js';
+import { Game } from './Game.js';
+import { logger } from './logger.js';
 
 export interface ArchetypeManagerEvents {
   archetypeCreated(archetype: Archetype): void;

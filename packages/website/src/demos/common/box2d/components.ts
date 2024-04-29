@@ -1,7 +1,7 @@
-import { BodyShape } from './types';
+import { BodyShape } from './types.js';
 import { Component, State } from '0g';
 import { b2Body } from '@flyover/box2d';
-import { EntityContact } from './ContactListener';
+import { EntityContact } from './ContactListener.js';
 
 export class Transform extends Component(() => ({
   x: 0,
@@ -35,7 +35,7 @@ export class BodyConfig extends Component(() => ({
 })) {}
 
 export class Body extends State(() => ({
-  value: (null as any) as b2Body,
+  value: null as any as b2Body,
 })) {}
 
 export class Contacts extends State(() => ({

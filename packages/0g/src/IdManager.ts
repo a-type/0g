@@ -1,4 +1,4 @@
-import { incrementIdVersion, SIGNIFIER_MASK } from './ids';
+import { incrementIdVersion, SIGNIFIER_MASK } from './ids.js';
 
 /**
  * Provides monotonically increasing ID numbers. Allows

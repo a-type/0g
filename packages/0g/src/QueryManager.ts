@@ -1,6 +1,6 @@
-import { Game } from './Game';
-import { ObjectPool } from './internal/objectPool';
-import { Query, QueryComponentFilter } from './Query';
+import { Game } from './Game.js';
+import { ObjectPool } from './internal/objectPool.js';
+import { Query, QueryComponentFilter } from './Query.js';
 
 // TODO: reuse queries with identical definitions!
 export class QueryManager {

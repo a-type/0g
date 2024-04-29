@@ -2,58 +2,23 @@
   "name": "website",
   "version": "0.0.7",
   "private": true,
+  "type": "module",
   "dependencies": {
-    "0g": "link:../0g",
-    "@0g/editor": "link:../editor",
-    "@0g/react": "link:../react",
-    "@craco/craco": "^6.0.0",
-    "@emotion/react": "^11.1.2",
-    "@emotion/styled": "^11.0.0",
+    "0g": "workspace:*",
+    "@0g/react": "workspace:*",
     "@flyover/box2d": "^1.0.1",
-    "@react-spring/web": "^9.0.0-rc.3",
-    "@testing-library/jest-dom": "^5.11.4",
-    "@testing-library/react": "^11.1.0",
-    "@testing-library/user-event": "^12.1.10",
-    "@types/jest": "^26.0.15",
-    "@types/node": "^14.14.11",
-    "@types/react": "^17.0.0",
-    "@types/react-dom": "^17.0.0",
-    "cross-env": "^7.0.3",
-    "math2d": "^3.0.0",
-    "react": "^17.0.1",
-    "react-dom": "^17.0.1",
-    "react-scripts": "4.0.1",
-    "typescript": "^4.0.3",
-    "web-vitals": "^0.2.4",
-    "wouter": "^2.6.0"
+    "@react-spring/web": "9.7.3",
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.0",
+    "math2d": "4.0.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "typescript": "5.4.5",
+    "vite": "5.2.10",
+    "@vitejs/plugin-react-swc": "3.6.0"
   },
   "scripts": {
-    "start": "craco start",
-    "dev": "craco start",
-    "build": "cross-env SKIP_PREFLIGHT_CHECK=true craco build",
-    "test": "craco test",
-    "eject": "craco eject",
-    "release": "echo \"no-op\""
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
-  },
-  "devDependencies": {
-    "@emotion/babel-preset-css-prop": "^11.0.0"
+    "dev": "vite",
+    "build": "vite build"
   }
 }

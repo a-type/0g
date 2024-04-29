@@ -1,4 +1,4 @@
-import { Poolable } from './internal/objectPool';
+import { Poolable } from './internal/objectPool.js';
 
 export class ResourceHandle<T = any> implements Poolable {
   private _promise: Promise<T>;

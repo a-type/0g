@@ -1,10 +1,11 @@
-import { Component } from '../Component';
-import { makeEffect } from '../Effect';
-import { Entity } from '../Entity';
-import { changed, not } from '../filters';
-import { Game } from '../Game';
-import { logger } from '../logger';
-import { makeSystem } from '../System';
+import { Component } from '../Component.js';
+import { makeEffect } from '../Effect.js';
+import { Entity } from '../Entity.js';
+import { changed, not } from '../filters.js';
+import { Game } from '../Game.js';
+import { logger } from '../logger.js';
+import { makeSystem } from '../System.js';
+import { describe, it, expect } from 'vitest';
 
 const delta = 16 + 2 / 3;
 

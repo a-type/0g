@@ -1,6 +1,6 @@
-import { ObjectPool } from './internal/objectPool';
-import { logger } from './logger';
-import { ResourceHandle } from './ResourceHandle';
+import { ObjectPool } from './internal/objectPool.js';
+import { logger } from './logger.js';
+import { ResourceHandle } from './ResourceHandle.js';
 
 export class Resources<ResourceMap extends Record<string, any>> {
   private handlePool = new ObjectPool(() => new ResourceHandle());
