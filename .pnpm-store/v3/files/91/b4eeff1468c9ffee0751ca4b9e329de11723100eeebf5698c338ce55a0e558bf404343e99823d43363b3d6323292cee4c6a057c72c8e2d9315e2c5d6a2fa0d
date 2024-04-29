@@ -1,0 +1,41 @@
+{
+  "name": "typedoc-plugin-internal-external",
+  "version": "2.2.0",
+  "description": "Force a File or Reflection (symbol) to be @internal or @external",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "./test/useTypedocVersion.js && ./test/banner.js && test_downstream_projects",
+    "release": "release",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "typedocplugin",
+    "typedoc"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/christopherthielen/typedoc-plugin-internal-external"
+  },
+  "author": "Chris Thielen",
+  "license": "MIT",
+  "peerDependencies": {
+    "typedoc": ">=0.7.2 <1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^14.0.5",
+    "@uirouter/publish-scripts": "^2.3.44",
+    "husky": "^4.2.5",
+    "lodash": "^4.17.15",
+    "prettier": "^2.0.5",
+    "pretty-quick": "^2.0.1",
+    "semver": "^7.1.1",
+    "typedoc": "^0.17.7",
+    "typescript": ">=3.8.3"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "pretty-quick --staged"
+    }
+  }
+}

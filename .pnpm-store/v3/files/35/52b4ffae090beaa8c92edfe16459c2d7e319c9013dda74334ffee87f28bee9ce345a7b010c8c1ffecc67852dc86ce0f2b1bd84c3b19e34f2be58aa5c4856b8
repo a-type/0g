@@ -1,0 +1,10 @@
+{
+  "version": "v1",
+  "packages": {
+    "typedoc-plugin-internal-external": {
+      "signature": "fb5180caa9b5363b749732dc2ccf6be3",
+      "file": true,
+      "replaced": "latest"
+    }
+  }
+}
