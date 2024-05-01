@@ -34,6 +34,9 @@ export class ComponentManager {
   }
 
   acquire = (typeId: number, initialValues: any) => {
+    if (!this.pools[typeId]) {
+      throw new Error(`ComponentType with ID ${typeId} does not exist`);
+    }
     const component = this.pools[typeId].acquire(
       initialValues,
       this.game.idManager.get(),

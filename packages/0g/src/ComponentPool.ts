@@ -12,15 +12,15 @@ export class ComponentPool<S> {
     this.pool = new ObjectPool<ComponentInstance<S>>(() => new this.Type());
   }
 
-  acquire(initial: Partial<S> = {}, id: number) {
+  acquire = (initial: Partial<S> = {}, id: number) => {
     const instance = this.pool.acquire();
     this.Type.initialize(instance, initial, id);
     return instance;
-  }
+  };
 
-  release(instance: ComponentInstance<S>) {
+  release = (instance: ComponentInstance<S>) => {
     this.pool.release(instance);
-  }
+  };
 
   get ComponentType() {
     return this.Type;

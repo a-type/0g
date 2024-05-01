@@ -7,6 +7,7 @@ export * from './System.js';
 export * from './filters.js';
 export * from './Effect.js';
 export * from './compose.js';
+export { Entity } from './Entity.js';
 
 export interface Globals {
   [key: string]: any;
