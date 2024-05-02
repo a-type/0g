@@ -1,15 +1,14 @@
-import { ComponentType } from './Component.js';
 import { Game } from './Game.js';
-import { Poolable } from './internal/objectPool.js';
 import { Archetype } from './Archetype.js';
 import { Filter, isFilter, has } from './filters.js';
 import { EntityImpostorFor, QueryIterator } from './QueryIterator.js';
 import { logger } from './logger.js';
 import { Entity } from './Entity.js';
 import { EventSubscriber } from '@a-type/utils';
+import { ComponentHandle } from './Component2.js';
 
 export type QueryComponentFilter = Array<
-  Filter<ComponentType<any>> | ComponentType<any>
+  Filter<ComponentHandle> | ComponentHandle
 >;
 
 export type QueryEvents = {
@@ -24,11 +23,10 @@ export type QueryIteratorFn<Q extends Query<any>, Returns = void> = {
   (ent: EntityImpostorFor<ExtractQueryDef<Q>>): Returns;
 };
 
-export class Query<FilterDef extends QueryComponentFilter>
-  extends EventSubscriber<QueryEvents>
-  implements Poolable
-{
-  public filter: Filter<ComponentType<any>>[] = [];
+export class Query<
+  FilterDef extends QueryComponentFilter,
+> extends EventSubscriber<QueryEvents> {
+  public filter: Filter<ComponentHandle>[] = [];
   readonly archetypes = new Array<Archetype>();
   private trackedEntities: number[] = [];
   private addedThisFrame: number[] = [];

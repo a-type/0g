@@ -6,7 +6,7 @@ type InferAsset<Loader extends AssetLoader<any>> =
   Loader extends AssetLoader<infer T> ? T : never;
 
 export class Assets<Loaders extends Record<string, AssetLoader>> {
-  private handlePool = new ObjectPool(() => new ResourceHandle());
+  private handlePool = new ObjectPool(() => new ResourceHandle(), h => h.reset());
   private handles = new Map<string, ResourceHandle>();
 
   constructor(private _loaders: Loaders) {}

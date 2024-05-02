@@ -1,22 +1,28 @@
 import { BodyShape } from './types.js';
-import { Component, State } from '0g';
+import { component, state } from '0g';
 import { b2Body } from '@flyover/box2d';
 import { EntityContact } from './ContactListener.js';
 
-export class Transform extends Component(() => ({
-  x: 0,
-  y: 0,
-  angle: 0,
-})) {
-  get position() {
-    return {
-      x: this.x,
-      y: this.y,
-    };
-  }
-}
+export const Transform = component(
+  'Transform',
+  () => ({
+    x: 0,
+    y: 0,
+    angle: 0,
+  }),
+  {
+    extensions: {
+      position(i) {
+        return {
+          x: i.x,
+          y: i.y,
+        };
+      },
+    },
+  },
+);
 
-export class BodyConfig extends Component(() => ({
+export const BodyConfig = component('BodyConfig', () => ({
   shape: {
     shape: 'circle',
     radius: 1,
@@ -32,32 +38,38 @@ export class BodyConfig extends Component(() => ({
   angularDamping: 0,
   linearDamping: 0,
   sensor: false,
-})) {}
+}));
 
-export class Body extends State(() => ({
+export const Body = state('Body', () => ({
   value: null as any as b2Body,
-})) {}
+}));
 
-export class Contacts extends State(() => ({
+export const Contacts = state('Contacts', () => ({
   began: new Array<EntityContact>(),
   ended: new Array<EntityContact>(),
   current: new Array<EntityContact>(),
-})) {}
+}));
 
-export class ContactsCache extends State(() => ({
-  began: new Set<EntityContact>(),
-  ended: new Set<EntityContact>(),
-})) {
-  onBeginContact(contact: EntityContact) {
-    this.began.add(contact);
-    this.updated = true;
-  }
-  onEndContact(contact: EntityContact) {
-    this.ended.add(contact);
-    this.updated = true;
-  }
-}
+export const ContactsCache = state(
+  'ContactsCache',
+  () => ({
+    began: new Set<EntityContact>(),
+    ended: new Set<EntityContact>(),
+  }),
+  {
+    extensions: {
+      onBeginContact: (i) => (contact: EntityContact) => {
+        i.began.add(contact);
+        i.$.changed = true;
+      },
+      onEndContact: (i) => (contact: EntityContact) => {
+        i.ended.add(contact);
+        i.$.changed = true;
+      },
+    },
+  },
+);
 
-export class WorldConfig extends Component(() => ({
+export const WorldConfig = component('WorldConfig', () => ({
   gravity: { x: 0, y: 0 },
-})) {}
+}));

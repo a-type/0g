@@ -1,9 +1,10 @@
 import { ComponentPool } from './ComponentPool.js';
 import {
-  ComponentType,
   COMPONENT_CHANGE_HANDLE,
   ComponentInstance,
-} from './Component.js';
+  ComponentInstanceInternal,
+  ComponentHandle,
+} from './Component2.js';
 import { Game } from './Game.js';
 
 /**
@@ -11,20 +12,20 @@ import { Game } from './Game.js';
  * the presence of Components assigned to Entities.
  */
 export class ComponentManager {
-  private pools = new Array<ComponentPool<any>>();
+  private pools = new Array<ComponentPool>();
   private changed = new Array<boolean>();
   private unsubscribes = new Array<() => void>();
 
   constructor(
-    public componentTypes: ComponentType<any>[],
+    public componentHandles: ComponentHandle[],
     private game: Game,
   ) {
     // initialize pools, one for each ComponentType by ID. ComponentType IDs are incrementing integers.
-    Object.values(componentTypes).forEach((Type) => {
+    Object.values(componentHandles).forEach((handle) => {
       // assign an ID
-      Type.id = game.idManager.get();
+      handle.id = game.idManager.get();
       // create a pool
-      this.pools[Type.id] = new ComponentPool<any>(Type, this.game);
+      this.pools[handle.id] = new ComponentPool(handle, this.game);
     });
 
     // TODO: right time to do this?
@@ -41,23 +42,23 @@ export class ComponentManager {
       initialValues,
       this.game.idManager.get(),
     );
-    component[COMPONENT_CHANGE_HANDLE] = this.onComponentChanged;
+    component.$[COMPONENT_CHANGE_HANDLE] = this.onComponentChanged;
     return component;
   };
 
-  release = (instance: ComponentInstance<any>) => {
-    delete instance[COMPONENT_CHANGE_HANDLE];
-    return this.pools[instance.__type].release(instance);
+  release = (instance: ComponentInstanceInternal) => {
+    delete instance.$[COMPONENT_CHANGE_HANDLE];
+    return this.pools[instance.$.type.id].release(instance);
   };
 
   wasChangedLastFrame = (componentInstanceId: number) => {
     return !!this.changed[componentInstanceId];
   };
 
-  private onComponentChanged = (component: ComponentInstance<any>) => {
+  private onComponentChanged = (component: ComponentInstanceInternal) => {
     this.game.enqueueOperation({
       op: 'markChanged',
-      componentId: component.id,
+      componentId: component.$.id,
     });
   };
 

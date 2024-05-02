@@ -1,21 +1,17 @@
 import { Archetype } from './Archetype.js';
-import { Component } from './Component.js';
+import {
+  ComponentA as A,
+  ComponentB as B,
+  ComponentC as C,
+} from './__tests__/componentFixtures.js';
 import { Entity } from './Entity.js';
 import { describe, it, expect } from 'vitest';
 
-class A extends Component(() => ({})) {}
-class B extends Component(() => ({})) {}
-class C extends Component(() => ({})) {}
-
-A.id = 0;
-B.id = 1;
-C.id = 2;
-
 describe('Archetypes', () => {
   const entities = [
-    <const>[[new A(), new B(), new C()] as [A, B, C], 1],
-    <const>[[new A(), new B(), new C()] as [A, B, C], 5],
-    <const>[[new A(), new B(), new C()] as [A, B, C], 100],
+    <const>[[A.create(), B.create(), C.create()] as const, 1],
+    <const>[[A.create(), B.create(), C.create()] as const, 5],
+    <const>[[A.create(), B.create(), C.create()] as const, 100],
   ];
 
   it('stores and iterates entities', () => {

@@ -1,15 +1,12 @@
 import { logger } from '../logger.js';
 
-export interface Poolable {
-  reset?(): void;
-}
-
-export class ObjectPool<T extends Poolable> {
+export class ObjectPool<T> {
   private free = new Array<T>();
   private count = 0;
 
   constructor(
     private factory: () => T,
+    private reset: (item: T) => void = () => { },
     initialSize: number = 1,
   ) {
     this.expand(initialSize);
@@ -31,7 +28,7 @@ export class ObjectPool<T extends Poolable> {
       logger.warn(`Tried to release ${item}`);
       return;
     }
-    item.reset?.();
+    this.reset(item);
     this.free.push(item);
   }
 

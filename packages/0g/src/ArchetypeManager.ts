@@ -1,10 +1,6 @@
 import { EventSubscriber } from '@a-type/utils';
 import { Archetype } from './Archetype.js';
-import {
-  ComponentInstanceFor,
-  ComponentType,
-  ComponentInstance,
-} from './Component.js';
+import { ComponentInstance, ComponentInstanceInternal } from './Component2.js';
 import { Game } from './Game.js';
 import { logger } from './logger.js';
 
@@ -34,7 +30,7 @@ export class ArchetypeManager extends EventSubscriber<ArchetypeManagerEvents> {
     // FIXME: why +1 here? Component ids are not starting at 0... this
     // should be more elegant
     this.emptyId = new Array(
-      this.game.componentManager.componentTypes.length + 1,
+      this.game.componentManager.componentHandles.length + 1,
     )
       .fill('0')
       .join('');
@@ -51,10 +47,7 @@ export class ArchetypeManager extends EventSubscriber<ArchetypeManagerEvents> {
     this.emit('entityCreated', entityId);
   }
 
-  addComponent<T extends ComponentType<any>>(
-    entityId: number,
-    instance: ComponentInstanceFor<T>,
-  ) {
+  addComponent(entityId: number, instance: ComponentInstanceInternal) {
     logger.debug(
       `Adding ${
         Object.getPrototypeOf(instance).constructor.name
@@ -63,7 +56,7 @@ export class ArchetypeManager extends EventSubscriber<ArchetypeManagerEvents> {
     const oldArchetypeId = this.entityLookup[entityId];
     if (oldArchetypeId === undefined) {
       throw new Error(
-        `Tried to add component ${instance.__type} to ${entityId}, but it was not found in the archetype registry`,
+        `Tried to add component ${instance.$.type.name} to ${entityId}, but it was not found in the archetype registry`,
       );
     }
     const oldArchetype = this.getOrCreate(oldArchetypeId);
@@ -74,7 +67,7 @@ export class ArchetypeManager extends EventSubscriber<ArchetypeManagerEvents> {
 
     const newArchetypeId = (this.entityLookup[entityId] = this.flipBit(
       oldArchetypeId,
-      instance.__type,
+      instance.$.type.id,
     ));
     const archetype = this.getOrCreate(newArchetypeId);
     // copy entity from old to new

@@ -1,29 +1,32 @@
 import { Game } from './Game.js';
 import { ObjectPool } from './internal/objectPool.js';
-import { ComponentInstance, ComponentType } from './Component.js';
+import { ComponentHandle, ComponentInstanceInternal } from './Component2.js';
 
-export class ComponentPool<S> {
-  private pool: ObjectPool<ComponentInstance<S>>;
+export class ComponentPool {
+  private pool: ObjectPool<ComponentInstanceInternal>;
 
   constructor(
-    private Type: ComponentType<S>,
+    private handle: ComponentHandle,
     private game: Game,
   ) {
-    this.pool = new ObjectPool<ComponentInstance<S>>(() => new this.Type());
+    this.pool = new ObjectPool<ComponentInstanceInternal>(
+      () => this.handle.create(),
+      (instance) => this.handle.reset(instance),
+    );
   }
 
-  acquire = (initial: Partial<S> = {}, id: number) => {
+  acquire = (initial: any = {}, id: number) => {
     const instance = this.pool.acquire();
-    this.Type.initialize(instance, initial, id);
+    this.handle.initialize(instance, initial, id);
     return instance;
   };
 
-  release = (instance: ComponentInstance<S>) => {
+  release = (instance: ComponentInstanceInternal) => {
     this.pool.release(instance);
   };
 
   get ComponentType() {
-    return this.Type;
+    return this.handle;
   }
 
   destroy = () => {

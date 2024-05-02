@@ -1,6 +1,4 @@
-import { Poolable } from './internal/objectPool.js';
-
-export class ResourceHandle<T = any> implements Poolable {
+export class ResourceHandle<T = any> {
   private _promise: Promise<T>;
   private _resolve: (value: T) => void = () => {
     throw new Error('Cannot resolve this resource yet');

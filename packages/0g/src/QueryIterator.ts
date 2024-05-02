@@ -1,23 +1,20 @@
-import { ComponentType } from './Component.js';
+import { ComponentHandle } from './Component2.js';
 import { Entity } from './Entity.js';
 import { Any, Changed, Filter, not, Not } from './filters.js';
 import { Game } from './Game.js';
 import { Query, QueryComponentFilter } from './Query.js';
 
-type FilterNots<
-  CompUnion extends Filter<ComponentType<any>> | ComponentType<any>,
-> = CompUnion extends Not<any> ? never : CompUnion;
+type FilterNots<CompUnion extends Filter<ComponentHandle> | ComponentHandle> =
+  CompUnion extends Not<any> ? never : CompUnion;
 
-type UnwrapAnys<
-  CompUnion extends Filter<ComponentType<any>> | ComponentType<any>,
-> = CompUnion extends Any<any> ? never : CompUnion;
+type UnwrapAnys<CompUnion extends Filter<ComponentHandle> | ComponentHandle> =
+  CompUnion extends Any<any> ? never : CompUnion;
 
-type OnlyNots<
-  CompUnion extends Filter<ComponentType<any>> | ComponentType<any>,
-> = CompUnion extends Not<infer C> ? C : never;
+type OnlyNots<CompUnion extends Filter<ComponentHandle> | ComponentHandle> =
+  CompUnion extends Not<infer C> ? C : never;
 
 type UnwrapFilters<
-  CompUnion extends Filter<ComponentType<any>> | ComponentType<any>,
+  CompUnion extends Filter<ComponentHandle> | ComponentHandle,
 > = CompUnion extends Filter<infer C> ? C : CompUnion;
 
 type DefiniteComponentsFromFilter<Fil extends QueryComponentFilter> =

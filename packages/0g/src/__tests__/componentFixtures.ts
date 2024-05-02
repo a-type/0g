@@ -1,21 +1,21 @@
-import { Component } from '../Component.js';
+import { component } from '../Component2.js';
 
-export class ComponentA extends Component(() => ({
+export const ComponentA = component('A', () => ({
   value: 10,
-})) {}
+}));
 ComponentA.id = 1;
 
-export class ComponentB extends Component(() => ({
+export const ComponentB = component('B', () => ({
   value: 'hello',
-})) {}
+}));
 ComponentB.id = 2;
 
-export class ComponentC extends Component(() => ({
+export const ComponentC = component('C', () => ({
   value: true,
-})) {}
+}));
 ComponentC.id = 3;
 
-export class ComponentD extends Component(() => ({
+export const ComponentD = component('D', () => ({
   value: [3],
-})) {}
+}));
 ComponentD.id = 4;

@@ -1,5 +1,5 @@
 import { EventSubscriber } from '@a-type/utils';
-import { ComponentType } from './Component.js';
+import { ComponentHandle } from './Component2.js';
 import { Entity } from './Entity.js';
 
 export type ArchetypeEvents = {
@@ -16,7 +16,7 @@ export type ArchetypeEvents = {
  * and checking every Entity in the system at init and then on every change.
  */
 export class Archetype<
-  T extends ComponentType<any>[] = ComponentType<any>[],
+  T extends ComponentHandle[] = ComponentHandle[],
 > extends EventSubscriber<ArchetypeEvents> {
   private entities = new Array<Entity<T[number], any>>();
   /** Maps entity ID -> index in entity array */
@@ -29,6 +29,8 @@ export class Archetype<
   /**
    * Archetype is iterable; iterating it will iterate over its stored
    * Entities.
+   *
+   * TODO: reverse?
    */
   [Symbol.iterator]() {
     return this.entities[Symbol.iterator]();
@@ -81,7 +83,7 @@ export class Archetype<
     return this.entities[index];
   }
 
-  hasAll = (types: ComponentType<any>[]) => {
+  hasAll = (types: ComponentHandle[]) => {
     const masked = types
       .reduce((m, T) => {
         m[T.id] = '1';
@@ -91,18 +93,18 @@ export class Archetype<
     return this.id === masked;
   };
 
-  hasSome = (types: ComponentType<any>[]) => {
+  hasSome = (types: ComponentHandle[]) => {
     for (var T of types) {
       if (this.id[T.id] === '1') return true;
     }
     return false;
   };
 
-  includes = (Type: ComponentType<any>) => {
+  includes = (Type: ComponentHandle) => {
     return this.id[Type.id] === '1';
   };
 
-  omits = (Type: ComponentType<any>) => {
+  omits = (Type: ComponentHandle) => {
     return !this.includes(Type);
   };
 

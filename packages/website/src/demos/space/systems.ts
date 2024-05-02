@@ -245,7 +245,9 @@ const damageVisualizerSystem = makeSystem(
     const { health, maxHealth } = entity.get(Damageable);
     const gap =
       health === maxHealth ? 0 : Math.round((health / maxHealth) * 10);
-    entity.get(SpriteConfig).update((self) => (self.dashGap = gap));
+    const sprite = entity.get(SpriteConfig);
+    sprite.dashGap = gap;
+    sprite.$.changed = true;
   },
 );
 

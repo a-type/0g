@@ -1,27 +1,30 @@
-import { ComponentInstance, ComponentType } from './Component.js';
-import { Poolable } from './internal/objectPool.js';
+import {
+  ComponentHandle,
+  ComponentInstance,
+  ComponentInstanceInternal,
+  InstanceFor,
+} from './Component2.js';
 
-// Utility type: it unwraps a ComponentType to an instance, making it nullable
+// Utility type: it unwraps a ComponentDefinition to an instance, making it nullable
 // if the type is not accounted for in the Entity definition, or "never" if the type
 // is specifically omitted - otherwise it is non-nullable.
 type DefinedInstance<
-  Present extends ComponentType<any>,
-  Omitted extends ComponentType<any>,
-  Type extends ComponentType<any>,
-> = Type extends Present
-  ? InstanceType<Type>
-  : Type extends Omitted
+  Present extends ComponentHandle,
+  Omitted extends ComponentHandle,
+  Handle extends ComponentHandle,
+> = Handle extends Present
+  ? InstanceFor<Handle>
+  : Handle extends Omitted
     ? never
-    : InstanceType<Type> | null;
+    : InstanceFor<Handle> | null;
 
 export class Entity<
-  DefiniteComponents extends ComponentType<any> = ComponentType<any>,
-  OmittedComponents extends ComponentType<any> = any,
-> implements Poolable
-{
+  DefiniteComponents extends ComponentHandle = ComponentHandle,
+  OmittedComponents extends ComponentHandle = any,
+> {
   private _id = 0;
   // TODO: make array
-  readonly components = new Map<number, ComponentInstance<any>>();
+  readonly components = new Map<number, ComponentInstance>();
 
   private _destroyed = true;
 
@@ -36,49 +39,46 @@ export class Entity<
   // TODO: hide these behind Symbols?
   __set = (
     entityId: number,
-    components: ComponentInstance<any>[] | Readonly<ComponentInstance<any>[]>,
+    components:
+      | ComponentInstanceInternal[]
+      | Readonly<ComponentInstanceInternal[]>,
   ) => {
     this._id = entityId;
     this.components.clear();
     components.forEach((comp) => {
-      this.components.set(comp.__type, comp);
+      this.components.set(comp.$.type.id, comp);
     });
     this._destroyed = false;
   };
 
-  __addComponent = (instance: ComponentInstance<any>) => {
-    this.components.set(instance.__type, instance);
+  __addComponent = (instance: ComponentInstanceInternal) => {
+    this.components.set(instance.$.type.id, instance);
   };
 
-  __removeComponent = (typeId: number) => {
+  __removeComponent = (typeId: number): ComponentInstanceInternal => {
     const instance = this.components.get(typeId);
     this.components.delete(typeId);
-    return instance;
+    return instance as ComponentInstanceInternal;
   };
 
-  get = <T extends ComponentType<any>>(
-    Type: T,
+  get = <T extends ComponentHandle>(
+    handle: T,
   ): DefinedInstance<DefiniteComponents, OmittedComponents, T> => {
-    const instance = (this.components.get(Type.id) ?? null) as DefinedInstance<
-      DefiniteComponents,
-      OmittedComponents,
-      T
-    >;
+    const instance = (this.components.get(handle.id) ??
+      null) as DefinedInstance<DefiniteComponents, OmittedComponents, T>;
     console.assert(
       !instance || instance.id !== 0,
-      `Entity tried to access recycled Component instance of type ${Type.name}`,
+      `Entity tried to access recycled Component instance of type ${handle.name}`,
     );
     return instance;
   };
 
-  maybeGet = <T extends ComponentInstance<any>>(
-    Type: ComponentType<T>,
-  ): T | null => {
-    return (this.components.get(Type.id) ?? null) as T | null;
+  maybeGet = <T extends ComponentHandle>(handle: T): InstanceFor<T> | null => {
+    return (this.components.get(handle.id) ?? null) as InstanceFor<T> | null;
   };
 
-  has = <T extends ComponentType<any>>(Type: T): boolean => {
-    return this.components.has(Type.id);
+  has = <T extends ComponentHandle>(handle: T): boolean => {
+    return this.components.has(handle.id);
   };
 
   reset() {

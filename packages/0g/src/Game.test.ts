@@ -1,10 +1,10 @@
+import { component } from './Component2.js';
 import { Game } from './Game.js';
-import { Component } from './Component.js';
 import { describe, it, beforeEach, expect } from 'vitest';
 
-class A extends Component(() => ({})) {}
-class B extends Component(() => ({})) {}
-class C extends Component(() => ({})) {}
+const A = component('A', () => ({}));
+const B = component('B', () => ({}));
+const C = component('C', () => ({}));
 
 describe('Game', () => {
   let game: Game;

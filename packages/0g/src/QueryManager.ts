@@ -7,7 +7,7 @@ export class QueryManager {
   private pool: ObjectPool<Query<any>>;
 
   constructor(private game: Game) {
-    this.pool = new ObjectPool<Query<any>>(() => new Query(this.game));
+    this.pool = new ObjectPool<Query<any>>(() => new Query(this.game), q => q.reset());
   }
 
   create<Def extends QueryComponentFilter>(userDef: Def) {
