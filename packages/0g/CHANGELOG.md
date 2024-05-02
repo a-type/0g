@@ -1,5 +1,11 @@
 # 0g
 
+## 0.2.0
+
+### Minor Changes
+
+- 72203f1: Rewrite components as plain objects
+
 ## 0.1.2
 
 ### Patch Changes
