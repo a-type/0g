@@ -1,5 +1,12 @@
 # @0g/react
 
+## 2.0.1
+
+### Patch Changes
+
+- Updated dependencies [911246b]
+  - 0g@0.2.1
+
 ## 2.0.0
 
 ### Minor Changes
