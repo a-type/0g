@@ -21,6 +21,7 @@ export type ComponentHandle<
   deserialize?: Deserializer;
   extensions?: Ext;
   create: () => ComponentInstance<Shape, Ext>;
+  isInstance: (instance: any) => instance is ComponentInstance<Shape, Ext>;
 };
 
 type Serializer<Shape = any> = (shape: Shape) => string;
@@ -160,10 +161,17 @@ function createComponentDefinition<
     initialize(instance, {}, 0);
     return instance;
   }
+  function isInstance(
+    instance: any,
+  ): instance is ComponentInstance<Shape, Ext> {
+    if (!('$' in instance)) return false;
+    return instance.$.type.id === handle.id;
+  }
   Object.assign(handle, {
     reset,
     create,
     initialize,
+    isInstance,
     ...options,
   });
   return handle;
