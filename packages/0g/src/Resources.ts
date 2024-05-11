@@ -3,7 +3,7 @@ import { logger } from './logger.js';
 import { ResourceHandle } from './ResourceHandle.js';
 
 export class Resources<ResourceMap extends Record<string, any>> {
-  private handlePool = new ObjectPool(() => new ResourceHandle());
+  private handlePool = new ObjectPool(() => new ResourceHandle(), h => h.reset());
   private handles = new Map<string | number | symbol, ResourceHandle>();
 
   private getOrCreateGlobalHandle = (key: string | number | symbol) => {

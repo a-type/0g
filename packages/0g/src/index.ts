@@ -2,7 +2,7 @@ import { AssetLoader } from './Assets.js';
 
 export * from './Game.js';
 export * from './Query.js';
-export * from './Component.js';
+export * from './Component2.js';
 export * from './System.js';
 export * from './filters.js';
 export * from './Effect.js';

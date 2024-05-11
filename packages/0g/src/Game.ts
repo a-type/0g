@@ -1,5 +1,4 @@
 import { QueryManager } from './QueryManager.js';
-import { ComponentType, ComponentInstance } from './Component.js';
 import { ComponentManager } from './ComponentManager.js';
 import { IdManager } from './IdManager.js';
 import { ArchetypeManager } from './ArchetypeManager.js';
@@ -11,8 +10,14 @@ import { RemovedList } from './RemovedList.js';
 import { Assets } from './Assets.js';
 import { QueryComponentFilter } from './Query.js';
 import { EntityImpostorFor } from './QueryIterator.js';
-import type { AssetLoaders, Globals } from './index.js';
+import type {
+  AssetLoaders,
+  BaseShape,
+  ComponentInstanceInternal,
+  Globals,
+} from './index.js';
 import { EventSubscriber } from '@a-type/utils';
+import { ComponentHandle } from './Component2.js';
 
 export type GameConstants = {
   maxComponentId: number;
@@ -36,7 +41,10 @@ export class Game extends EventSubscriber<GameEvents> {
   private _componentManager: ComponentManager;
   private _globals = new Resources<Globals>();
   private _runnableCleanups: (() => void)[];
-  private _entityPool = new ObjectPool(() => new Entity());
+  private _entityPool = new ObjectPool(
+    () => new Entity(),
+    (e) => e.reset(),
+  );
   private _removedList = new RemovedList();
   private _assets: Assets<AssetLoaders>;
 
@@ -56,7 +64,7 @@ export class Game extends EventSubscriber<GameEvents> {
     systems = [],
     assetLoaders = {},
   }: {
-    components: ComponentType<any>[];
+    components: ComponentHandle[];
     systems?: ((game: Game) => () => void)[];
     assetLoaders?: AssetLoaders;
   }) {
@@ -124,15 +132,15 @@ export class Game extends EventSubscriber<GameEvents> {
   /**
    * Add a component to an entity.
    */
-  add = <ComponentShape>(
+  add = <ComponentShape extends BaseShape>(
     entityId: number,
-    Type: ComponentType<ComponentShape>,
+    handle: ComponentHandle<ComponentShape>,
     initial?: Partial<ComponentShape>,
   ) => {
     this._operationQueue.push({
       op: 'addComponent',
       entityId,
-      componentType: Type.id,
+      componentType: handle.id,
       initialValues: initial,
     });
   };
@@ -140,7 +148,7 @@ export class Game extends EventSubscriber<GameEvents> {
   /**
    * Remove a component by type from an entity
    */
-  remove = <T extends ComponentType<any>>(entityId: number, Type: T) => {
+  remove = <T extends ComponentHandle>(entityId: number, Type: T) => {
     this._operationQueue.push({
       op: 'removeComponent',
       entityId,
@@ -220,7 +228,7 @@ export class Game extends EventSubscriber<GameEvents> {
   };
 
   private applyOperation = (operation: Operation) => {
-    let instance: ComponentInstance<any>;
+    let instance: ComponentInstanceInternal | undefined;
     let entity: Entity;
 
     switch (operation.op) {

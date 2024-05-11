@@ -1,55 +1,62 @@
-import { Component, State } from '0g';
+import { component, state } from '0g';
 
-export class Player extends Component(() => ({
+export const Player = component('Player', () => ({
   rotateSpeed: 3,
   thrustForce: 2,
-})) {}
+}));
 
-export class Damageable extends Component(() => ({
-  maxHealth: 3,
-  health: 3,
-  invulnerableFrames: 5 * 60, // ~5s,
-  damageFrom: ['bullet'],
-})) {
-  // ephemeral state
-  private __invulnerableTimer = 0;
-  addDamage(force = false) {
-    if (!this.vulnerable && !force) return;
-    this.health = Math.max(0, this.health - 1);
-    this.__invulnerableTimer = this.invulnerableFrames;
-    this.updated = true;
-  }
-  get vulnerable() {
-    return this.__invulnerableTimer === 0;
-  }
-  get dead() {
-    return this.health === 0;
-  }
-  tickInvulnerability() {
-    this.__invulnerableTimer = Math.max(0, this.__invulnerableTimer - 1);
-  }
-}
+export const Damageable = component(
+  'Damageable',
+  () => ({
+    maxHealth: 3,
+    health: 3,
+    invulnerableFrames: 5 * 60, // ~5s,
+    damageFrom: ['bullet'],
+    __invulnerableTimer: 0,
+  }),
+  {
+    extensions: {
+      addDamage:
+        (i) =>
+        (force = false) => {
+          if (i.__invulnerableTimer > 0 && !force) return;
+          i.health = Math.max(0, i.health - 1);
+          i.__invulnerableTimer = i.invulnerableFrames;
+          i.$.changed = true;
+        },
+      vulnerable(i) {
+        return i.__invulnerableTimer === 0;
+      },
+      dead(i) {
+        return i.health === 0;
+      },
+      tickInvulnerability: (i) => () => {
+        i.__invulnerableTimer = Math.max(0, i.__invulnerableTimer - 1);
+      },
+    },
+  },
+);
 
-export class ColliderTag extends Component(() => ({
+export const ColliderTag = component('ColliderTag', () => ({
   group: 'bullet',
-})) {}
+}));
 
-export class Asteroid extends Component(() => ({
+export const Asteroid = component('Asteroid', () => ({
   size: 3,
   variant: Math.floor(Math.random() * 3),
-})) {}
+}));
 
-export class Bullet extends Component(() => ({
+export const Bullet = component('Bullet', () => ({
   speed: 8,
-})) {}
+}));
 
-export class SpriteConfig extends Component(() => ({
+export const SpriteConfig = component('SpriteConfig', () => ({
   path: 'm 0 0 l 5 0 l 0 5 l -5 0 l 0 -5',
   stroke: 'white',
   dashGap: 0,
-})) {}
+}));
 
-export class Sprite extends State(() => ({
-  element: (null as any) as SVGGElement,
-  path: (null as any) as SVGPathElement,
-})) {}
+export const Sprite = state('Sprite', () => ({
+  element: null as any as SVGGElement,
+  path: null as any as SVGPathElement,
+}));

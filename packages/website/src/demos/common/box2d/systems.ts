@@ -1,4 +1,11 @@
-import { makeSystem, makeEffect, changed, Game, compose } from '0g';
+import {
+  makeSystem,
+  makeEffect,
+  changed,
+  Game,
+  compose,
+  InstanceFor,
+} from '0g';
 import {
   b2Body,
   b2BodyType,
@@ -13,7 +20,7 @@ import * as components from './components.js';
 import { createCapsule } from './utils.js';
 
 declare module '0g' {
-  interface GameResources {
+  interface Globals {
     physicsWorld: b2World;
     physicsContacts: ContactListener;
   }
@@ -21,7 +28,7 @@ declare module '0g' {
 
 function assignBodyConfig(
   body: b2Body,
-  config: components.BodyConfig,
+  config: InstanceFor<typeof components.BodyConfig>,
   id: number,
 ) {
   const {
@@ -43,7 +50,10 @@ function assignBodyConfig(
   return body;
 }
 
-function createFixtureDef(config: components.BodyConfig, id: number) {
+function createFixtureDef(
+  config: InstanceFor<typeof components.BodyConfig>,
+  id: number,
+) {
   const { density, restitution, friction, shape, sensor } = config;
 
   const fix = new b2FixtureDef();
@@ -167,7 +177,7 @@ const updateBodiesSystem = makeSystem(
 
     assignBodyConfig(body.value, config, ent.id);
     applyFixtures(body.value, createFixtureDef(config, ent.id));
-    body.updated = true;
+    body.$.changed = true;
   },
 );
 
@@ -175,7 +185,7 @@ const resetContactsSystem = makeSystem([components.Contacts], (ent) => {
   const contacts = ent.get(components.Contacts);
   contacts.began.length = 0;
   contacts.ended.length = 0;
-  contacts.updated = true;
+  contacts.$.changed = true;
 });
 
 const stepWorldRunner = (game: Game) => {
@@ -200,11 +210,11 @@ const updateTransformsSystem = makeSystem(
 
     const pos = body.value.GetPosition();
 
-    ent.get(components.Transform).update((transform) => {
-      transform.x = pos.x;
-      transform.y = pos.y;
-      transform.angle = body.value.GetAngle();
-    });
+    const transform = ent.get(components.Transform);
+    transform.x = pos.x;
+    transform.y = pos.y;
+    transform.angle = body.value.GetAngle();
+    transform.$.changed = true;
   },
 );
 
@@ -224,7 +234,7 @@ const updateContactsSystem = makeSystem(
       contacts.ended.push(c);
     }
 
-    contacts.updated = true;
+    contacts.$.changed = true;
 
     cache.began.clear();
     cache.ended.clear();

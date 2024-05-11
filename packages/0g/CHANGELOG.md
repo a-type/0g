@@ -1,5 +1,23 @@
 # 0g
 
+## 0.2.1
+
+### Patch Changes
+
+- 911246b: Component.isInstance
+
+## 0.2.0
+
+### Minor Changes
+
+- 72203f1: Rewrite components as plain objects
+
+## 0.1.2
+
+### Patch Changes
+
+- 35733cd: Export Entity class
+
 ## 0.1.1
 
 ### Patch Changes

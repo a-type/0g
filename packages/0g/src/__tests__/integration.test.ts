@@ -1,4 +1,4 @@
-import { Component } from '../Component.js';
+import { component } from '../Component2.js';
 import { makeEffect } from '../Effect.js';
 import { Entity } from '../Entity.js';
 import { changed, not } from '../filters.js';
@@ -10,13 +10,13 @@ import { describe, it, expect } from 'vitest';
 const delta = 16 + 2 / 3;
 
 describe('integration tests', () => {
-  class OutputComponent extends Component(() => ({
+  const OutputComponent = component('Output', () => ({
     removablePresent: false,
-  })) {}
+  }));
 
-  class RemovableComponent extends Component(() => ({
+  const RemovableComponent = component('Removable', () => ({
     stepsSinceAdded: 0,
-  })) {}
+  }));
 
   const stepsTillToggle = 3;
 
@@ -24,14 +24,15 @@ describe('integration tests', () => {
     [RemovableComponent, OutputComponent],
     function (ent) {
       logger.debug('Setting removablePresent: true');
-      ent.get(OutputComponent).update((output) => {
-        output.removablePresent = true;
-      });
+      const output = ent.get(OutputComponent);
+      output.removablePresent = true;
+      output.$.changed = true;
+
       return () => {
         logger.debug('Setting removablePresent: false');
-        ent.get(OutputComponent).update((output) => {
-          output.removablePresent = false;
-        });
+        const output = ent.get(OutputComponent);
+        output.removablePresent = false;
+        output.$.changed = true;
       };
     },
   );
@@ -46,10 +47,10 @@ describe('integration tests', () => {
 
   const IncrementRemoveTimerSystem = makeSystem([RemovableComponent], (ent) => {
     logger.debug('Incrementing stepsSinceAdded');
-    ent.get(RemovableComponent).update((comp) => {
-      comp.stepsSinceAdded++;
-      logger.debug(`stepsSinceAdded: ${comp.stepsSinceAdded}`);
-    });
+    const comp = ent.get(RemovableComponent);
+    comp.stepsSinceAdded++;
+    comp.$.changed = true;
+    logger.debug(`stepsSinceAdded: ${comp.stepsSinceAdded}`);
   });
 
   const RemoveSystem = makeSystem(

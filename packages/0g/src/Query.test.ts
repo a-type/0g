@@ -1,5 +1,4 @@
 import { ArchetypeManager } from './ArchetypeManager.js';
-import { ComponentInstance } from './Component.js';
 import { Entity } from './Entity.js';
 import { not, Not } from './filters.js';
 import { Game } from './Game.js';
@@ -12,6 +11,7 @@ import {
 } from './__tests__/componentFixtures.js';
 import { describe, it, beforeEach, expect, vi } from 'vitest';
 import { EventSubscriber } from '@a-type/utils';
+import { ComponentInstanceInternal } from './Component2.js';
 
 const withA = 100;
 const withAB = 101;
@@ -24,7 +24,7 @@ describe('Query', () => {
   let game: Game = null as any;
 
   // bootstrapping
-  function addEntity(eid: number, components: ComponentInstance<any>[]) {
+  function addEntity(eid: number, components: ComponentInstanceInternal[]) {
     game.archetypeManager.createEntity(eid);
     components.forEach((comp) => {
       game.archetypeManager.addComponent(eid, comp);
@@ -34,7 +34,7 @@ describe('Query', () => {
   beforeEach(() => {
     const archetypeManager = new ArchetypeManager({
       componentManager: {
-        componentTypes: {
+        componentHandles: {
           length: 10,
         },
         getTypeName: () => 'TEST MOCK',
@@ -56,12 +56,12 @@ describe('Query', () => {
     };
 
     // bootstrap some testing archetypes
-    addEntity(withA, [new ComponentA()]);
-    addEntity(withB, [new ComponentB()]);
-    addEntity(withAB, [new ComponentA(), new ComponentB()]);
-    addEntity(withC, [new ComponentC()]);
-    addEntity(withD, [new ComponentD()]);
-    addEntity(withAD, [new ComponentA(), new ComponentD()]);
+    addEntity(withA, [ComponentA.create()]);
+    addEntity(withB, [ComponentB.create()]);
+    addEntity(withAB, [ComponentA.create(), ComponentB.create()]);
+    addEntity(withC, [ComponentC.create()]);
+    addEntity(withD, [ComponentD.create()]);
+    addEntity(withAD, [ComponentA.create(), ComponentD.create()]);
   });
 
   it('registers Archetypes which match included components', () => {
@@ -92,8 +92,8 @@ describe('Query', () => {
   it('registers late-added Archetypes', () => {
     const query = new Query<[typeof ComponentB]>(game);
     query.initialize([ComponentB]);
-    addEntity(200, [new ComponentB(), new ComponentD()]);
-    addEntity(201, [new ComponentC(), new ComponentD()]);
+    addEntity(200, [ComponentB.create(), ComponentD.create()]);
+    addEntity(201, [ComponentC.create(), ComponentD.create()]);
     expect.assertions(4);
     expect(query.archetypeIds).toEqual([
       '00100000000',
@@ -126,7 +126,7 @@ describe('Query', () => {
     expect(query.removedIds).toEqual([]);
 
     // simple add case
-    game.archetypeManager.addComponent(withC, new ComponentA());
+    game.archetypeManager.addComponent(withC, ComponentA.create());
     game.emit('stepComplete');
 
     expect(query.entities).toEqual([withA, withAB, withAD, withC]);
@@ -158,7 +158,7 @@ describe('Query', () => {
     expect(query.removedIds).toEqual([]);
 
     // internal move archetype case
-    game.archetypeManager.addComponent(withA, new ComponentC());
+    game.archetypeManager.addComponent(withA, ComponentC.create());
     game.emit('stepComplete');
 
     expect(query.entities).toEqual([withAB, withC, withA]);
@@ -181,9 +181,9 @@ describe('Query', () => {
     });
 
     it('emits entityAdded events when an entity is added to matching Archetype', () => {
-      addEntity(200, [new ComponentA()]);
-      addEntity(201, [new ComponentA(), new ComponentC()]);
-      addEntity(202, [new ComponentD()]);
+      addEntity(200, [ComponentA.create()]);
+      addEntity(201, [ComponentA.create(), ComponentC.create()]);
+      addEntity(202, [ComponentD.create()]);
       game.emit('stepComplete');
       expect(onAdded).toHaveBeenCalledTimes(2);
       expect(onAdded).toHaveBeenNthCalledWith(1, 200);
