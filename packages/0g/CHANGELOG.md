@@ -1,5 +1,11 @@
 # 0g
 
+## 0.2.2
+
+### Patch Changes
+
+- 5e9eb89: Throw error on duplicate component type
+
 ## 0.2.1
 
 ### Patch Changes
