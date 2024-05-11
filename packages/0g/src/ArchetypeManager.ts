@@ -66,16 +66,23 @@ export class ArchetypeManager extends EventSubscriber<ArchetypeManagerEvents> {
         `Tried to add component ${instance.__type} to ${entityId}, but it was not found in the archetype registry`,
       );
     }
+    const newArchetypeId = (this.entityLookup[entityId] = this.flipBit(
+      oldArchetypeId,
+      instance.__type,
+    ));
+    if (oldArchetypeId === newArchetypeId) {
+      // not currently supported...
+      throw new Error(
+        `Tried to add component ${instance.__type} to ${entityId}, but it already has that component`,
+      );
+    }
+
     const oldArchetype = this.getOrCreate(oldArchetypeId);
 
     // remove data from old archetype
     const entity = oldArchetype.removeEntity(entityId);
     entity.__addComponent(instance);
 
-    const newArchetypeId = (this.entityLookup[entityId] = this.flipBit(
-      oldArchetypeId,
-      instance.__type,
-    ));
     const archetype = this.getOrCreate(newArchetypeId);
     // copy entity from old to new
     archetype.addEntity(entity);
