@@ -1,5 +1,11 @@
 # 0g
 
+## 0.3.0
+
+### Minor Changes
+
+- 07289c0: Make components and systems self-registering
+
 ## 0.2.2
 
 ### Patch Changes
