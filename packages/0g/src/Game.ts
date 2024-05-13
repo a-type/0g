@@ -62,14 +62,17 @@ export class Game extends EventSubscriber<GameEvents> {
     maxEntities: 2 ** 16,
   };
 
-  constructor({ assetLoaders = {} }: { assetLoaders?: AssetLoaders } = {}) {
+  constructor({
+    assetLoaders = {},
+    ignoreSystemsWarning,
+  }: { assetLoaders?: AssetLoaders; ignoreSystemsWarning?: boolean } = {}) {
     super();
     this._componentManager = new ComponentManager(this);
     this._assets = new Assets(assetLoaders);
     this._queryManager = new QueryManager(this);
     this._archetypeManager = new ArchetypeManager(this);
 
-    if (allSystems.length === 0) {
+    if (allSystems.length === 0 && !ignoreSystemsWarning) {
       throw new Error(
         'No systems are defined at the type of game construction. You have to define systems before calling the Game constructor. Did you forget to import modules which define your systems?',
       );

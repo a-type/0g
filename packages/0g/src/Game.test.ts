@@ -10,7 +10,7 @@ describe('Game', () => {
   let game: Game;
   beforeEach(() => {
     game = new Game({
-      components: [A, B, C],
+      ignoreSystemsWarning: true,
     });
   });
 

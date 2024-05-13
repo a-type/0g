@@ -34,9 +34,7 @@ describe('Query', () => {
   beforeEach(() => {
     const archetypeManager = new ArchetypeManager({
       componentManager: {
-        componentHandles: {
-          length: 10,
-        },
+        count: 10,
         getTypeName: () => 'TEST MOCK',
       },
       entityPool: {

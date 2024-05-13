@@ -1,10 +1,10 @@
 import { component } from '../Component2.js';
-import { makeEffect } from '../Effect.js';
+import { effect } from '../Effect.js';
 import { Entity } from '../Entity.js';
 import { changed, not } from '../filters.js';
 import { Game } from '../Game.js';
 import { logger } from '../logger.js';
-import { makeSystem } from '../System.js';
+import { system } from '../System.js';
 import { describe, it, expect } from 'vitest';
 
 const delta = 16 + 2 / 3;
@@ -20,7 +20,7 @@ describe('integration tests', () => {
 
   const stepsTillToggle = 3;
 
-  const SetFlagEffect = makeEffect(
+  const SetFlagEffect = effect(
     [RemovableComponent, OutputComponent],
     function (ent) {
       logger.debug('Setting removablePresent: true');
@@ -37,7 +37,7 @@ describe('integration tests', () => {
     },
   );
 
-  const ReAddRemovableEffect = makeEffect(
+  const ReAddRemovableEffect = effect(
     [not(RemovableComponent)],
     function (ent, game) {
       logger.debug('Adding RemovableComponent');
@@ -45,7 +45,7 @@ describe('integration tests', () => {
     },
   );
 
-  const IncrementRemoveTimerSystem = makeSystem([RemovableComponent], (ent) => {
+  const IncrementRemoveTimerSystem = system([RemovableComponent], (ent) => {
     logger.debug('Incrementing stepsSinceAdded');
     const comp = ent.get(RemovableComponent);
     comp.stepsSinceAdded++;
@@ -53,26 +53,15 @@ describe('integration tests', () => {
     logger.debug(`stepsSinceAdded: ${comp.stepsSinceAdded}`);
   });
 
-  const RemoveSystem = makeSystem(
-    [changed(RemovableComponent)],
-    (ent, game) => {
-      if (ent.get(RemovableComponent).stepsSinceAdded >= stepsTillToggle) {
-        logger.debug('Removing RemovableComponent');
-        game.remove(ent.id, RemovableComponent);
-      }
-    },
-  );
+  const RemoveSystem = system([changed(RemovableComponent)], (ent, game) => {
+    if (ent.get(RemovableComponent).stepsSinceAdded >= stepsTillToggle) {
+      logger.debug('Removing RemovableComponent');
+      game.remove(ent.id, RemovableComponent);
+    }
+  });
 
   it('adds and removes components, and queries for those operations', () => {
-    const game = new Game({
-      components: [OutputComponent, RemovableComponent],
-      systems: [
-        SetFlagEffect,
-        ReAddRemovableEffect,
-        IncrementRemoveTimerSystem,
-        RemoveSystem,
-      ],
-    });
+    const game = new Game();
 
     const a = game.create();
     game.add(a, OutputComponent);
