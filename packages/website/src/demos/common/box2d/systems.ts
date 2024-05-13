@@ -1,11 +1,4 @@
-import {
-  makeSystem,
-  makeEffect,
-  changed,
-  Game,
-  compose,
-  InstanceFor,
-} from '0g';
+import { system, effect, changed, Game, InstanceFor, setup } from '0g';
 import {
   b2Body,
   b2BodyType,
@@ -102,7 +95,7 @@ function applyFixtures(body: b2Body, fix: b2FixtureDef) {
   body.CreateFixture(fix);
 }
 
-const manageWorldsEffect = makeEffect(
+export const manageWorldsEffect = effect(
   [components.WorldConfig],
   (entity, game) => {
     const config = entity.get(components.WorldConfig);
@@ -118,7 +111,7 @@ const manageWorldsEffect = makeEffect(
   },
 );
 
-const manageBodiesEffect = makeEffect(
+export const manageBodiesEffect = effect(
   [components.BodyConfig, components.Transform],
   async (entity, game) => {
     const bodyConfig = entity.get(components.BodyConfig);
@@ -144,7 +137,7 @@ const manageBodiesEffect = makeEffect(
   },
 );
 
-const manageContactsCacheEffect = makeEffect(
+export const manageContactsCacheEffect = effect(
   [components.Contacts],
   (entity, game) => {
     game.add(entity.id, components.ContactsCache);
@@ -154,7 +147,7 @@ const manageContactsCacheEffect = makeEffect(
   },
 );
 
-const subscribeContactsCacheEffect = makeEffect(
+export const subscribeContactsCacheEffect = effect(
   [components.ContactsCache],
   async (entity, game) => {
     const contactsCache = entity.get(components.ContactsCache);
@@ -169,7 +162,7 @@ const subscribeContactsCacheEffect = makeEffect(
   },
 );
 
-const updateBodiesSystem = makeSystem(
+export const updateBodiesSystem = system(
   [changed(components.BodyConfig), components.Body],
   (ent) => {
     const body = ent.get(components.Body);
@@ -181,14 +174,14 @@ const updateBodiesSystem = makeSystem(
   },
 );
 
-const resetContactsSystem = makeSystem([components.Contacts], (ent) => {
+export const resetContactsSystem = system([components.Contacts], (ent) => {
   const contacts = ent.get(components.Contacts);
   contacts.began.length = 0;
   contacts.ended.length = 0;
   contacts.$.changed = true;
 });
 
-const stepWorldRunner = (game: Game) => {
+export const stepWorldRunner = setup((game: Game) => {
   let simulate: () => void;
   let unsubscribe: (() => void) | undefined;
   game.globals.load('physicsWorld').then((world) => {
@@ -201,9 +194,9 @@ const stepWorldRunner = (game: Game) => {
   return () => {
     unsubscribe?.();
   };
-};
+});
 
-const updateTransformsSystem = makeSystem(
+export const updateTransformsSystem = system(
   [components.Body, components.Transform],
   (ent) => {
     const body = ent.get(components.Body);
@@ -218,7 +211,7 @@ const updateTransformsSystem = makeSystem(
   },
 );
 
-const updateContactsSystem = makeSystem(
+export const updateContactsSystem = system(
   [changed(components.ContactsCache), components.Contacts],
   (ent) => {
     const cache = ent.get(components.ContactsCache);
@@ -239,16 +232,4 @@ const updateContactsSystem = makeSystem(
     cache.began.clear();
     cache.ended.clear();
   },
-);
-
-export const systems = compose(
-  manageWorldsEffect,
-  manageBodiesEffect,
-  manageContactsCacheEffect,
-  subscribeContactsCacheEffect,
-  updateBodiesSystem,
-  resetContactsSystem,
-  stepWorldRunner,
-  updateTransformsSystem,
-  updateContactsSystem,
 );

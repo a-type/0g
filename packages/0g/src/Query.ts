@@ -98,7 +98,7 @@ export class Query<
         case 'changed':
           match = archetype.includes(filter.Component);
           break;
-        case 'any':
+        case 'oneOf':
           match = filter.Components.some((Comp) => archetype.includes(Comp));
       }
       if (!match) return;

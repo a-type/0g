@@ -3,6 +3,7 @@ import { Archetype } from './Archetype.js';
 import { ComponentInstance, ComponentInstanceInternal } from './Component2.js';
 import { Game } from './Game.js';
 import { logger } from './logger.js';
+import { getIdSignifier } from './ids.js';
 
 export type ArchetypeManagerEvents = {
   archetypeCreated(archetype: Archetype): void;
@@ -29,17 +30,28 @@ export class ArchetypeManager extends EventSubscriber<ArchetypeManagerEvents> {
     super();
     // FIXME: why +1 here? Component ids are not starting at 0... this
     // should be more elegant
-    this.emptyId = new Array(
-      this.game.componentManager.componentHandles.length + 1,
-    )
+    this.emptyId = new Array(this.game.componentManager.count + 1)
       .fill('0')
       .join('');
     this.archetypes[this.emptyId] = new Archetype(this.emptyId);
   }
 
+  private lookupEntityArchetype(entityId: number) {
+    const lookupIndex = getIdSignifier(entityId);
+    return this.entityLookup[lookupIndex];
+  }
+  private setEntityArchetype(entityId: number, archetypeId: string) {
+    const lookupIndex = getIdSignifier(entityId);
+    this.entityLookup[lookupIndex] = archetypeId;
+  }
+  private clearEntityArchetype(entityId: number) {
+    const lookupIndex = getIdSignifier(entityId);
+    this.entityLookup[lookupIndex] = undefined;
+  }
+
   createEntity(entityId: number) {
     logger.debug(`Creating entity ${entityId}`);
-    this.entityLookup[entityId] = this.emptyId;
+    this.setEntityArchetype(entityId, this.emptyId);
     // allocate an Entity
     const entity = this.game.entityPool.acquire();
     entity.__set(entityId, []);
@@ -53,16 +65,14 @@ export class ArchetypeManager extends EventSubscriber<ArchetypeManagerEvents> {
         Object.getPrototypeOf(instance).constructor.name
       } to entity ${entityId}`,
     );
-    const oldArchetypeId = this.entityLookup[entityId];
+    const oldArchetypeId = this.lookupEntityArchetype(entityId);
     if (oldArchetypeId === undefined) {
       throw new Error(
         `Tried to add component ${instance.$.type.name} to ${entityId}, but it was not found in the archetype registry`,
       );
     }
-    const newArchetypeId = (this.entityLookup[entityId] = this.flipBit(
-      oldArchetypeId,
-      instance.$.type.id,
-    ));
+    const newArchetypeId = this.flipBit(oldArchetypeId, instance.$.type.id);
+    this.setEntityArchetype(entityId, newArchetypeId);
     if (oldArchetypeId === newArchetypeId) {
       // not currently supported...
       throw new Error(
@@ -89,7 +99,7 @@ export class ArchetypeManager extends EventSubscriber<ArchetypeManagerEvents> {
         componentType,
       )} from entity ${entityId}`,
     );
-    const oldArchetypeId = this.entityLookup[entityId];
+    const oldArchetypeId = this.lookupEntityArchetype(entityId);
     if (oldArchetypeId === undefined) {
       logger.warn(
         `Tried to remove component ${this.game.componentManager.getTypeName(
@@ -103,10 +113,8 @@ export class ArchetypeManager extends EventSubscriber<ArchetypeManagerEvents> {
     const entity = oldArchetype.removeEntity(entityId);
     const removed = entity.__removeComponent(componentType);
 
-    const newArchetypeId = (this.entityLookup[entityId] = this.flipBit(
-      oldArchetypeId,
-      componentType,
-    ));
+    const newArchetypeId = this.flipBit(oldArchetypeId, componentType);
+    this.setEntityArchetype(entityId, newArchetypeId);
     const archetype = this.getOrCreate(newArchetypeId);
     archetype.addEntity(entity);
     logger.debug(`Entity ${entityId} moved to archetype ${newArchetypeId}`);
@@ -117,13 +125,13 @@ export class ArchetypeManager extends EventSubscriber<ArchetypeManagerEvents> {
 
   destroyEntity(entityId: number) {
     logger.debug(`Destroying entity ${entityId}`);
-    const archetypeId = this.entityLookup[entityId];
+    const archetypeId = this.lookupEntityArchetype(entityId);
     if (archetypeId === undefined) {
       throw new Error(
         `Tried to destroy ${entityId}, but it was not found in archetype registry`,
       );
     }
-    this.entityLookup[entityId] = undefined;
+    this.clearEntityArchetype(entityId);
     const archetype = this.archetypes[archetypeId];
     const entity = archetype.removeEntity(entityId);
     this.emit('entityDestroyed', entityId);
@@ -131,7 +139,7 @@ export class ArchetypeManager extends EventSubscriber<ArchetypeManagerEvents> {
   }
 
   getEntity(entityId: number) {
-    const archetypeId = this.entityLookup[entityId];
+    const archetypeId = this.lookupEntityArchetype(entityId);
     if (archetypeId === undefined) {
       logger.debug(`Could not find Archetype for Entity ${entityId}`);
       return null;

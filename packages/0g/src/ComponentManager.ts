@@ -3,9 +3,10 @@ import {
   COMPONENT_CHANGE_HANDLE,
   ComponentInstance,
   ComponentInstanceInternal,
-  ComponentHandle,
+  componentTypeMap,
 } from './Component2.js';
 import { Game } from './Game.js';
+import { IdManager } from './IdManager.js';
 
 /**
  * Manages pools of Components based on their Type, and
@@ -15,23 +16,22 @@ export class ComponentManager {
   private pools = new Array<ComponentPool>();
   private changed = new Array<boolean>();
   private unsubscribes = new Array<() => void>();
+  private componentIds = new IdManager();
 
-  constructor(
-    public componentHandles: ComponentHandle[],
-    private game: Game,
-  ) {
-    // initialize pools, one for each ComponentType by ID. ComponentType IDs are incrementing integers.
-    Object.values(componentHandles).forEach((handle) => {
-      // assign an ID
-      handle.id = game.idManager.get();
-      // create a pool
-      this.pools[handle.id] = new ComponentPool(handle, this.game);
-    });
+  constructor(private game: Game) {
+    // pre-allocate pools for each ComponentType
+    for (const [id, val] of componentTypeMap) {
+      this.pools[id] = new ComponentPool(val, this.game);
+    }
 
     // TODO: right time to do this?
     this.unsubscribes.push(
       game.subscribe('preApplyOperations', this.resetChanged),
     );
+  }
+
+  public get count() {
+    return componentTypeMap.size;
   }
 
   acquire = (typeId: number, initialValues: any) => {
@@ -40,7 +40,7 @@ export class ComponentManager {
     }
     const component = this.pools[typeId].acquire(
       initialValues,
-      this.game.idManager.get(),
+      this.componentIds.get(),
     );
     component.$[COMPONENT_CHANGE_HANDLE] = this.onComponentChanged;
     return component;
@@ -48,6 +48,7 @@ export class ComponentManager {
 
   release = (instance: ComponentInstanceInternal) => {
     delete instance.$[COMPONENT_CHANGE_HANDLE];
+    this.componentIds.release(instance.$.id);
     return this.pools[instance.$.type.id].release(instance);
   };
 

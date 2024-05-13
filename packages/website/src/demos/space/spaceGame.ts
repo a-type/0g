@@ -1,19 +1,12 @@
 import { Game } from '0g';
-import * as gameComponents from './components.js';
-import * as box2dComponents from '../common/box2d/components.js';
-import { systems as box2dSystems } from '../common/box2d/systems.js';
-import { systems } from './systems.js';
 import { createSVGElement } from './utils.js';
 import { asteroidPrefab, playerPrefab, worldPrefab } from './prefabs.js';
 import { Keyboard, keyboard, Pointer, pointer } from '0g/input';
 
-const game = new Game({
-  components: [
-    ...Object.values(gameComponents),
-    ...Object.values(box2dComponents),
-  ],
-  systems: [box2dSystems, systems],
-});
+import '../common/box2d/systems.js';
+import './systems.js';
+
+const game = new Game({});
 
 game.globals.resolve('keyboard', keyboard);
 game.subscribe('stepComplete', keyboard.frame);

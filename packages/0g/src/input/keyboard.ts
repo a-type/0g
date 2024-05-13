@@ -11,7 +11,7 @@ export class Keyboard {
   }
 
   private handleKeyDown = (ev: KeyboardEvent) => {
-    if (ev.target === document.body) {
+    if (ev.target === document.body && ev.key !== 'F5' && ev.key !== 'F12') {
       ev.preventDefault();
     }
 

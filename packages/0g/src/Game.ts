@@ -10,14 +10,15 @@ import { RemovedList } from './RemovedList.js';
 import { Assets } from './Assets.js';
 import { QueryComponentFilter } from './Query.js';
 import { EntityImpostorFor } from './QueryIterator.js';
-import type {
-  AssetLoaders,
-  BaseShape,
-  ComponentInstanceInternal,
-  Globals,
+import {
+  type AssetLoaders,
+  type BaseShape,
+  type ComponentInstanceInternal,
+  type Globals,
 } from './index.js';
 import { EventSubscriber } from '@a-type/utils';
 import { ComponentHandle } from './Component2.js';
+import { allSystems } from './System.js';
 
 export type GameConstants = {
   maxComponentId: number;
@@ -35,7 +36,9 @@ export type GameEvents = {
 
 export class Game extends EventSubscriber<GameEvents> {
   private _queryManager: QueryManager;
-  private _idManager = new IdManager();
+  private _entityIds = new IdManager((...msgs) =>
+    console.debug('Entity IDs:', ...msgs),
+  );
   private _archetypeManager: ArchetypeManager;
   private _operationQueue: OperationQueue = [];
   private _componentManager: ComponentManager;
@@ -59,25 +62,26 @@ export class Game extends EventSubscriber<GameEvents> {
     maxEntities: 2 ** 16,
   };
 
-  constructor({
-    components,
-    systems = [],
-    assetLoaders = {},
-  }: {
-    components: ComponentHandle[];
-    systems?: ((game: Game) => () => void)[];
-    assetLoaders?: AssetLoaders;
-  }) {
+  constructor({ assetLoaders = {} }: { assetLoaders?: AssetLoaders } = {}) {
     super();
-    this._componentManager = new ComponentManager(components, this);
+    this._componentManager = new ComponentManager(this);
     this._assets = new Assets(assetLoaders);
     this._queryManager = new QueryManager(this);
     this._archetypeManager = new ArchetypeManager(this);
-    this._runnableCleanups = systems.map((sys) => sys(this));
+
+    if (allSystems.length === 0) {
+      throw new Error(
+        'No systems are defined at the type of game construction. You have to define systems before calling the Game constructor. Did you forget to import modules which define your systems?',
+      );
+    }
+    this._runnableCleanups = allSystems
+      .map((sys) => sys(this))
+      .filter(Boolean) as (() => void)[];
+    console.debug(`Registered ${allSystems.length} systems`);
   }
 
-  get idManager() {
-    return this._idManager;
+  get entityIds() {
+    return this._entityIds;
   }
   get componentManager() {
     return this._componentManager;
@@ -111,7 +115,7 @@ export class Game extends EventSubscriber<GameEvents> {
    * Allocates a new entity id and enqueues an operation to create the entity at the next opportunity.
    */
   create = () => {
-    const id = this.idManager.get();
+    const id = this.entityIds.get();
     this._operationQueue.push({
       op: 'createEntity',
       entityId: id,
@@ -133,10 +137,11 @@ export class Game extends EventSubscriber<GameEvents> {
    * Add a component to an entity.
    */
   add = <ComponentShape extends BaseShape>(
-    entityId: number,
+    entity: number | Entity,
     handle: ComponentHandle<ComponentShape>,
     initial?: Partial<ComponentShape>,
   ) => {
+    const entityId = typeof entity === 'number' ? entity : entity.id;
     this._operationQueue.push({
       op: 'addComponent',
       entityId,
@@ -148,7 +153,8 @@ export class Game extends EventSubscriber<GameEvents> {
   /**
    * Remove a component by type from an entity
    */
-  remove = <T extends ComponentHandle>(entityId: number, Type: T) => {
+  remove = <T extends ComponentHandle>(entity: number | Entity, Type: T) => {
+    const entityId = typeof entity === 'number' ? entity : entity.id;
     this._operationQueue.push({
       op: 'removeComponent',
       entityId,
@@ -260,6 +266,7 @@ export class Game extends EventSubscriber<GameEvents> {
 
         entity = this.archetypeManager.destroyEntity(operation.entityId);
 
+        this.entityIds.release(operation.entityId);
         this._removedList.add(entity);
         break;
       case 'markChanged':

@@ -1,13 +1,13 @@
+import { componentTypeIds } from './IdManager.js';
+
 export const COMPONENT_CHANGE_HANDLE = Symbol('Component change handle');
 
 export type BaseShape = Record<string, unknown>;
-type Empty = Record<string, never>;
 
 export type ComponentHandle<
   Shape extends BaseShape = any,
   Ext extends Extensions<Shape> = any,
 > = {
-  sym: symbol;
   id: number;
   name: string;
   defaults: () => Shape;
@@ -110,6 +110,9 @@ const defaultDeserialize: Deserializer = (
   return data as any;
 };
 
+export const componentTypeMap = new Map<number, ComponentHandle>();
+const componentNameSet = new Set<string>();
+
 function createComponentDefinition<
   Shape extends BaseShape,
   Ext extends Extensions<Shape>,
@@ -118,13 +121,19 @@ function createComponentDefinition<
   init: () => Shape,
   options?: ComponentOptions<Shape, Ext>,
 ): ComponentHandle<Shape, Ext> {
-  const sym = Symbol(name);
+  if (componentNameSet.has(name)) {
+    throw new Error(
+      `Component name "${name}" already exists. Names must be unique. Use "namespace" to avoid conflicts.`,
+    );
+  }
+
   const handle = {
-    id: 0,
+    id: componentTypeIds.get(),
     name,
-    sym,
     defaults: init,
   } as ComponentHandle<Shape, Ext>;
+  componentTypeMap.set(handle.id, handle);
+
   function reset(instance: Shape) {
     Object.assign(instance, init());
   }
@@ -196,7 +205,25 @@ export function state<Shape extends BaseShape, Ext extends Extensions<Shape>>(
   return createComponentDefinition(name, init, options);
 }
 
-type Blobby = Record<string, any>;
-type Defined = { 3: 'a' };
-
-type Test = Blobby[keyof Blobby];
+export function namespace(ns: string) {
+  function namespacedComponent<
+    Shape extends BaseShape,
+    Ext extends Extensions<Shape>,
+  >(name: string, init: () => Shape, options?: ComponentOptions<Shape, Ext>) {
+    return component<Shape, Ext>(`${ns}:${name}`, init, options);
+  }
+  function namespacedState<
+    Shape extends BaseShape,
+    Ext extends Extensions<Shape>,
+  >(
+    name: string,
+    init: () => Shape,
+    options?: Omit<ComponentOptions<Shape, Ext>, 'serialize' | 'deserialize'>,
+  ) {
+    return state<Shape, Ext>(`${ns}:${name}`, init, options);
+  }
+  return {
+    component: namespacedComponent,
+    state: namespacedState,
+  };
+}

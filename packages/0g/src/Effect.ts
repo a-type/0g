@@ -1,11 +1,12 @@
 import { Game } from './Game.js';
 import { QueryComponentFilter } from './Query.js';
 import { EntityImpostorFor } from './QueryIterator.js';
+import { allSystems } from './System.js';
 
 type CleanupFn = () => void | Promise<void>;
 type CleanupResult = Promise<CleanupFn | void> | CleanupFn | void;
 
-export function makeEffect<Filter extends QueryComponentFilter>(
+export function effect<Filter extends QueryComponentFilter>(
   filter: Filter,
   effect: (
     entity: EntityImpostorFor<Filter>,
@@ -13,7 +14,7 @@ export function makeEffect<Filter extends QueryComponentFilter>(
     info: { abortSignal: AbortSignal },
   ) => CleanupResult,
 ) {
-  return function (game: Game) {
+  function eff(game: Game) {
     const query = game.queryManager.create(filter);
     const abortControllers = new Array<AbortController>();
     const cleanups = new Array<CleanupFn>();
@@ -59,5 +60,11 @@ export function makeEffect<Filter extends QueryComponentFilter>(
         cleanup();
       }
     };
-  };
+  }
+
+  allSystems.push(eff);
+  return eff;
 }
+
+/** @deprecated - use effect */
+export const makeEffect = effect;

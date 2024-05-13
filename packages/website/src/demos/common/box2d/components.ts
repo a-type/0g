@@ -1,7 +1,9 @@
 import { BodyShape } from './types.js';
-import { component, state } from '0g';
+import { namespace } from '0g';
 import { b2Body } from '@flyover/box2d';
 import { EntityContact } from './ContactListener.js';
+
+const { component, state } = namespace('box2d');
 
 export const Transform = component(
   'Transform',
