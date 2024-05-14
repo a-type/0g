@@ -14,11 +14,12 @@ import { asteroidPrefab, bulletPrefab } from './prefabs.js';
 import { createSVGElement } from './utils.js';
 
 export const createSpriteEffect = effect(
-  [SpriteConfig],
+  [SpriteConfig, Transform],
   async (entity, game) => {
     const element = createSVGElement('g');
     const pathEl = createSVGElement('path');
     const { path, stroke, dashGap } = entity.get(SpriteConfig);
+    const transform = entity.get(Transform);
     pathEl.setAttribute('d', path);
     pathEl.setAttribute('stroke', stroke);
     pathEl.setAttribute('stroke-width', '1px');
@@ -28,6 +29,10 @@ export const createSpriteEffect = effect(
       dashGap ? dashGap.toString() : 'none',
     );
     element.appendChild(pathEl);
+    element.setAttribute(
+      'transform',
+      `translate(${transform.x},${transform.y}) rotate(${transform.angle * (180 / Math.PI)})`,
+    );
 
     const root = await game.globals.load('root');
 
@@ -65,6 +70,7 @@ export const transformSpriteSystem = system(
       `translate(${x}, ${y}) rotate(${angle * (180 / Math.PI)})`,
     );
   },
+  { phase: 'postStep' },
 );
 
 export const asteroidInitialSpinEffect = effect([Asteroid, Body], (entity) => {

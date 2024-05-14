@@ -188,7 +188,7 @@ export const stepWorldRunner = setup((game: Game) => {
     simulate = () => {
       world.Step(1 / 60.0, 8, 3);
     };
-    unsubscribe = game.subscribe('step', simulate);
+    unsubscribe = game.subscribe('phase:step', simulate);
   });
 
   return () => {
@@ -209,6 +209,7 @@ export const updateTransformsSystem = system(
     transform.angle = body.value.GetAngle();
     transform.$.changed = true;
   },
+  { phase: 'preStep' },
 );
 
 export const updateContactsSystem = system(

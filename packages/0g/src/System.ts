@@ -16,7 +16,12 @@ export function system<Filter extends QueryComponentFilter, Result = void>(
   {
     phase = 'step',
     initialResult = undefined,
-  }: { phase?: 'step' | 'preStep' | 'postStep'; initialResult?: Result } = {},
+  }: {
+    // TS trick to show the default value in the signature
+    // but still allow any string
+    phase?: 'step' | 'preStep' | 'postStep' | (string & {});
+    initialResult?: Result;
+  } = {},
 ) {
   function sys(game: Game) {
     const query = game.queryManager.create(filter);
@@ -31,7 +36,7 @@ export function system<Filter extends QueryComponentFilter, Result = void>(
       }
     }
 
-    return game.subscribe(phase, onPhase);
+    return game.subscribe(`phase:${phase}`, onPhase);
   }
 
   allSystems.push(sys);

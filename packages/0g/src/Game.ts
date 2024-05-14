@@ -26,21 +26,23 @@ export type GameConstants = {
 };
 
 export type GameEvents = {
-  preStep(): any;
-  step(): any;
-  postStep(): any;
+  [phase: `phase:${string}`]: any;
   stepComplete(): any;
   preApplyOperations(): any;
   destroyEntities(): any;
 };
 
-export class Game extends EventSubscriber<GameEvents> {
+export class Game {
+  private events = new EventSubscriber<GameEvents>();
   private _queryManager: QueryManager;
   private _entityIds = new IdManager((...msgs) =>
     console.debug('Entity IDs:', ...msgs),
   );
   private _archetypeManager: ArchetypeManager;
-  private _operationQueue: OperationQueue = [];
+  // operations applied every step
+  private _stepOperationQueue: OperationQueue = [];
+  // operations applied every phase
+  private _phaseOperationQueue: OperationQueue = [];
   private _componentManager: ComponentManager;
   private _globals = new Resources<Globals>();
   private _runnableCleanups: (() => void)[];
@@ -51,8 +53,7 @@ export class Game extends EventSubscriber<GameEvents> {
   private _removedList = new RemovedList();
   private _assets: Assets<AssetLoaders>;
 
-  // TODO: configurable?
-  private _phases = ['preStep', 'step', 'postStep'] as const;
+  private _phases = ['preStep', 'step', 'postStep'];
 
   private _delta = 0;
   private _time = 0;
@@ -65,8 +66,13 @@ export class Game extends EventSubscriber<GameEvents> {
   constructor({
     assetLoaders = {},
     ignoreSystemsWarning,
-  }: { assetLoaders?: AssetLoaders; ignoreSystemsWarning?: boolean } = {}) {
-    super();
+    phases,
+  }: {
+    assetLoaders?: AssetLoaders;
+    ignoreSystemsWarning?: boolean;
+    phases?: string[];
+  } = {}) {
+    this._phases = phases ?? this._phases;
     this._componentManager = new ComponentManager(this);
     this._assets = new Assets(assetLoaders);
     this._queryManager = new QueryManager(this);
@@ -114,12 +120,24 @@ export class Game extends EventSubscriber<GameEvents> {
     return this._entityPool;
   }
 
+  subscribe = <K extends keyof GameEvents>(
+    event: K,
+    listener: GameEvents[K],
+  ) => {
+    if (event.startsWith('phase:') && !this._phases.includes(event.slice(6))) {
+      throw new Error(
+        `Unknown phase: ${event.slice(6)}. Known phases: ${this._phases.join(', ')}. Add this phase to your phases array in the Game constructor if you want to use it.`,
+      );
+    }
+    return this.events.subscribe(event, listener);
+  };
+
   /**
    * Allocates a new entity id and enqueues an operation to create the entity at the next opportunity.
    */
   create = () => {
     const id = this.entityIds.get();
-    this._operationQueue.push({
+    this.enqueueStepOperation({
       op: 'createEntity',
       entityId: id,
     });
@@ -130,7 +148,7 @@ export class Game extends EventSubscriber<GameEvents> {
    * Enqueues an entity to be destroyed at the next opportunity
    */
   destroy = (id: number) => {
-    this._operationQueue.push({
+    this.enqueueStepOperation({
       op: 'removeEntity',
       entityId: id,
     });
@@ -145,7 +163,7 @@ export class Game extends EventSubscriber<GameEvents> {
     initial?: Partial<ComponentShape>,
   ) => {
     const entityId = typeof entity === 'number' ? entity : entity.id;
-    this._operationQueue.push({
+    this.enqueueStepOperation({
       op: 'addComponent',
       entityId,
       componentType: handle.id,
@@ -158,7 +176,7 @@ export class Game extends EventSubscriber<GameEvents> {
    */
   remove = <T extends ComponentHandle>(entity: number | Entity, Type: T) => {
     const entityId = typeof entity === 'number' ? entity : entity.id;
-    this._operationQueue.push({
+    this.enqueueStepOperation({
       op: 'removeComponent',
       entityId,
       componentType: Type.id,
@@ -209,18 +227,23 @@ export class Game extends EventSubscriber<GameEvents> {
    */
   step = (delta: number) => {
     this._delta = delta;
-    this._phases.forEach((phase) => {
-      this.emit(phase);
-    });
-    this.emit('destroyEntities');
+    for (const phase of this._phases) {
+      this.events.emit(`phase:${phase}`);
+      this.flushPhaseOperations();
+    }
+    this.events.emit('destroyEntities');
     this._removedList.flush(this.destroyEntity);
-    this.emit('preApplyOperations');
-    this.flushOperations();
-    this.emit('stepComplete');
+    this.events.emit('preApplyOperations');
+    this.flushStepOperations();
+    this.events.emit('stepComplete');
   };
 
-  enqueueOperation = (operation: Operation) => {
-    this._operationQueue.push(operation);
+  enqueuePhaseOperation = (operation: Operation) => {
+    this._phaseOperationQueue.push(operation);
+  };
+
+  enqueueStepOperation = (operation: Operation) => {
+    this._stepOperationQueue.push(operation);
   };
 
   private destroyEntity = (entity: Entity) => {
@@ -230,9 +253,15 @@ export class Game extends EventSubscriber<GameEvents> {
     this.entityPool.release(entity);
   };
 
-  private flushOperations = () => {
-    while (this._operationQueue.length) {
-      this.applyOperation(this._operationQueue.shift()!);
+  private flushPhaseOperations = () => {
+    while (this._phaseOperationQueue.length) {
+      this.applyOperation(this._phaseOperationQueue.shift()!);
+    }
+  };
+
+  private flushStepOperations = () => {
+    while (this._stepOperationQueue.length) {
+      this.applyOperation(this._stepOperationQueue.shift()!);
     }
   };
 
