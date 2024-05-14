@@ -12,26 +12,17 @@ export const Damageable = component(
     health: 3,
     invulnerableFrames: 5 * 60, // ~5s,
     damageFrom: ['bullet'],
-    __invulnerableTimer: 0,
   }),
   {
     extensions: {
       addDamage:
         (i) =>
-        (force = false) => {
-          if (i.__invulnerableTimer > 0 && !force) return;
-          i.health = Math.max(0, i.health - 1);
-          i.__invulnerableTimer = i.invulnerableFrames;
+        (dmg = 1) => {
+          i.health = Math.max(0, i.health - dmg);
           i.$.changed = true;
         },
-      vulnerable(i) {
-        return i.__invulnerableTimer === 0;
-      },
       dead(i) {
         return i.health === 0;
-      },
-      tickInvulnerability: (i) => () => {
-        i.__invulnerableTimer = Math.max(0, i.__invulnerableTimer - 1);
       },
     },
   },

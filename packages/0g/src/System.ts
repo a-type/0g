@@ -4,18 +4,30 @@ import { EntityImpostorFor } from './QueryIterator.js';
 
 export const allSystems = new Array<(game: Game) => void | (() => void)>();
 
-export function system<Filter extends QueryComponentFilter>(
+type SystemRunner<Filter extends QueryComponentFilter, Result> = (
+  entity: EntityImpostorFor<Filter>,
+  game: Game,
+  previousResult: Result,
+) => Result;
+
+export function system<Filter extends QueryComponentFilter, Result = void>(
   filter: Filter,
-  run: (entity: EntityImpostorFor<Filter>, game: Game) => void,
-  phase: 'step' | 'preStep' | 'postStep' = 'step',
+  run: SystemRunner<Filter, Result>,
+  {
+    phase = 'step',
+    initialResult = undefined,
+  }: { phase?: 'step' | 'preStep' | 'postStep'; initialResult?: Result } = {},
 ) {
   function sys(game: Game) {
     const query = game.queryManager.create(filter);
+    let result: Result;
+    const entityResults = new WeakMap<EntityImpostorFor<Filter>, Result>();
 
     function onPhase() {
       let ent;
       for (ent of query) {
-        run(ent, game);
+        result = run(ent, game, entityResults.get(ent) ?? initialResult!);
+        entityResults.set(ent, result);
       }
     }
 

@@ -122,10 +122,14 @@ export const playerMovementSystem = system(
 
 export const damageSystem = system(
   [Damageable, changed(Contacts)],
-  (entity, game) => {
+  (entity, game, invulnerabilityFrames) => {
+    // if invulnerable, tick down invuln frames
+    if (invulnerabilityFrames > 0) {
+      return invulnerabilityFrames - 1;
+    }
+
     const contacts = entity.get(Contacts);
     const damageable = entity.get(Damageable);
-    let tookDamage = false;
     for (const contact of contacts.began) {
       if (!contact.otherId) continue;
 
@@ -134,18 +138,19 @@ export const damageSystem = system(
 
       if (!colliderTag) continue;
 
-      tookDamage =
-        tookDamage || damageable.damageFrom.includes(colliderTag.group);
+      if (damageable.damageFrom.includes(colliderTag.group)) {
+        damageable.addDamage();
+
+        return damageable.invulnerableFrames;
+      }
     }
-    if (tookDamage) {
-      damageable.addDamage();
-    }
+    // tick down invuln frames
+    return 0;
+  },
+  {
+    initialResult: 0,
   },
 );
-
-export const damageCooldownSystem = system([Damageable], (entity) => {
-  entity.get(Damageable).tickInvulnerability();
-});
 
 export const shootSystem = system([Player, Transform], (entity, game) => {
   const keyboard = game.globals.immediate('keyboard')!;

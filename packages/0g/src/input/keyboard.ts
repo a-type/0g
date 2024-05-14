@@ -5,13 +5,27 @@ export class Keyboard {
   private keysDown = new Set<string>();
   private keysUp = new Set<string>();
 
+  private _blockBrowserShortcuts = false;
+
+  set blockBrowserShortcuts(value: boolean) {
+    this._blockBrowserShortcuts = value;
+  }
+
   constructor() {
     window.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('keyup', this.handleKeyUp);
   }
 
   private handleKeyDown = (ev: KeyboardEvent) => {
-    if (ev.target === document.body && ev.key !== 'F5' && ev.key !== 'F12') {
+    if (
+      ev.target === document.body &&
+      (this._blockBrowserShortcuts ||
+        // allow F12
+        (ev.key !== 'F12' &&
+          // allow refresh shortcuts
+          ev.key !== 'F5' &&
+          !(ev.key === 'r' && (ev.ctrlKey || ev.metaKey))))
+    ) {
       ev.preventDefault();
     }
 
