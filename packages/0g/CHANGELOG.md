@@ -1,5 +1,12 @@
 # 0g
 
+## 0.3.1
+
+### Patch Changes
+
+- abaf2a0: Custom phase support
+- fd4fed0: Allow returning ephemeral state from systems
+
 ## 0.3.0
 
 ### Minor Changes
