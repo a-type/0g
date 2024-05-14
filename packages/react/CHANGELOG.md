@@ -1,5 +1,13 @@
 # @0g/react
 
+## 3.0.1
+
+### Patch Changes
+
+- Updated dependencies [abaf2a0]
+- Updated dependencies [fd4fed0]
+  - 0g@0.3.1
+
 ## 3.0.0
 
 ### Patch Changes
