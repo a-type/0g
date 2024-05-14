@@ -21,6 +21,7 @@ const withD = 104;
 const withAD = 105;
 
 describe('Query', () => {
+  let events: EventSubscriber<any>;
   let game: Game = null as any;
 
   // bootstrapping
@@ -44,7 +45,8 @@ describe('Query', () => {
         release() {},
       },
     } as any);
-    game = new EventSubscriber() as any;
+    events = new EventSubscriber();
+    game = events as any;
     (game as any).archetypeManager = archetypeManager;
     (game as any).entityPool = {
       acquire() {
@@ -116,7 +118,7 @@ describe('Query', () => {
     expect(onAdded).toHaveBeenCalledTimes(3);
 
     // reset frame tracking
-    game.emit('preApplyOperations');
+    events.emit('preApplyOperations');
     onAdded.mockClear();
 
     expect(query.entities).toEqual([withA, withAB, withAD]);
@@ -125,14 +127,14 @@ describe('Query', () => {
 
     // simple add case
     game.archetypeManager.addComponent(withC, ComponentA.create());
-    game.emit('stepComplete');
+    events.emit('stepComplete');
 
     expect(query.entities).toEqual([withA, withAB, withAD, withC]);
     expect(query.addedIds).toEqual([withC]);
     expect(query.removedIds).toEqual([]);
     expect(onAdded).toHaveBeenCalledTimes(1);
 
-    game.emit('preApplyOperations');
+    events.emit('preApplyOperations');
     onAdded.mockClear();
 
     expect(query.entities).toEqual([withA, withAB, withAD, withC]);
@@ -141,14 +143,14 @@ describe('Query', () => {
 
     // simple remove case
     game.archetypeManager.removeComponent(withAD, ComponentA.id);
-    game.emit('stepComplete');
+    events.emit('stepComplete');
 
     expect(query.entities).toEqual([withA, withAB, withC]);
     expect(query.addedIds).toEqual([]);
     expect(query.removedIds).toEqual([withAD]);
     expect(onRemoved).toHaveBeenCalledTimes(1);
 
-    game.emit('preApplyOperations');
+    events.emit('preApplyOperations');
     onAdded.mockClear();
 
     expect(query.entities).toEqual([withA, withAB, withC]);
@@ -157,7 +159,7 @@ describe('Query', () => {
 
     // internal move archetype case
     game.archetypeManager.addComponent(withA, ComponentC.create());
-    game.emit('stepComplete');
+    events.emit('stepComplete');
 
     expect(query.entities).toEqual([withAB, withC, withA]);
     expect(query.addedIds).toEqual([]);
@@ -175,14 +177,14 @@ describe('Query', () => {
       query.initialize([ComponentA]);
       query.subscribe('entityAdded', onAdded);
       query.subscribe('entityRemoved', onRemoved);
-      game.emit('preApplyOperations');
+      events.emit('preApplyOperations');
     });
 
     it('emits entityAdded events when an entity is added to matching Archetype', () => {
       addEntity(200, [ComponentA.create()]);
       addEntity(201, [ComponentA.create(), ComponentC.create()]);
       addEntity(202, [ComponentD.create()]);
-      game.emit('stepComplete');
+      events.emit('stepComplete');
       expect(onAdded).toHaveBeenCalledTimes(2);
       expect(onAdded).toHaveBeenNthCalledWith(1, 200);
       expect(onAdded).toHaveBeenNthCalledWith(2, 201);
@@ -190,7 +192,7 @@ describe('Query', () => {
 
     it('emits entityRemoved events when an entity is removed from matching Archetype', () => {
       game.archetypeManager.removeComponent(withAB, ComponentA.id);
-      game.emit('stepComplete');
+      events.emit('stepComplete');
       expect(onRemoved).toHaveBeenCalledWith(withAB);
       expect(onAdded).not.toHaveBeenCalled();
     });
