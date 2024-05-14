@@ -9,6 +9,10 @@
       "outputs": [],
       "inputs": ["**/*.tsx", "**/*.ts", "**/*.test.tsx", "**/*.test.ts"]
     },
+    "test-ci": {
+      "outputs": [],
+      "inputs": ["**/*.tsx", "**/*.ts", "**/*.test.tsx", "**/*.test.ts"]
+    },
     "typecheck": {
       "outputs": [],
       "inputs": ["**/*.tsx", "**/*.ts"]
