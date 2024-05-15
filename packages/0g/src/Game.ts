@@ -250,6 +250,7 @@ export class Game {
     entity.components.forEach((instance) => {
       if (instance) this.componentManager.release(instance);
     });
+    this.entityIds.release(entity.id);
     this.entityPool.release(entity);
   };
 
@@ -298,7 +299,6 @@ export class Game {
 
         entity = this.archetypeManager.destroyEntity(operation.entityId);
 
-        this.entityIds.release(operation.entityId);
         this._removedList.add(entity);
         break;
       case 'markChanged':
