@@ -1,5 +1,11 @@
 # 0g
 
+## 0.3.2
+
+### Patch Changes
+
+- d8a7fad: Fix for pointer buttons
+
 ## 0.3.1
 
 ### Patch Changes
