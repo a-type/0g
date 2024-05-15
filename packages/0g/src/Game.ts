@@ -246,6 +246,9 @@ export class Game {
     this._stepOperationQueue.push(operation);
   };
 
+  // entities aren't actually destroyed until the end of the following
+  //step when this is called. It gives effects time to react to the
+  // removal of the entity.
   private destroyEntity = (entity: Entity) => {
     entity.components.forEach((instance) => {
       if (instance) this.componentManager.release(instance);
@@ -294,6 +297,10 @@ export class Game {
       case 'createEntity':
         this.archetypeManager.createEntity(operation.entityId);
         break;
+      // removal is not destruction - the entity object will remain
+      // allocated with components, but removed from archetypes
+      // and therefore queries. effects get one last look at it
+      // before it is returned to the pool.
       case 'removeEntity':
         if (operation.entityId === 0) break;
 
