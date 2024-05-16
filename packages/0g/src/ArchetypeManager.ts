@@ -2,7 +2,6 @@ import { EventSubscriber } from '@a-type/utils';
 import { Archetype } from './Archetype.js';
 import { ComponentInstance, ComponentInstanceInternal } from './Component2.js';
 import { Game } from './Game.js';
-import { logger } from './logger.js';
 import { getIdSignifier } from './ids.js';
 
 export type ArchetypeManagerEvents = {
@@ -50,7 +49,7 @@ export class ArchetypeManager extends EventSubscriber<ArchetypeManagerEvents> {
   }
 
   createEntity(entityId: number) {
-    logger.debug(`Creating entity ${entityId}`);
+    this.game.logger.debug(`Creating entity ${entityId}`);
     this.setEntityArchetype(entityId, this.emptyId);
     // allocate an Entity
     const entity = this.game.entityPool.acquire();
@@ -60,7 +59,9 @@ export class ArchetypeManager extends EventSubscriber<ArchetypeManagerEvents> {
   }
 
   addComponent(entityId: number, instance: ComponentInstanceInternal) {
-    logger.debug(`Adding ${instance.$.type.name} to entity ${entityId}`);
+    this.game.logger.debug(
+      `Adding ${instance.$.type.name} to entity ${entityId}`,
+    );
     const oldArchetypeId = this.lookupEntityArchetype(entityId);
     if (oldArchetypeId === undefined) {
       throw new Error(
@@ -85,19 +86,21 @@ export class ArchetypeManager extends EventSubscriber<ArchetypeManagerEvents> {
     const archetype = this.getOrCreate(newArchetypeId);
     // copy entity from old to new
     archetype.addEntity(entity);
-    logger.debug(`Entity ${entityId} moved to archetype ${newArchetypeId}`);
+    this.game.logger.debug(
+      `Entity ${entityId} moved to archetype ${newArchetypeId}`,
+    );
     this.emit('entityComponentAdded', entityId, instance);
   }
 
   removeComponent(entityId: number, componentType: number) {
-    logger.debug(
+    this.game.logger.debug(
       `Removing ${this.game.componentManager.getTypeName(
         componentType,
       )} from entity ${entityId}`,
     );
     const oldArchetypeId = this.lookupEntityArchetype(entityId);
     if (oldArchetypeId === undefined) {
-      logger.warn(
+      this.game.logger.warn(
         `Tried to remove component ${this.game.componentManager.getTypeName(
           componentType,
         )} from ${entityId}, but it was not found in the archetype registry`,
@@ -113,14 +116,16 @@ export class ArchetypeManager extends EventSubscriber<ArchetypeManagerEvents> {
     this.setEntityArchetype(entityId, newArchetypeId);
     const archetype = this.getOrCreate(newArchetypeId);
     archetype.addEntity(entity);
-    logger.debug(`Entity ${entityId} moved to archetype ${newArchetypeId}`);
+    this.game.logger.debug(
+      `Entity ${entityId} moved to archetype ${newArchetypeId}`,
+    );
     this.emit('entityComponentRemoved', entityId, componentType);
 
     return removed;
   }
 
   destroyEntity(entityId: number) {
-    logger.debug(`Destroying entity ${entityId}`);
+    this.game.logger.debug(`Destroying entity ${entityId}`);
     const archetypeId = this.lookupEntityArchetype(entityId);
     if (archetypeId === undefined) {
       throw new Error(
@@ -138,7 +143,7 @@ export class ArchetypeManager extends EventSubscriber<ArchetypeManagerEvents> {
   getEntity(entityId: number) {
     const archetypeId = this.lookupEntityArchetype(entityId);
     if (archetypeId === undefined) {
-      logger.debug(`Could not find Archetype for Entity ${entityId}`);
+      this.game.logger.debug(`Could not find Archetype for Entity ${entityId}`);
       return null;
     }
     const archetype = this.archetypes[archetypeId];
@@ -149,7 +154,7 @@ export class ArchetypeManager extends EventSubscriber<ArchetypeManagerEvents> {
     let archetype = this.archetypes[id];
     if (!archetype) {
       archetype = this.archetypes[id] = new Archetype(id);
-      logger.debug(`New Archetype ${id} created`);
+      this.game.logger.debug(`New Archetype ${id} created`);
       this.emit('archetypeCreated', archetype);
     }
     return archetype;

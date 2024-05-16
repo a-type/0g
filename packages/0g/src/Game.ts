@@ -19,6 +19,7 @@ import {
 import { EventSubscriber } from '@a-type/utils';
 import { ComponentHandle } from './Component2.js';
 import { allSystems } from './System.js';
+import { Logger } from './logger.js';
 
 export type GameConstants = {
   maxComponentId: number;
@@ -44,7 +45,7 @@ export class Game {
   // operations applied every phase
   private _phaseOperationQueue: OperationQueue = [];
   private _componentManager: ComponentManager;
-  private _globals = new Resources<Globals>();
+  private _globals;
   private _runnableCleanups: (() => void)[];
   private _entityPool = new ObjectPool(
     () => new Entity(),
@@ -63,20 +64,26 @@ export class Game {
     maxEntities: 2 ** 16,
   };
 
+  readonly logger;
+
   constructor({
     assetLoaders = {},
     ignoreSystemsWarning,
     phases,
+    logLevel,
   }: {
     assetLoaders?: AssetLoaders;
     ignoreSystemsWarning?: boolean;
     phases?: string[];
+    logLevel?: 'debug' | 'info' | 'warn' | 'error';
   } = {}) {
     this._phases = phases ?? this._phases;
     this._componentManager = new ComponentManager(this);
     this._assets = new Assets(assetLoaders);
     this._queryManager = new QueryManager(this);
     this._archetypeManager = new ArchetypeManager(this);
+    this._globals = new Resources<Globals>(this);
+    this.logger = new Logger(logLevel ?? 'info');
 
     if (allSystems.length === 0 && !ignoreSystemsWarning) {
       throw new Error(

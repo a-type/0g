@@ -1,12 +1,10 @@
-import { logger } from '../logger.js';
-
 export class ObjectPool<T> {
   private free = new Array<T>();
   private count = 0;
 
   constructor(
     private factory: () => T,
-    private reset: (item: T) => void = () => { },
+    private reset: (item: T) => void = () => {},
     initialSize: number = 1,
   ) {
     this.expand(initialSize);
@@ -25,7 +23,7 @@ export class ObjectPool<T> {
 
   release(item: T) {
     if (!item) {
-      logger.warn(`Tried to release ${item}`);
+      console.warn(`Tried to release ${item}. This might be a bug.`);
       return;
     }
     this.reset(item);
