@@ -60,11 +60,7 @@ export class ArchetypeManager extends EventSubscriber<ArchetypeManagerEvents> {
   }
 
   addComponent(entityId: number, instance: ComponentInstanceInternal) {
-    logger.debug(
-      `Adding ${
-        Object.getPrototypeOf(instance).constructor.name
-      } to entity ${entityId}`,
-    );
+    logger.debug(`Adding ${instance.$.type.name} to entity ${entityId}`);
     const oldArchetypeId = this.lookupEntityArchetype(entityId);
     if (oldArchetypeId === undefined) {
       throw new Error(
@@ -135,6 +131,7 @@ export class ArchetypeManager extends EventSubscriber<ArchetypeManagerEvents> {
     const archetype = this.archetypes[archetypeId];
     const entity = archetype.removeEntity(entityId);
     this.emit('entityDestroyed', entityId);
+    entity.__markRemoved();
     return entity;
   }
 

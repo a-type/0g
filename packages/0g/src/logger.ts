@@ -1,8 +1,15 @@
+const isTest =
+  (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') || false;
+
 const doLog = (
   level: 'info' | 'warn' | 'error' | 'debug' | 'log',
   ...messages: unknown[]
 ) => {
-  if (localStorage.getItem('DEBUG') === 'true' || (window as any).DEBUG) {
+  if (
+    localStorage.getItem('DEBUG') === 'true' ||
+    (window as any).DEBUG ||
+    isTest
+  ) {
     console[level](...messages);
   }
 };

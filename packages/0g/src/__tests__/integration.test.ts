@@ -60,6 +60,20 @@ describe('integration tests', () => {
     }
   });
 
+  const DeleteMeComponent = component('DeleteMe', () => ({}));
+
+  const DeleteSystem = system([DeleteMeComponent], (ent, game) => {
+    logger.debug('Deleting entity', ent.id);
+    game.destroy(ent.id);
+  });
+
+  const ReAddEffect = effect([DeleteMeComponent], (ent, game) => {
+    return () => {
+      const newId = game.create();
+      game.add(newId, OutputComponent);
+    };
+  });
+
   it('adds and removes components, and queries for those operations', () => {
     const game = new Game();
 
@@ -112,5 +126,36 @@ describe('integration tests', () => {
     expect(entity.get(OutputComponent).removablePresent).toBe(true);
     expect(entity.maybeGet(RemovableComponent)).not.toBe(null);
     expect(entity.maybeGet(RemovableComponent)!.stepsSinceAdded).toBe(0);
+  });
+
+  it('handles deleting and recycling entities', () => {
+    const game = new Game();
+
+    const a = game.create();
+    game.add(a, DeleteMeComponent);
+
+    logger.debug('Step 1');
+    game.step(delta);
+    const deleted = game.get(a);
+
+    // why does it take 2 steps to remove?
+    // the entity and component are only actually created
+    // when operations are applied in step 1, at the end.
+    // so step 2 is the first time the has(DeleteMe) query
+    // matches.
+    logger.debug('Step 2');
+    game.step(delta);
+
+    expect(deleted?.removed).toBe(true);
+
+    logger.debug('Step 3');
+    game.step(delta);
+
+    // this assertion might be too strong, but currently
+    // based on this game simulation, the original entity
+    // should be pooled and reused to make the new one.
+    const newEntity = game.findFirst([OutputComponent]);
+    expect(newEntity).not.toBe(null);
+    expect(newEntity).toBe(deleted);
   });
 });

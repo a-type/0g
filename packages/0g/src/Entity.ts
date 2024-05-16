@@ -27,6 +27,7 @@ export class Entity<
   readonly components = new Map<number, ComponentInstance>();
 
   private _destroyed = true;
+  private _removed = false;
 
   get id() {
     return this._id;
@@ -34,6 +35,10 @@ export class Entity<
 
   get destroyed() {
     return this._destroyed;
+  }
+
+  get removed() {
+    return this._removed;
   }
 
   // TODO: hide these behind Symbols?
@@ -49,6 +54,7 @@ export class Entity<
       this.components.set(comp.$.type.id, comp);
     });
     this._destroyed = false;
+    this._removed = false;
   };
 
   __addComponent = (instance: ComponentInstanceInternal) => {
@@ -59,6 +65,10 @@ export class Entity<
     const instance = this.components.get(typeId);
     this.components.delete(typeId);
     return instance as ComponentInstanceInternal;
+  };
+
+  __markRemoved = () => {
+    this._removed = true;
   };
 
   get = <T extends ComponentHandle>(
