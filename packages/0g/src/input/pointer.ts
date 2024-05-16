@@ -22,18 +22,18 @@ export class Pointer {
     }
 
     if (ev.type === 'pointerdown') {
-      if (ev.buttons === 1) {
+      if (ev.button === 1) {
         this._primaryDown = true;
         this._primaryPressed = true;
-      } else if (ev.buttons === 2) {
+      } else if (ev.button === 2) {
         this._secondaryDown = true;
         this._secondaryPressed = true;
       }
     } else if (ev.type === 'pointerup') {
-      if (ev.buttons === 1) {
+      if (ev.button === 1) {
         this._primaryUp = true;
         this._primaryPressed = false;
-      } else if (ev.buttons === 2) {
+      } else if (ev.button === 2) {
         this._secondaryUp = true;
         this._secondaryPressed = false;
       }

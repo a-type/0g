@@ -1,4 +1,3 @@
-import { Game } from '0g';
 import { createSVGElement } from './utils.js';
 import { asteroidPrefab, playerPrefab, worldPrefab } from './prefabs.js';
 import { Keyboard, keyboard, Pointer, pointer } from '0g/input';
@@ -6,6 +5,7 @@ import { Keyboard, keyboard, Pointer, pointer } from '0g/input';
 import '../common/box2d/systems.js';
 import './systems.js';
 
+import { Game } from '0g';
 const game = new Game({});
 
 game.globals.resolve('keyboard', keyboard);
