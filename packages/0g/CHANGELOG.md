@@ -1,5 +1,11 @@
 # 0g
 
+## 0.3.3
+
+### Patch Changes
+
+- 2637ec5: Fix pointer up events
+
 ## 0.3.2
 
 ### Patch Changes
