@@ -20,18 +20,3 @@ export function useFrame(callback: () => void, phase?: string) {
     );
   }, [game, ref]);
 }
-
-/**
- * Iterates over a query result entity list every
- * game step
- */
-export function useQueryFrame<Q extends Query<QueryComponentFilter>>(
-  input: Q,
-  callback: QueryIteratorFn<Q>,
-) {
-  useFrame(() => {
-    for (const ent of input) {
-      callback(ent as any);
-    }
-  });
-}
