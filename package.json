@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "test": "turbo run test",
+    "test-ci": "turbo run test-ci",
     "build": "turbo run build",
     "homepage": "lerna run --scope website build",
     "ci:version": "pnpm changeset version",

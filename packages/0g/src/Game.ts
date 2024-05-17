@@ -10,14 +10,16 @@ import { RemovedList } from './RemovedList.js';
 import { Assets } from './Assets.js';
 import { QueryComponentFilter } from './Query.js';
 import { EntityImpostorFor } from './QueryIterator.js';
-import type {
-  AssetLoaders,
-  BaseShape,
-  ComponentInstanceInternal,
-  Globals,
+import {
+  type AssetLoaders,
+  type BaseShape,
+  type ComponentInstanceInternal,
+  type Globals,
 } from './index.js';
 import { EventSubscriber } from '@a-type/utils';
 import { ComponentHandle } from './Component2.js';
+import { allSystems } from './System.js';
+import { Logger } from './logger.js';
 
 export type GameConstants = {
   maxComponentId: number;
@@ -25,21 +27,25 @@ export type GameConstants = {
 };
 
 export type GameEvents = {
-  preStep(): any;
-  step(): any;
-  postStep(): any;
+  [phase: `phase:${string}`]: any;
   stepComplete(): any;
   preApplyOperations(): any;
   destroyEntities(): any;
 };
 
-export class Game extends EventSubscriber<GameEvents> {
+export class Game {
+  private events = new EventSubscriber<GameEvents>();
   private _queryManager: QueryManager;
-  private _idManager = new IdManager();
+  private _entityIds = new IdManager((...msgs) =>
+    console.debug('Entity IDs:', ...msgs),
+  );
   private _archetypeManager: ArchetypeManager;
-  private _operationQueue: OperationQueue = [];
+  // operations applied every step
+  private _stepOperationQueue: OperationQueue = [];
+  // operations applied every phase
+  private _phaseOperationQueue: OperationQueue = [];
   private _componentManager: ComponentManager;
-  private _globals = new Resources<Globals>();
+  private _globals;
   private _runnableCleanups: (() => void)[];
   private _entityPool = new ObjectPool(
     () => new Entity(),
@@ -48,8 +54,7 @@ export class Game extends EventSubscriber<GameEvents> {
   private _removedList = new RemovedList();
   private _assets: Assets<AssetLoaders>;
 
-  // TODO: configurable?
-  private _phases = ['preStep', 'step', 'postStep'] as const;
+  private _phases = ['preStep', 'step', 'postStep'];
 
   private _delta = 0;
   private _time = 0;
@@ -59,25 +64,40 @@ export class Game extends EventSubscriber<GameEvents> {
     maxEntities: 2 ** 16,
   };
 
+  readonly logger;
+
   constructor({
-    components,
-    systems = [],
     assetLoaders = {},
+    ignoreSystemsWarning,
+    phases,
+    logLevel,
   }: {
-    components: ComponentHandle[];
-    systems?: ((game: Game) => () => void)[];
     assetLoaders?: AssetLoaders;
-  }) {
-    super();
-    this._componentManager = new ComponentManager(components, this);
+    ignoreSystemsWarning?: boolean;
+    phases?: string[];
+    logLevel?: 'debug' | 'info' | 'warn' | 'error';
+  } = {}) {
+    this._phases = phases ?? this._phases;
+    this._componentManager = new ComponentManager(this);
     this._assets = new Assets(assetLoaders);
     this._queryManager = new QueryManager(this);
     this._archetypeManager = new ArchetypeManager(this);
-    this._runnableCleanups = systems.map((sys) => sys(this));
+    this._globals = new Resources<Globals>(this);
+    this.logger = new Logger(logLevel ?? 'info');
+
+    if (allSystems.length === 0 && !ignoreSystemsWarning) {
+      throw new Error(
+        'No systems are defined at the type of game construction. You have to define systems before calling the Game constructor. Did you forget to import modules which define your systems?',
+      );
+    }
+    this._runnableCleanups = allSystems
+      .map((sys) => sys(this))
+      .filter(Boolean) as (() => void)[];
+    console.debug(`Registered ${allSystems.length} systems`);
   }
 
-  get idManager() {
-    return this._idManager;
+  get entityIds() {
+    return this._entityIds;
   }
   get componentManager() {
     return this._componentManager;
@@ -107,12 +127,24 @@ export class Game extends EventSubscriber<GameEvents> {
     return this._entityPool;
   }
 
+  subscribe = <K extends keyof GameEvents>(
+    event: K,
+    listener: GameEvents[K],
+  ) => {
+    if (event.startsWith('phase:') && !this._phases.includes(event.slice(6))) {
+      throw new Error(
+        `Unknown phase: ${event.slice(6)}. Known phases: ${this._phases.join(', ')}. Add this phase to your phases array in the Game constructor if you want to use it.`,
+      );
+    }
+    return this.events.subscribe(event, listener);
+  };
+
   /**
    * Allocates a new entity id and enqueues an operation to create the entity at the next opportunity.
    */
   create = () => {
-    const id = this.idManager.get();
-    this._operationQueue.push({
+    const id = this.entityIds.get();
+    this.enqueueStepOperation({
       op: 'createEntity',
       entityId: id,
     });
@@ -123,7 +155,7 @@ export class Game extends EventSubscriber<GameEvents> {
    * Enqueues an entity to be destroyed at the next opportunity
    */
   destroy = (id: number) => {
-    this._operationQueue.push({
+    this.enqueueStepOperation({
       op: 'removeEntity',
       entityId: id,
     });
@@ -133,11 +165,12 @@ export class Game extends EventSubscriber<GameEvents> {
    * Add a component to an entity.
    */
   add = <ComponentShape extends BaseShape>(
-    entityId: number,
+    entity: number | Entity,
     handle: ComponentHandle<ComponentShape>,
     initial?: Partial<ComponentShape>,
   ) => {
-    this._operationQueue.push({
+    const entityId = typeof entity === 'number' ? entity : entity.id;
+    this.enqueueStepOperation({
       op: 'addComponent',
       entityId,
       componentType: handle.id,
@@ -148,8 +181,9 @@ export class Game extends EventSubscriber<GameEvents> {
   /**
    * Remove a component by type from an entity
    */
-  remove = <T extends ComponentHandle>(entityId: number, Type: T) => {
-    this._operationQueue.push({
+  remove = <T extends ComponentHandle>(entity: number | Entity, Type: T) => {
+    const entityId = typeof entity === 'number' ? entity : entity.id;
+    this.enqueueStepOperation({
       op: 'removeComponent',
       entityId,
       componentType: Type.id,
@@ -200,30 +234,45 @@ export class Game extends EventSubscriber<GameEvents> {
    */
   step = (delta: number) => {
     this._delta = delta;
-    this._phases.forEach((phase) => {
-      this.emit(phase);
-    });
-    this.emit('destroyEntities');
+    for (const phase of this._phases) {
+      this.events.emit(`phase:${phase}`);
+      this.flushPhaseOperations();
+    }
+    this.events.emit('destroyEntities');
     this._removedList.flush(this.destroyEntity);
-    this.emit('preApplyOperations');
-    this.flushOperations();
-    this.emit('stepComplete');
+    this.events.emit('preApplyOperations');
+    this.flushStepOperations();
+    this.events.emit('stepComplete');
   };
 
-  enqueueOperation = (operation: Operation) => {
-    this._operationQueue.push(operation);
+  enqueuePhaseOperation = (operation: Operation) => {
+    this._phaseOperationQueue.push(operation);
   };
 
+  enqueueStepOperation = (operation: Operation) => {
+    this._stepOperationQueue.push(operation);
+  };
+
+  // entities aren't actually destroyed until the end of the following
+  //step when this is called. It gives effects time to react to the
+  // removal of the entity.
   private destroyEntity = (entity: Entity) => {
     entity.components.forEach((instance) => {
       if (instance) this.componentManager.release(instance);
     });
+    this.entityIds.release(entity.id);
     this.entityPool.release(entity);
   };
 
-  private flushOperations = () => {
-    while (this._operationQueue.length) {
-      this.applyOperation(this._operationQueue.shift()!);
+  private flushPhaseOperations = () => {
+    while (this._phaseOperationQueue.length) {
+      this.applyOperation(this._phaseOperationQueue.shift()!);
+    }
+  };
+
+  private flushStepOperations = () => {
+    while (this._stepOperationQueue.length) {
+      this.applyOperation(this._stepOperationQueue.shift()!);
     }
   };
 
@@ -255,6 +304,10 @@ export class Game extends EventSubscriber<GameEvents> {
       case 'createEntity':
         this.archetypeManager.createEntity(operation.entityId);
         break;
+      // removal is not destruction - the entity object will remain
+      // allocated with components, but removed from archetypes
+      // and therefore queries. effects get one last look at it
+      // before it is returned to the pool.
       case 'removeEntity':
         if (operation.entityId === 0) break;
 

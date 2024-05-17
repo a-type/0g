@@ -1,6 +1,7 @@
 import { EventSubscriber } from '@a-type/utils';
 import { ComponentHandle } from './Component2.js';
 import { Entity } from './Entity.js';
+import { getIdSignifier } from './ids.js';
 
 export type ArchetypeEvents = {
   entityAdded(entity: Entity<any, any>): any;
@@ -36,11 +37,23 @@ export class Archetype<
     return this.entities[Symbol.iterator]();
   }
 
+  private setLookup(entityId: number, index: number) {
+    this.entityIndexLookup[getIdSignifier(entityId)] = index;
+  }
+
+  private getLookup(entityId: number) {
+    return this.entityIndexLookup[getIdSignifier(entityId)];
+  }
+
+  private clearLookup(entityId: number) {
+    this.entityIndexLookup[getIdSignifier(entityId)] = undefined;
+  }
+
   addEntity(entity: Entity<any, any>) {
     // this is the index ("column") of this entity in the table
     const index = this.entities.length;
     // for lookup later when presented with an entityId
-    this.entityIndexLookup[entity.id] = index;
+    this.setLookup(entity.id, index);
 
     // add entity data to the column of all data arrays
     this.entities[index] = entity;
@@ -52,13 +65,13 @@ export class Archetype<
    * component data list
    */
   removeEntity(entityId: number) {
-    const index = this.entityIndexLookup[entityId];
+    const index = this.getLookup(entityId);
     if (index === undefined) {
       throw new Error(
         `Tried to remove ${entityId} from archetype ${this.id}, but was not present`,
       );
     }
-    this.entityIndexLookup[entityId] = undefined;
+    this.clearLookup(entityId);
 
     const [entity] = this.entities.splice(index, 1);
     // FIXME: improve this!!! Maybe look into a linked list like that one blog post...
@@ -74,7 +87,7 @@ export class Archetype<
   }
 
   getEntity(entityId: number) {
-    const index = this.entityIndexLookup[entityId];
+    const index = this.getLookup(entityId);
     if (index === undefined) {
       throw new Error(
         `Could not find entity ${entityId} in archetype ${this.id}`,

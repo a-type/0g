@@ -1,4 +1,4 @@
-import { any, changed, compose, makeEffect, makeSystem } from '0g';
+import { oneOf, changed, effect, system } from '0g';
 import { vecNormalize, vecScale } from 'math2d';
 import { Body, Contacts, Transform } from '../common/box2d/components.js';
 import {
@@ -13,32 +13,40 @@ import {
 import { asteroidPrefab, bulletPrefab } from './prefabs.js';
 import { createSVGElement } from './utils.js';
 
-const createSpriteEffect = makeEffect([SpriteConfig], async (entity, game) => {
-  const element = createSVGElement('g');
-  const pathEl = createSVGElement('path');
-  const { path, stroke, dashGap } = entity.get(SpriteConfig);
-  pathEl.setAttribute('d', path);
-  pathEl.setAttribute('stroke', stroke);
-  pathEl.setAttribute('stroke-width', '1px');
-  pathEl.setAttribute('vector-effect', 'non-scaling-stroke');
-  pathEl.setAttribute(
-    'stroke-dasharray',
-    dashGap ? dashGap.toString() : 'none',
-  );
-  element.appendChild(pathEl);
+export const createSpriteEffect = effect(
+  [SpriteConfig, Transform],
+  async (entity, game) => {
+    const element = createSVGElement('g');
+    const pathEl = createSVGElement('path');
+    const { path, stroke, dashGap } = entity.get(SpriteConfig);
+    const transform = entity.get(Transform);
+    pathEl.setAttribute('d', path);
+    pathEl.setAttribute('stroke', stroke);
+    pathEl.setAttribute('stroke-width', '1px');
+    pathEl.setAttribute('vector-effect', 'non-scaling-stroke');
+    pathEl.setAttribute(
+      'stroke-dasharray',
+      dashGap ? dashGap.toString() : 'none',
+    );
+    element.appendChild(pathEl);
+    element.setAttribute(
+      'transform',
+      `translate(${transform.x},${transform.y}) rotate(${transform.angle * (180 / Math.PI)})`,
+    );
 
-  const root = await game.globals.load('root');
+    const root = await game.globals.load('root');
 
-  root.appendChild(element);
+    root.appendChild(element);
 
-  game.add(entity.id, Sprite, { element, path: pathEl });
-  return () => {
-    game.remove(entity.id, Sprite);
-    root.removeChild(element);
-  };
-});
+    game.add(entity.id, Sprite, { element, path: pathEl });
+    return () => {
+      game.remove(entity.id, Sprite);
+      root.removeChild(element);
+    };
+  },
+);
 
-const updateSpriteSystem = makeSystem(
+export const updateSpriteSystem = system(
   [changed(SpriteConfig), Sprite],
   (entity) => {
     const { path, stroke, dashGap } = entity.get(SpriteConfig);
@@ -52,7 +60,7 @@ const updateSpriteSystem = makeSystem(
   },
 );
 
-const transformSpriteSystem = makeSystem(
+export const transformSpriteSystem = system(
   [changed(Transform), Sprite],
   (entity) => {
     const { element } = entity.get(Sprite);
@@ -62,13 +70,14 @@ const transformSpriteSystem = makeSystem(
       `translate(${x}, ${y}) rotate(${angle * (180 / Math.PI)})`,
     );
   },
+  { phase: 'postStep' },
 );
 
-const asteroidInitialSpinEffect = makeEffect([Asteroid, Body], (entity) => {
+export const asteroidInitialSpinEffect = effect([Asteroid, Body], (entity) => {
   entity.get(Body).value.SetAngularVelocity(Math.random() - 0.5);
 });
 
-const bulletInitialVelocityEffect = makeEffect(
+export const bulletInitialVelocityEffect = effect(
   [Bullet, Transform, Body],
   (entity) => {
     // get forward direction
@@ -82,7 +91,7 @@ const bulletInitialVelocityEffect = makeEffect(
   },
 );
 
-const playerMovementSystem = makeSystem(
+export const playerMovementSystem = system(
   [Player, Body, Transform],
   (entity, game) => {
     const keyboard = game.globals.immediate('keyboard')!;
@@ -118,12 +127,16 @@ const playerMovementSystem = makeSystem(
   },
 );
 
-const damageSystem = makeSystem(
+export const damageSystem = system(
   [Damageable, changed(Contacts)],
-  (entity, game) => {
+  (entity, game, invulnerabilityFrames) => {
+    // if invulnerable, tick down invuln frames
+    if (invulnerabilityFrames > 0) {
+      return invulnerabilityFrames - 1;
+    }
+
     const contacts = entity.get(Contacts);
     const damageable = entity.get(Damageable);
-    let tookDamage = false;
     for (const contact of contacts.began) {
       if (!contact.otherId) continue;
 
@@ -132,20 +145,21 @@ const damageSystem = makeSystem(
 
       if (!colliderTag) continue;
 
-      tookDamage =
-        tookDamage || damageable.damageFrom.includes(colliderTag.group);
+      if (damageable.damageFrom.includes(colliderTag.group)) {
+        damageable.addDamage();
+
+        return damageable.invulnerableFrames;
+      }
     }
-    if (tookDamage) {
-      damageable.addDamage();
-    }
+    // tick down invuln frames
+    return 0;
+  },
+  {
+    initialResult: 0,
   },
 );
 
-const damageCooldownSystem = makeSystem([Damageable], (entity) => {
-  entity.get(Damageable).tickInvulnerability();
-});
-
-const shootSystem = makeSystem([Player, Transform], (entity, game) => {
+export const shootSystem = system([Player, Transform], (entity, game) => {
   const keyboard = game.globals.immediate('keyboard')!;
 
   if (keyboard.getKeyDown(' ') || keyboard.getKeyDown('Control')) {
@@ -154,7 +168,7 @@ const shootSystem = makeSystem([Player, Transform], (entity, game) => {
   }
 });
 
-const playerDestroySystem = makeSystem(
+export const playerDestroySystem = system(
   [Player, changed(Damageable)],
   (entity, game) => {
     const damageable = entity.get(Damageable);
@@ -164,7 +178,7 @@ const playerDestroySystem = makeSystem(
   },
 );
 
-const asteroidDestroySystem = makeSystem(
+export const asteroidDestroySystem = system(
   [Asteroid, changed(Damageable), Transform],
   (entity, game) => {
     const damageable = entity.get(Damageable);
@@ -188,7 +202,7 @@ const asteroidDestroySystem = makeSystem(
   },
 );
 
-const bulletDestroySystem = makeSystem(
+export const bulletDestroySystem = system(
   [Bullet, changed(Contacts)],
   (entity, game) => {
     for (const contact of entity.get(Contacts).began) {
@@ -204,7 +218,7 @@ const bulletDestroySystem = makeSystem(
   },
 );
 
-const asteroidRecoilSystem = makeSystem(
+export const asteroidRecoilSystem = system(
   [Asteroid, Body, Transform, changed(Contacts)],
   (entity, game) => {
     const transform = entity.get(Transform);
@@ -240,7 +254,7 @@ const asteroidRecoilSystem = makeSystem(
   },
 );
 
-const damageVisualizerSystem = makeSystem(
+export const damageVisualizerSystem = system(
   [changed(Damageable), SpriteConfig],
   (entity) => {
     const { health, maxHealth } = entity.get(Damageable);
@@ -252,7 +266,7 @@ const damageVisualizerSystem = makeSystem(
   },
 );
 
-const cleanupBulletsSystem = makeSystem(
+export const cleanupBulletsSystem = system(
   [Bullet, changed(Transform)],
   (entity, game) => {
     const { x, y } = entity.get(Transform);
@@ -266,8 +280,8 @@ function wrap(v: number, buffer = 2) {
   const size = 100 + buffer * 2;
   return v > 100 + buffer ? v - size : v < -buffer ? v + size : v;
 }
-const wrapObjectsSystem = makeSystem(
-  [any(Player, Asteroid), Transform, Body],
+export const wrapObjectsSystem = system(
+  [oneOf(Player, Asteroid), Transform, Body],
   (entity, game) => {
     const transform = entity.get(Transform);
     const wrappedX = wrap(transform.x);
@@ -278,23 +292,4 @@ const wrapObjectsSystem = makeSystem(
       body.value.SetPositionXY(wrappedX, wrappedY);
     }
   },
-);
-
-export const systems = compose(
-  createSpriteEffect,
-  updateSpriteSystem,
-  transformSpriteSystem,
-  asteroidInitialSpinEffect,
-  bulletInitialVelocityEffect,
-  playerMovementSystem,
-  damageSystem,
-  damageCooldownSystem,
-  shootSystem,
-  playerDestroySystem,
-  asteroidDestroySystem,
-  bulletDestroySystem,
-  damageVisualizerSystem,
-  cleanupBulletsSystem,
-  wrapObjectsSystem,
-  asteroidRecoilSystem,
 );

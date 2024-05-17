@@ -1,6 +1,6 @@
 {
   "name": "@0g/react",
-  "version": "2.0.1",
+  "version": "3.0.3",
   "description": "",
   "type": "module",
   "exports": {
@@ -44,7 +44,7 @@
   },
   "homepage": "https://github.com/a-type/0g#readme",
   "peerDependencies": {
-    "0g": "0.2.1",
+    "0g": "0.3.3",
     "react": "^18.0.0"
   },
   "devDependencies": {

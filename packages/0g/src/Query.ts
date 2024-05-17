@@ -2,7 +2,6 @@ import { Game } from './Game.js';
 import { Archetype } from './Archetype.js';
 import { Filter, isFilter, has } from './filters.js';
 import { EntityImpostorFor, QueryIterator } from './QueryIterator.js';
-import { logger } from './logger.js';
 import { Entity } from './Entity.js';
 import { EventSubscriber } from '@a-type/utils';
 import { ComponentHandle } from './Component2.js';
@@ -60,7 +59,7 @@ export class Query<
   };
 
   initialize(def: FilterDef) {
-    logger.debug(`Initializing Query ${this.toString()}`);
+    this.game.logger.debug(`Initializing Query ${this.toString()}`);
     this.filter = this.processDef(def);
 
     Object.values(this.game.archetypeManager.archetypes).forEach(
@@ -98,14 +97,16 @@ export class Query<
         case 'changed':
           match = archetype.includes(filter.Component);
           break;
-        case 'any':
+        case 'oneOf':
           match = filter.Components.some((Comp) => archetype.includes(Comp));
       }
       if (!match) return;
     }
 
     this.archetypes.push(archetype);
-    logger.debug(`Query ${this.toString()} added Archetype ${archetype.id}`);
+    this.game.logger.debug(
+      `Query ${this.toString()} added Archetype ${archetype.id}`,
+    );
     this.unsubscribes.push(
       archetype.subscribe('entityRemoved', this.handleEntityRemoved),
     );
@@ -203,12 +204,16 @@ export class Query<
   };
 
   private emitAdded = (entityId: number) => {
-    logger.debug(`Entity ${entityId} added to query ${this.toString()}`);
+    this.game.logger.debug(
+      `Entity ${entityId} added to query ${this.toString()}`,
+    );
     this.emit('entityAdded', entityId);
   };
 
   private emitRemoved = (entityId: number) => {
-    logger.debug(`Entity ${entityId} removed from query ${this.toString()}`);
+    this.game.logger.debug(
+      `Entity ${entityId} removed from query ${this.toString()}`,
+    );
     this.emit('entityRemoved', entityId);
   };
 

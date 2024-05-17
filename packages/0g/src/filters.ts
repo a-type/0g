@@ -54,29 +54,31 @@ export const changed = <Comp extends ComponentHandle>(
   },
 });
 
-export type Any<Comps extends ComponentHandle[]> = {
+export type OneOf<Comps extends ComponentHandle[]> = {
   Components: Comps;
-  kind: 'any';
+  kind: 'oneOf';
   __isFilter: true;
   toString(): string;
 };
 
-export const any = <Comps extends ComponentHandle[]>(
+export const oneOf = <Comps extends ComponentHandle[]>(
   ...Components: Comps
-): Any<Comps> => ({
+): OneOf<Comps> => ({
   Components,
-  kind: 'any',
+  kind: 'oneOf',
   __isFilter: true,
   toString() {
-    return `any(${Components.map((Comp) => Comp.name).join(', ')})`;
+    return `oneOf(${Components.map((Comp) => Comp.name).join(', ')})`;
   },
 });
+/** @deprecated - use oneOf */
+export const any = oneOf;
 
 export type Filter<Comp extends ComponentHandle> =
   | Not<Comp>
   | Has<Comp>
   | Changed<Comp>
-  | Any<Comp[]>;
+  | OneOf<Comp[]>;
 
 export const isFilter = (thing: any): thing is Filter<any> =>
   thing.__isFilter === true;
@@ -91,5 +93,6 @@ export const isChangedFilter = (
   fil: Filter<any>,
 ): fil is Changed<ComponentHandle> => fil.kind === 'changed';
 
-export const isAnyFilter = (fil: Filter<any>): fil is Any<ComponentHandle[]> =>
-  fil.kind === 'any';
+export const isOneOfFilter = (
+  fil: Filter<any>,
+): fil is OneOf<ComponentHandle[]> => fil.kind === 'oneOf';

@@ -1,5 +1,36 @@
 # 0g
 
+## 0.3.3
+
+### Patch Changes
+
+- 2637ec5: Fix pointer up events
+
+## 0.3.2
+
+### Patch Changes
+
+- d8a7fad: Fix for pointer buttons
+
+## 0.3.1
+
+### Patch Changes
+
+- abaf2a0: Custom phase support
+- fd4fed0: Allow returning ephemeral state from systems
+
+## 0.3.0
+
+### Minor Changes
+
+- 07289c0: Make components and systems self-registering
+
+## 0.2.2
+
+### Patch Changes
+
+- 5e9eb89: Throw error on duplicate component type
+
 ## 0.2.1
 
 ### Patch Changes

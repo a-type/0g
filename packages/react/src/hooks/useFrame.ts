@@ -5,7 +5,7 @@ import { useGame } from './useGame.js';
 /**
  * Runs a callback every game step
  */
-export function useFrame(callback: () => void) {
+export function useFrame(callback: () => void, phase?: string) {
   const game = useGame();
 
   const ref = useRef(callback);
@@ -14,7 +14,10 @@ export function useFrame(callback: () => void) {
   }, [callback]);
 
   useEffect(() => {
-    return game.subscribe('step', ref.current);
+    return game.subscribe(
+      phase ? `phase:${phase}` : 'stepComplete',
+      ref.current,
+    );
   }, [game, ref]);
 }
 
@@ -28,7 +31,6 @@ export function useQueryFrame<Q extends Query<QueryComponentFilter>>(
 ) {
   useFrame(() => {
     for (const ent of input) {
-      // FIXME:
       callback(ent as any);
     }
   });

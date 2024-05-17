@@ -1,5 +1,5 @@
+import { Game } from './index.js';
 import { ObjectPool } from './internal/objectPool.js';
-import { logger } from './logger.js';
 import { ResourceHandle } from './ResourceHandle.js';
 
 export class Resources<ResourceMap extends Record<string, any>> {
@@ -8,6 +8,8 @@ export class Resources<ResourceMap extends Record<string, any>> {
     (h) => h.reset(),
   );
   private handles = new Map<string | number | symbol, ResourceHandle>();
+
+  constructor(private game: Game) {}
 
   private getOrCreateGlobalHandle = (key: string | number | symbol) => {
     let handle = this.handles.get(key);
@@ -29,7 +31,7 @@ export class Resources<ResourceMap extends Record<string, any>> {
     value: Key extends keyof ResourceMap ? ResourceMap[Key] : any,
   ) => {
     this.getOrCreateGlobalHandle(key).resolve(value);
-    logger.debug('Resolved resource', key);
+    this.game.logger.debug('Resolved resource', key);
   };
 
   immediate = <Key extends keyof ResourceMap | (string & {})>(key: Key) => {

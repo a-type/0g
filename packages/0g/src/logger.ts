@@ -1,16 +1,26 @@
-const doLog = (
-  level: 'info' | 'warn' | 'error' | 'debug' | 'log',
-  ...messages: unknown[]
-) => {
-  if (localStorage.getItem('DEBUG') === 'true' || (window as any).DEBUG) {
-    console[level](...messages);
-  }
-};
+export class Logger {
+  static readonly levels = ['debug', 'info', 'warn', 'error'] as const;
 
-export const logger = {
-  info: doLog.bind(null, 'info'),
-  warn: doLog.bind(null, 'warn'),
-  error: doLog.bind(null, 'error'),
-  debug: doLog.bind(null, 'debug'),
-  log: doLog.bind(null, 'log'),
-};
+  private lvl = 2;
+
+  doLog = (
+    level: 'info' | 'warn' | 'error' | 'debug',
+    ...messages: unknown[]
+  ) => {
+    if (Logger.levels.indexOf(level) >= this.lvl) {
+      console[level](...messages);
+    }
+  };
+
+  constructor(level: 'info' | 'warn' | 'error' | 'debug') {
+    this.lvl = Logger.levels.indexOf(level);
+  }
+
+  info = this.doLog.bind(null, 'info');
+  warn = this.doLog.bind(null, 'warn');
+  error = this.doLog.bind(null, 'error');
+  debug = this.doLog.bind(null, 'debug');
+  log = this.doLog.bind(null, 'info');
+}
+
+export const defaultLogger = new Logger('info');

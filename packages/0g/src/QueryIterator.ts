@@ -1,6 +1,6 @@
 import { ComponentHandle } from './Component2.js';
 import { Entity } from './Entity.js';
-import { Any, Changed, Filter, not, Not } from './filters.js';
+import { OneOf, Changed, Filter, not, Not } from './filters.js';
 import { Game } from './Game.js';
 import { Query, QueryComponentFilter } from './Query.js';
 
@@ -8,7 +8,7 @@ type FilterNots<CompUnion extends Filter<ComponentHandle> | ComponentHandle> =
   CompUnion extends Not<any> ? never : CompUnion;
 
 type UnwrapAnys<CompUnion extends Filter<ComponentHandle> | ComponentHandle> =
-  CompUnion extends Any<any> ? never : CompUnion;
+  CompUnion extends OneOf<any> ? never : CompUnion;
 
 type OnlyNots<CompUnion extends Filter<ComponentHandle> | ComponentHandle> =
   CompUnion extends Not<infer C> ? C : never;
