@@ -12,6 +12,7 @@ import {
 import { describe, it, beforeEach, expect, vi } from 'vitest';
 import { EventSubscriber } from '@a-type/utils';
 import { ComponentInstanceInternal } from './Component2.js';
+import { defaultLogger } from './logger.js';
 
 const withA = 100;
 const withAB = 101;
@@ -33,27 +34,21 @@ describe('Query', () => {
   }
 
   beforeEach(() => {
-    const archetypeManager = new ArchetypeManager({
-      componentManager: {
-        count: 10,
-        getTypeName: () => 'TEST MOCK',
-      },
-      entityPool: {
-        acquire() {
-          return new Entity();
-        },
-        release() {},
-      },
-    } as any);
     events = new EventSubscriber();
     game = events as any;
-    (game as any).archetypeManager = archetypeManager;
+    (game as any).componentManager = {
+      count: 10,
+      getTypeName: () => 'TEST MOCK',
+    };
     (game as any).entityPool = {
       acquire() {
         return new Entity();
       },
       release() {},
     };
+    (game as any).logger = defaultLogger;
+    const archetypeManager = new ArchetypeManager(game);
+    (game as any).archetypeManager = archetypeManager;
 
     // bootstrap some testing archetypes
     addEntity(withA, [ComponentA.create()]);
