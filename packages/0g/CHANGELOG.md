@@ -1,5 +1,11 @@
 # 0g
 
+## 0.4.1
+
+### Patch Changes
+
+- 7bfcfc9: tweak component instance typing
+
 ## 0.4.0
 
 ### Minor Changes
