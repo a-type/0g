@@ -1,5 +1,11 @@
 # 0g
 
+## 0.3.4
+
+### Patch Changes
+
+- a54972f: Improve typings on global and asset keys
+
 ## 0.3.3
 
 ### Patch Changes
