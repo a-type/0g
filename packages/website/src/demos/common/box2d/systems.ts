@@ -126,13 +126,13 @@ export const manageBodiesEffect = effect(
     assignBodyConfig(b, bodyConfig, entity.id);
     applyFixtures(b, createFixtureDef(bodyConfig, entity.id));
 
-    game.add(entity.id, components.Body, { value: b });
+    game.add(entity, components.Body, { value: b });
     return () => {
       const body = entity.get(components.Body);
       if (body?.value) {
         world.DestroyBody(body.value);
       }
-      game.remove(entity.id, components.Body);
+      game.remove(entity, components.Body);
     };
   },
 );
@@ -140,9 +140,9 @@ export const manageBodiesEffect = effect(
 export const manageContactsCacheEffect = effect(
   [components.Contacts],
   (entity, game) => {
-    game.add(entity.id, components.ContactsCache);
+    game.add(entity, components.ContactsCache);
     return () => {
-      game.remove(entity.id, components.ContactsCache);
+      game.remove(entity, components.ContactsCache);
     };
   },
 );

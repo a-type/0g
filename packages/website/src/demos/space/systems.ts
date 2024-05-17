@@ -1,4 +1,4 @@
-import { oneOf, changed, effect, system } from '0g';
+import { oneOf, changed, effect, system, not } from '0g';
 import { vecNormalize, vecScale } from 'math2d';
 import { Body, Contacts, Transform } from '../common/box2d/components.js';
 import {
@@ -38,9 +38,9 @@ export const createSpriteEffect = effect(
 
     root.appendChild(element);
 
-    game.add(entity.id, Sprite, { element, path: pathEl });
+    game.add(entity, Sprite, { element, path: pathEl });
     return () => {
-      game.remove(entity.id, Sprite);
+      game.remove(entity, Sprite);
       root.removeChild(element);
     };
   },

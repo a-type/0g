@@ -6,7 +6,9 @@ import '../common/box2d/systems.js';
 import './systems.js';
 
 import { Game } from '0g';
-const game = new Game({});
+const game = new Game({
+  logLevel: 'debug',
+});
 
 game.globals.resolve('keyboard', keyboard);
 game.subscribe('stepComplete', keyboard.frame);

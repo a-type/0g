@@ -1,18 +1,22 @@
+export type LogLevel = 'info' | 'warn' | 'error' | 'debug';
+
 export class Logger {
-  static readonly levels = ['debug', 'info', 'warn', 'error'] as const;
+  static readonly levels: LogLevel[] = [
+    'debug',
+    'info',
+    'warn',
+    'error',
+  ] as const;
 
   private lvl = 2;
 
-  doLog = (
-    level: 'info' | 'warn' | 'error' | 'debug',
-    ...messages: unknown[]
-  ) => {
+  doLog = (level: LogLevel, ...messages: unknown[]) => {
     if (Logger.levels.indexOf(level) >= this.lvl) {
       console[level](...messages);
     }
   };
 
-  constructor(level: 'info' | 'warn' | 'error' | 'debug') {
+  constructor(level: LogLevel) {
     this.lvl = Logger.levels.indexOf(level);
   }
 

@@ -10,17 +10,11 @@ import {
 // is specifically omitted - otherwise it is non-nullable.
 type DefinedInstance<
   Present extends ComponentHandle,
-  Omitted extends ComponentHandle,
   Handle extends ComponentHandle,
-> = Handle extends Present
-  ? InstanceFor<Handle>
-  : Handle extends Omitted
-    ? never
-    : InstanceFor<Handle> | null;
+> = Handle extends Present ? InstanceFor<Handle> : InstanceFor<Handle> | null;
 
 export class Entity<
   DefiniteComponents extends ComponentHandle = ComponentHandle,
-  OmittedComponents extends ComponentHandle = any,
 > {
   private _id = 0;
   // TODO: make array
@@ -73,9 +67,9 @@ export class Entity<
 
   get = <T extends ComponentHandle>(
     handle: T,
-  ): DefinedInstance<DefiniteComponents, OmittedComponents, T> => {
+  ): DefinedInstance<DefiniteComponents, T> => {
     const instance = (this.components.get(handle.id) ??
-      null) as DefinedInstance<DefiniteComponents, OmittedComponents, T>;
+      null) as DefinedInstance<DefiniteComponents, T>;
     console.assert(
       !instance || instance.id !== 0,
       `Entity tried to access recycled Component instance of type ${handle.name}`,

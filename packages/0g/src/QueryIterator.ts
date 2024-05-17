@@ -20,20 +20,15 @@ type UnwrapFilters<
 type DefiniteComponentsFromFilter<Fil extends QueryComponentFilter> =
   UnwrapFilters<UnwrapAnys<FilterNots<Fil[number]>>>;
 
-type OmittedComponentsFromFilter<Fil extends QueryComponentFilter> = OnlyNots<
-  Fil[number]
->;
-
 export type EntityImpostorFor<Q extends QueryComponentFilter> = Entity<
-  DefiniteComponentsFromFilter<Q>,
-  OmittedComponentsFromFilter<Q>
+  DefiniteComponentsFromFilter<Q>
 >;
 
 export class QueryIterator<Def extends QueryComponentFilter>
   implements Iterator<EntityImpostorFor<Def>>
 {
   private archetypeIndex = 0;
-  private archetypeIterator: Iterator<Entity<any, any>> | null = null;
+  private archetypeIterator: Iterator<Entity<any>> | null = null;
   private result: IteratorResult<EntityImpostorFor<Def>> = {
     done: true,
     value: null as any,

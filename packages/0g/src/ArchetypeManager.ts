@@ -37,7 +37,8 @@ export class ArchetypeManager extends EventSubscriber<ArchetypeManagerEvents> {
 
   private lookupEntityArchetype(entityId: number) {
     const lookupIndex = getIdSignifier(entityId);
-    return this.entityLookup[lookupIndex];
+    const arch = this.entityLookup[lookupIndex];
+    return arch;
   }
   private setEntityArchetype(entityId: number, archetypeId: string) {
     const lookupIndex = getIdSignifier(entityId);
@@ -124,8 +125,8 @@ export class ArchetypeManager extends EventSubscriber<ArchetypeManagerEvents> {
     return removed;
   }
 
-  destroyEntity(entityId: number) {
-    this.game.logger.debug(`Destroying entity ${entityId}`);
+  removeEntity(entityId: number) {
+    this.game.logger.debug(`Removing entity ${entityId} from all archetypes`);
     const archetypeId = this.lookupEntityArchetype(entityId);
     if (archetypeId === undefined) {
       throw new Error(
@@ -143,7 +144,7 @@ export class ArchetypeManager extends EventSubscriber<ArchetypeManagerEvents> {
   getEntity(entityId: number) {
     const archetypeId = this.lookupEntityArchetype(entityId);
     if (archetypeId === undefined) {
-      this.game.logger.debug(`Could not find Archetype for Entity ${entityId}`);
+      this.game.logger.error(`Could not find Entity ${entityId}`);
       return null;
     }
     const archetype = this.archetypes[archetypeId];

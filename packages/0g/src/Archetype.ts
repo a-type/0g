@@ -4,7 +4,7 @@ import { Entity } from './Entity.js';
 import { getIdSignifier } from './ids.js';
 
 export type ArchetypeEvents = {
-  entityAdded(entity: Entity<any, any>): any;
+  entityAdded(entity: Entity<any>): any;
   entityRemoved(entityId: number): any;
 };
 
@@ -19,7 +19,7 @@ export type ArchetypeEvents = {
 export class Archetype<
   T extends ComponentHandle[] = ComponentHandle[],
 > extends EventSubscriber<ArchetypeEvents> {
-  private entities = new Array<Entity<T[number], any>>();
+  private entities = new Array<Entity<T[number]>>();
   /** Maps entity ID -> index in entity array */
   private entityIndexLookup = new Array<number | undefined>();
 
@@ -49,7 +49,7 @@ export class Archetype<
     this.entityIndexLookup[getIdSignifier(entityId)] = undefined;
   }
 
-  addEntity(entity: Entity<any, any>) {
+  addEntity(entity: Entity<any>) {
     // this is the index ("column") of this entity in the table
     const index = this.entities.length;
     // for lookup later when presented with an entityId

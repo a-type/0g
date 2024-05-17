@@ -181,7 +181,19 @@ export class Game {
   /**
    * Remove a component by type from an entity
    */
-  remove = <T extends ComponentHandle>(entity: number | Entity, Type: T) => {
+  remove = <T extends ComponentHandle, E extends Entity<any>>(
+    entity: number | E,
+    Type: T,
+  ) => {
+    if (!(typeof entity === 'number')) {
+      // ignore removed entities, their components
+      // are already gone.
+      if (entity.removed) {
+        return;
+      }
+      // TODO: find a way to do this when the
+      // arg isn't an entity
+    }
     const entityId = typeof entity === 'number' ? entity : entity.id;
     this.enqueueStepOperation({
       op: 'removeComponent',
@@ -262,6 +274,7 @@ export class Game {
     });
     this.entityIds.release(entity.id);
     this.entityPool.release(entity);
+    this.logger.debug('Destroyed entity', entity.id);
   };
 
   private flushPhaseOperations = () => {
@@ -293,6 +306,18 @@ export class Game {
       case 'removeComponent':
         if (operation.entityId === 0) break;
 
+        this.logger.debug(
+          'Removing component',
+          operation.componentType,
+          'from entity',
+          operation.entityId,
+        );
+
+        // if entity was removed already, it won't
+        // be in archetypes anymore, and the component
+        // will be released in the removal process.
+        if (this._removedList.get(operation.entityId)) break;
+
         instance = this.archetypeManager.removeComponent(
           operation.entityId,
           operation.componentType,
@@ -311,7 +336,7 @@ export class Game {
       case 'removeEntity':
         if (operation.entityId === 0) break;
 
-        entity = this.archetypeManager.destroyEntity(operation.entityId);
+        entity = this.archetypeManager.removeEntity(operation.entityId);
 
         this._removedList.add(entity);
         break;

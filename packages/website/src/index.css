@@ -57,6 +57,10 @@ button {
   vertical-align: center;
   text-align: center;
   transition: 0.2s ease all;
+  cursor: pointer;
+}
+button:hover {
+  background-color: #e0e0f0;
 }
 button:active {
   transform: scale(0.9);
@@ -82,9 +86,21 @@ header > span {
   flex-direction: column;
   align-items: center;
   width: 100%;
+  position: relative;
 }
 .gameRoot > div {
   width: 80vmin;
   height: 80vmin;
   margin: auto;
+}
+
+.ui {
+  display: flex;
+  position: absolute;
+  pointer-events: none;
+  justify-content: center;
+  align-items: center;
+}
+.ui > * {
+  pointer-events: auto;
 }

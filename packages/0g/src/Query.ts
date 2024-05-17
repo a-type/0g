@@ -36,6 +36,10 @@ export class Query<
   };
   private unsubscribes: (() => void)[] = [];
   private unsubscribeArchetypes: (() => void) | undefined = undefined;
+  private _generation = 0;
+  get generation() {
+    return this._generation;
+  }
 
   constructor(private game: Game) {
     super();
@@ -130,10 +134,12 @@ export class Query<
 
   private handleEntityAdded = (entity: Entity) => {
     this.addToList(entity.id);
+    this._generation++;
   };
 
   private handleEntityRemoved = (entityId: number) => {
     this.removeFromList(entityId);
+    this._generation++;
   };
 
   toString() {
@@ -165,6 +171,10 @@ export class Query<
 
   get removedIds() {
     return this.removedThisFrame as readonly number[];
+  }
+
+  get count() {
+    return this.trackedEntities.length;
   }
 
   private addToList = (entityId: number) => {

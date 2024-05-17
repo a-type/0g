@@ -4,13 +4,13 @@ import { EntityImpostorFor } from './QueryIterator.js';
 
 export const allSystems = new Array<(game: Game) => void | (() => void)>();
 
-type SystemRunner<Filter extends QueryComponentFilter, Result> = (
+export type SystemRunner<Filter extends QueryComponentFilter, Result> = (
   entity: EntityImpostorFor<Filter>,
   game: Game,
   previousResult: Result,
 ) => Result;
 
-export function system<Filter extends QueryComponentFilter, Result = void>(
+function unregisteredSystem<Filter extends QueryComponentFilter, Result = void>(
   filter: Filter,
   run: SystemRunner<Filter, Result>,
   {
@@ -39,8 +39,22 @@ export function system<Filter extends QueryComponentFilter, Result = void>(
     return game.subscribe(`phase:${phase}`, onPhase);
   }
 
+  return sys;
+}
+
+export function system<Filter extends QueryComponentFilter, Result = void>(
+  filter: Filter,
+  run: SystemRunner<Filter, Result>,
+  options?: {
+    phase?: 'step' | 'preStep' | 'postStep' | (string & {});
+    initialResult?: Result;
+  },
+) {
+  const sys = unregisteredSystem(filter, run, options);
   allSystems.push(sys);
   return sys;
 }
+system.unregistered = unregisteredSystem;
+
 /** @deprecated - use system */
 export const makeSystem = system;
