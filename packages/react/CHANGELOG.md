@@ -1,5 +1,12 @@
 # @0g/react
 
+## 4.0.2
+
+### Patch Changes
+
+- Updated dependencies [7bfcfc9]
+  - 0g@0.4.1
+
 ## 4.0.1
 
 ### Patch Changes
