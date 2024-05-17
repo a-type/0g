@@ -3,7 +3,10 @@ import { logger } from './logger.js';
 import { ResourceHandle } from './ResourceHandle.js';
 
 export class Resources<ResourceMap extends Record<string, any>> {
-  private handlePool = new ObjectPool(() => new ResourceHandle(), h => h.reset());
+  private handlePool = new ObjectPool(
+    () => new ResourceHandle(),
+    (h) => h.reset(),
+  );
   private handles = new Map<string | number | symbol, ResourceHandle>();
 
   private getOrCreateGlobalHandle = (key: string | number | symbol) => {
@@ -15,25 +18,27 @@ export class Resources<ResourceMap extends Record<string, any>> {
     return handle;
   };
 
-  load = <Key extends keyof ResourceMap>(key: Key) => {
+  load = <Key extends keyof ResourceMap | (string & {})>(key: Key) => {
     return this.getOrCreateGlobalHandle(key).promise as Promise<
-      ResourceMap[Key]
+      Key extends keyof ResourceMap ? ResourceMap[Key] : any
     >;
   };
 
-  resolve = <Key extends keyof ResourceMap>(
+  resolve = <Key extends keyof ResourceMap | (string & {})>(
     key: Key,
-    value: ResourceMap[Key],
+    value: Key extends keyof ResourceMap ? ResourceMap[Key] : any,
   ) => {
     this.getOrCreateGlobalHandle(key).resolve(value);
     logger.debug('Resolved resource', key);
   };
 
-  immediate = <Key extends keyof ResourceMap>(key: Key) => {
-    return this.getOrCreateGlobalHandle(key).value as ResourceMap[Key] | null;
+  immediate = <Key extends keyof ResourceMap | (string & {})>(key: Key) => {
+    return this.getOrCreateGlobalHandle(key).value as
+      | (Key extends keyof ResourceMap ? ResourceMap[Key] : any)
+      | null;
   };
 
-  remove = (key: keyof ResourceMap) => {
+  remove = (key: keyof ResourceMap | (string & {})) => {
     const value = this.handles.get(key);
     if (value) {
       this.handlePool.release(value);

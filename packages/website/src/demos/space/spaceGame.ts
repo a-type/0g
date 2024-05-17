@@ -36,10 +36,13 @@ for (let i = 0; i < 4; i++) {
 }
 
 declare module '0g' {
-  interface GameResources {
+  interface Globals {
     root: SVGSVGElement;
     keyboard: Keyboard;
     pointer: Pointer;
+  }
+  interface AssetLoaders {
+    foo: string;
   }
 }
 

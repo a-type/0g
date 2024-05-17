@@ -86,6 +86,7 @@ const playerMovementSystem = makeSystem(
   [Player, Body, Transform],
   (entity, game) => {
     const keyboard = game.globals.immediate('keyboard')!;
+    const asset = game.assets.load('foo', 'bar');
 
     let rotation = 0;
     if (keyboard.getKeyPressed('a')) {

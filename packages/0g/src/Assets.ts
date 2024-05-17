@@ -2,16 +2,17 @@ import { ObjectPool } from './internal/objectPool.js';
 import { ResourceHandle } from './ResourceHandle.js';
 
 export type AssetLoader<T = any> = (key: string) => Promise<T>;
-type InferAsset<Loader extends AssetLoader<any>> =
-  Loader extends AssetLoader<infer T> ? T : never;
 
-export class Assets<Loaders extends Record<string, AssetLoader>> {
-  private handlePool = new ObjectPool(() => new ResourceHandle(), h => h.reset());
+export class Assets<Loaders extends Record<string, any>> {
+  private handlePool = new ObjectPool(
+    () => new ResourceHandle(),
+    (h) => h.reset(),
+  );
   private handles = new Map<string, ResourceHandle>();
 
   constructor(private _loaders: Loaders) {}
 
-  load = <LoaderName extends keyof Loaders>(
+  load = <LoaderName extends keyof Loaders | (string & {})>(
     loader: LoaderName,
     key: string,
   ) => {
@@ -19,20 +20,22 @@ export class Assets<Loaders extends Record<string, AssetLoader>> {
     if (!handle) {
       handle = this.handlePool.acquire();
       this.handles.set(this.getKey(loader, key), handle);
-      this._loaders[loader](key).then((value) => handle!.resolve(value));
+      this._loaders[loader](key).then((value: AssetLoader) =>
+        handle!.resolve(value),
+      );
     }
-    return handle!.promise as Promise<InferAsset<Loaders[LoaderName]>>;
+    return handle!.promise as Promise<Loaders[LoaderName]>;
   };
 
-  immediate = <LoaderName extends keyof Loaders>(
+  immediate = <LoaderName extends keyof Loaders | (string & {})>(
     loader: LoaderName,
     key: string,
   ) => {
     const handle = this.handles.get(this.getKey(loader, key));
     if (!handle) return null;
-    return handle.value as InferAsset<Loaders[LoaderName]> | null;
+    return handle.value as Loaders[LoaderName] | null;
   };
 
-  private getKey = (loader: keyof Loaders, key: string) =>
+  private getKey = (loader: keyof Loaders | (string & {}), key: string) =>
     `${loader.toString()}:${key}`;
 }
