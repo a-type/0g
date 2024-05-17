@@ -22,7 +22,7 @@ export class Pointer {
     }
 
     if (ev.type === 'pointerdown') {
-      if (ev.button === 1) {
+      if (ev.button === 0) {
         this._primaryDown = true;
         this._primaryPressed = true;
       } else if (ev.button === 2) {
@@ -30,7 +30,7 @@ export class Pointer {
         this._secondaryPressed = true;
       }
     } else if (ev.type === 'pointerup') {
-      if (ev.button === 1) {
+      if (ev.button === 0) {
         this._primaryUp = true;
         this._primaryPressed = false;
       } else if (ev.button === 2) {
