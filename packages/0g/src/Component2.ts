@@ -46,17 +46,20 @@ type AppliedExtensions<Ex extends Extensions<any>> = Ex extends undefined
         : never;
     };
 
-export type ComponentInstance$<Shape extends BaseShape = any> = {
+export type ComponentInstance$<
+  Shape extends BaseShape = any,
+  Ext extends Extensions<Shape> = Extensions<Shape>,
+> = {
   id: number;
-  type: ComponentHandle<Shape>;
-  [COMPONENT_CHANGE_HANDLE]?: (instance: ComponentInstance<Shape>) => void;
+  type: ComponentHandle<Shape, Ext>;
+  [COMPONENT_CHANGE_HANDLE]?: (instance: ComponentInstance<Shape, Ext>) => void;
   changed: boolean;
 };
 export type ComponentInstance<
   Shape extends BaseShape = BaseShape,
   Ext extends Extensions<Shape> = Extensions<Shape>,
 > = {
-  $: ComponentInstance$<Shape>;
+  $: ComponentInstance$<Shape, Ext>;
 } & Shape &
   AppliedExtensions<Ext>;
 // component just as seen by internal systems - no typing of
