@@ -1,5 +1,16 @@
 # @0g/react
 
+## 4.0.0
+
+### Minor Changes
+
+- 91a85b9: Improve React integration, include React UI in demo
+
+### Patch Changes
+
+- Updated dependencies [91a85b9]
+  - 0g@0.4.0
+
 ## 3.0.4
 
 ### Patch Changes
