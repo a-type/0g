@@ -1,5 +1,11 @@
 # 0g
 
+## 0.4.0
+
+### Minor Changes
+
+- 91a85b9: Improve React integration, include React UI in demo
+
 ## 0.3.4
 
 ### Patch Changes
