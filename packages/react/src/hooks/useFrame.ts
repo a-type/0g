@@ -1,11 +1,10 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
-import { Query, QueryComponentFilter, QueryIteratorFn } from '0g';
 import { useGame } from './useGame.js';
 
 /**
  * Runs a callback every game step
  */
-export function useFrame(callback: () => void, phase?: string) {
+export function useFrame(callback: () => void, phase: string = 'step') {
   const game = useGame();
 
   const ref = useRef(callback);
@@ -14,9 +13,6 @@ export function useFrame(callback: () => void, phase?: string) {
   }, [callback]);
 
   useEffect(() => {
-    return game.subscribe(
-      phase ? `phase:${phase}` : 'stepComplete',
-      ref.current,
-    );
+    return game.subscribe(`phase:${phase}`, ref.current);
   }, [game, ref]);
 }
