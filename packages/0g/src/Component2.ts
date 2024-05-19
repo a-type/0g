@@ -58,6 +58,11 @@ export type ComponentInstance$<
   [COMPONENT_CHANGE_HANDLE]?: (instance: ComponentInstance<Shape, Ext>) => void;
   /** Set changed = true to trigger changed() filters for this component */
   changed: boolean;
+  /**
+   * Call $() with a callback to automatically update the changed state for any
+   * alterations made within the callback.
+   */
+  (callback: () => void): void;
 };
 export type ComponentInstance<
   Shape extends BaseShape = BaseShape,
@@ -76,6 +81,8 @@ export type InstanceFor<Handle extends ComponentHandle> =
   Handle extends ComponentHandle<infer Shape, infer Ext>
     ? ComponentInstance<Shape, Ext>
     : never;
+
+export type AnyComponent = ComponentInstanceInternal;
 
 export type ComponentOptions<
   Shape extends BaseShape,
@@ -150,19 +157,24 @@ function createComponentDefinition<
     id: number,
   ) {
     Object.assign(pooled, init(), initial);
-    const tools = {
-      id,
-      type: handle,
-      [COMPONENT_CHANGE_HANDLE]: (i: ComponentInstanceInternal) => {},
-      set changed(_) {
-        tools[COMPONENT_CHANGE_HANDLE](pooled);
+    const $ = ((callback: () => void) => {
+      callback();
+      pooled.$.changed = true;
+    }) as ComponentInstance$;
+    Object.defineProperties($, {
+      id: { value: id, writable: false },
+      type: { value: handle, writable: false },
+      changed: {
+        get() {
+          console.warn('changed never returns true');
+          return false;
+        },
+        set(_) {
+          $[COMPONENT_CHANGE_HANDLE]?.(pooled);
+        },
       },
-      get changed(): boolean {
-        console.warn('changed never returns true');
-        return false;
-      },
-    };
-    pooled.$ = tools;
+    });
+    pooled.$ = $;
   }
   function create(): ComponentInstance<Shape, Ext> {
     const instance: any = init();
