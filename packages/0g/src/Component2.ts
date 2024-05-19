@@ -2,7 +2,7 @@ import { componentTypeIds } from './IdManager.js';
 
 export const COMPONENT_CHANGE_HANDLE = Symbol('Component change handle');
 
-export type BaseShape = Record<string, unknown>;
+export type BaseShape = Record<string, any>;
 
 export type ComponentHandle<
   Shape extends BaseShape = any,
@@ -50,9 +50,13 @@ export type ComponentInstance$<
   Shape extends BaseShape = any,
   Ext extends Extensions<Shape> = Extensions<Shape>,
 > = {
+  /** A unique ID for this component instance */
   id: number;
+  /** A reference to the component definition */
   type: ComponentHandle<Shape, Ext>;
+  /** INTERNAL USE ONLY */
   [COMPONENT_CHANGE_HANDLE]?: (instance: ComponentInstance<Shape, Ext>) => void;
+  /** Set changed = true to trigger changed() filters for this component */
   changed: boolean;
 };
 export type ComponentInstance<

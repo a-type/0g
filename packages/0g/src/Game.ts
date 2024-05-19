@@ -7,7 +7,7 @@ import { Entity } from './Entity.js';
 import { Resources } from './Resources.js';
 import { ObjectPool } from './internal/objectPool.js';
 import { RemovedList } from './RemovedList.js';
-import { Assets } from './Assets.js';
+import { AssetLoaderImpls, Assets } from './Assets.js';
 import { QueryComponentFilter } from './Query.js';
 import { EntityImpostorFor } from './QueryIterator.js';
 import {
@@ -72,7 +72,7 @@ export class Game {
     phases,
     logLevel,
   }: {
-    assetLoaders?: AssetLoaders;
+    assetLoaders?: AssetLoaderImpls<AssetLoaders>;
     ignoreSystemsWarning?: boolean;
     phases?: string[];
     logLevel?: 'debug' | 'info' | 'warn' | 'error';
@@ -237,7 +237,7 @@ export class Game {
     filter: Filter,
   ): EntityImpostorFor<Filter> | null => {
     const query = this._queryManager.create(filter);
-    return query.iterator.next().value ?? null;
+    return query.first();
   };
 
   /**
@@ -272,9 +272,10 @@ export class Game {
     entity.components.forEach((instance) => {
       if (instance) this.componentManager.release(instance);
     });
-    this.entityIds.release(entity.id);
+    const id = entity.id;
+    this.entityIds.release(id);
     this.entityPool.release(entity);
-    this.logger.debug('Destroyed entity', entity.id);
+    this.logger.debug('Destroyed entity', id);
   };
 
   private flushPhaseOperations = () => {

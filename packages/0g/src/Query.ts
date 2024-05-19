@@ -13,6 +13,7 @@ export type QueryComponentFilter = Array<
 export type QueryEvents = {
   entityAdded(entityId: number): void;
   entityRemoved(entityId: number): void;
+  destroy(): void;
 };
 
 type ExtractQueryDef<Q extends Query<any>> =
@@ -63,7 +64,6 @@ export class Query<
   };
 
   initialize(def: FilterDef) {
-    this.game.logger.debug(`Initializing Query ${this.toString()}`);
     this.filter = this.processDef(def);
 
     Object.values(this.game.archetypeManager.archetypes).forEach(
@@ -131,6 +131,10 @@ export class Query<
   [Symbol.iterator]() {
     return this.iterator;
   }
+
+  first = () => {
+    return this.iterator.first();
+  };
 
   private handleEntityAdded = (entity: Entity) => {
     this.addToList(entity.id);
@@ -231,6 +235,7 @@ export class Query<
     this.reset();
     this.unsubscribes.forEach((unsub) => unsub());
     this.unsubscribes.length = 0;
+    this.emit('destroy');
   };
 }
 

@@ -2,6 +2,9 @@ import { ObjectPool } from './internal/objectPool.js';
 import { ResourceHandle } from './ResourceHandle.js';
 
 export type AssetLoader<T = any> = (key: string) => Promise<T>;
+export type AssetLoaderImpls<Assets extends Record<string, any>> = {
+  [key in keyof Assets]: AssetLoader<Assets[key]>;
+};
 
 export class Assets<Loaders extends Record<string, any>> {
   private handlePool = new ObjectPool(
@@ -10,7 +13,7 @@ export class Assets<Loaders extends Record<string, any>> {
   );
   private handles = new Map<string, ResourceHandle>();
 
-  constructor(private _loaders: Loaders) {}
+  constructor(private _loaders: AssetLoaderImpls<Loaders>) {}
 
   load = <LoaderName extends keyof Loaders | (string & {})>(
     loader: LoaderName,

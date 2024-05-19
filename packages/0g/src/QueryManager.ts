@@ -1,22 +1,41 @@
+import { isFilter } from './filters.js';
 import { Game } from './Game.js';
-import { ObjectPool } from './internal/objectPool.js';
 import { Query, QueryComponentFilter } from './Query.js';
 
-// TODO: reuse queries with identical definitions!
 export class QueryManager {
-  private pool: ObjectPool<Query<any>>;
+  private queryCache: Map<string, Query<any>> = new Map();
 
-  constructor(private game: Game) {
-    this.pool = new ObjectPool<Query<any>>(() => new Query(this.game), q => q.reset());
+  constructor(private game: Game) {}
+
+  private getQueryKey(def: QueryComponentFilter) {
+    return def
+      .map((filter) =>
+        isFilter(filter) ? filter.toString() : `has(${filter.name})`,
+      )
+      .join(',');
   }
 
+  private handleQueryCreated = (query: Query<any>) => {
+    const unsub = query.subscribe('destroy', () => {
+      this.release(query);
+      unsub();
+    });
+  };
+
   create<Def extends QueryComponentFilter>(userDef: Def) {
-    const query = this.pool.acquire();
+    const key = this.getQueryKey(userDef);
+    if (this.queryCache.has(key)) {
+      return this.queryCache.get(key) as Query<Def>;
+    }
+    const query = new Query<Def>(this.game);
+    query.reset();
     query.initialize(userDef);
+    this.queryCache.set(key, query);
+    this.handleQueryCreated(query);
     return query as Query<Def>;
   }
 
   release(query: Query<any>) {
-    this.pool.release(query);
+    this.queryCache.delete(this.getQueryKey(query.filter));
   }
 }

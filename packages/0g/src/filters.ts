@@ -68,7 +68,9 @@ export const oneOf = <Comps extends ComponentHandle[]>(
   kind: 'oneOf',
   __isFilter: true,
   toString() {
-    return `oneOf(${Components.map((Comp) => Comp.name).join(', ')})`;
+    return `oneOf(${Components.map((Comp) => Comp.name)
+      .sort()
+      .join(', ')})`;
   },
 });
 /** @deprecated - use oneOf */

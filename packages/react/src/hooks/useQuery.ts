@@ -5,7 +5,10 @@ import { useGame } from './useGame.js';
 export function useQuery(queryDef: QueryComponentFilter) {
   const game = useGame();
   // stored as a static reference.
-  const [query] = useState(() => game.queryManager.create(queryDef));
+  const [query] = useState(() => {
+    const q = game.queryManager.create(queryDef);
+    return q;
+  });
 
   useSyncExternalStore(
     (onChange) => {

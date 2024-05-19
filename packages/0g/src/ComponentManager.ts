@@ -57,14 +57,14 @@ export class ComponentManager {
   };
 
   private onComponentChanged = (component: ComponentInstanceInternal) => {
-    this.game.enqueuePhaseOperation({
+    this.game.enqueueStepOperation({
       op: 'markChanged',
       componentId: component.$.id,
     });
   };
 
-  markChanged = (component: ComponentInstance<any>) => {
-    this.changed[component.id] = true;
+  markChanged = (componentId: number) => {
+    this.changed[componentId] = true;
   };
 
   private resetChanged = () => {

@@ -10,9 +10,6 @@ type FilterNots<CompUnion extends Filter<ComponentHandle> | ComponentHandle> =
 type UnwrapAnys<CompUnion extends Filter<ComponentHandle> | ComponentHandle> =
   CompUnion extends OneOf<any> ? never : CompUnion;
 
-type OnlyNots<CompUnion extends Filter<ComponentHandle> | ComponentHandle> =
-  CompUnion extends Not<infer C> ? C : never;
-
 type UnwrapFilters<
   CompUnion extends Filter<ComponentHandle> | ComponentHandle,
 > = CompUnion extends Filter<infer C> ? C : CompUnion;
@@ -48,7 +45,7 @@ export class QueryIterator<Def extends QueryComponentFilter>
     if (this.changedFilters.length === 0) return true;
     return this.changedFilters.some((filter) => {
       this.game.componentManager.wasChangedLastFrame(
-        this.result.value.get(filter.Component.prototype.constructor).id,
+        this.result.value.get(filter.Component).id,
       );
     });
   }
@@ -63,7 +60,7 @@ export class QueryIterator<Def extends QueryComponentFilter>
 
       // if changed() filter(s) are present, ensure a change has
       // occurred in the specified components
-      if (!this.checkChangeFilter()) {
+      if (!this.result.done && !this.checkChangeFilter()) {
         continue;
       }
 
@@ -81,5 +78,18 @@ export class QueryIterator<Def extends QueryComponentFilter>
     this.result.done = true;
     this.archetypeIndex = 0;
     return this.result;
+  }
+
+  first() {
+    this.archetypeIndex = 0;
+    this.archetypeIterator = null;
+    const first = this.next();
+    // reset stateful bits
+    this.archetypeIndex = 0;
+    this.archetypeIterator = null;
+    if (first.done) {
+      return null;
+    }
+    return first.value;
   }
 }

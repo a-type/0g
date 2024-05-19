@@ -1,10 +1,14 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { useGame } from './useGame.js';
+import { Game } from '0g';
 
 /**
  * Runs a callback every game step
  */
-export function useFrame(callback: () => void, phase: string = 'step') {
+export function useFrame(
+  callback: (game: Game) => void,
+  phase: string = 'step',
+) {
   const game = useGame();
 
   const ref = useRef(callback);
@@ -13,6 +17,6 @@ export function useFrame(callback: () => void, phase: string = 'step') {
   }, [callback]);
 
   useEffect(() => {
-    return game.subscribe(`phase:${phase}`, ref.current);
+    return game.subscribe(`phase:${phase}`, () => ref.current(game));
   }, [game, ref]);
 }
