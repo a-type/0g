@@ -1,5 +1,19 @@
 # @0g/react
 
+## 4.1.0
+
+### Minor Changes
+
+- 672d324: Make $ callable for easier (?) updates. Change useWatch to just watch a component. Add useOnChange for calling a callback on change instead.
+- e58fd1b: Fix changed() filter. Cache queries by definition. Fix findFirst(). Improve react hooks options.
+
+### Patch Changes
+
+- e75eed8: Fix useFrame step default
+- Updated dependencies [672d324]
+- Updated dependencies [e58fd1b]
+  - 0g@0.4.2
+
 ## 4.0.2
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # 0g
 
+## 0.4.2
+
+### Patch Changes
+
+- 672d324: Make $ callable for easier (?) updates. Change useWatch to just watch a component. Add useOnChange for calling a callback on change instead.
+- e58fd1b: Fix changed() filter. Cache queries by definition. Fix findFirst(). Improve react hooks options.
+
 ## 0.4.1
 
 ### Patch Changes
